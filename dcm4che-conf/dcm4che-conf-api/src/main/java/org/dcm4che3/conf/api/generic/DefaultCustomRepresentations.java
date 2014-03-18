@@ -46,11 +46,11 @@ import org.dcm4che3.util.AttributesFormat;
 
 public class DefaultCustomRepresentations {
 
-    public class AttributesFormatRepresentation implements CustomConfigObjectRepresentation<AttributesFormat> {
+    public static class AttributesFormatRepresentation implements CustomConfigObjectRepresentation<AttributesFormat> {
 
         @Override
         public String serialize(AttributesFormat obj, DicomConfiguration config) {
-            return obj.toString();
+            return (obj == null ? null : obj.toString());
         }
 
         @Override
@@ -63,7 +63,7 @@ public class DefaultCustomRepresentations {
 
     public static Map<Class, CustomConfigObjectRepresentation> defaultRepresentations; 
     
-    {
+    static {
         defaultRepresentations = new HashMap<Class, CustomConfigObjectRepresentation>();
         defaultRepresentations.put(AttributesFormat.class, new AttributesFormatRepresentation());
         

@@ -40,6 +40,10 @@ package org.dcm4che3.conf.api.generic;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.MalformedParameterizedTypeException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.naming.NamingException;
@@ -295,6 +299,50 @@ public class ReflectiveConfig {
 
             } else if (int.class.isAssignableFrom(fieldType)) {
                 value = reader.asInt(fieldAnno.name(), (fieldAnno.def().equals("N/A")? "0" : fieldAnno.def()));
+
+            } else if (Map.class.isAssignableFrom(fieldType)) {
+                
+                ParameterizedType pt = (ParameterizedType) field.getGenericType();
+                
+                Type[] ptypes = pt.getActualTypeArguments();
+                
+                // there must be only 2 parameterized types, and the key must be string
+                if (ptypes.length != 2) throw new MalformedParameterizedTypeException(); 
+                if (ptypes[0] != String.class) throw new MalformedParameterizedTypeException(); 
+
+                // expect String array, go through all entries
+                String[] entries = reader.asStringArray(fieldAnno.name());
+                
+                Map<String,Object> res = new HashMap<String,Object>();
+                
+                for (String e:entries) {
+                    
+                    String[] keyVal = e.split(fieldAnno.delimeter(),1);
+                    
+                    String eKey;
+                    Object eVal;
+                    
+                    
+                    if (keyVal.length == 1) {
+                        eKey = fieldAnno.defaultKey();
+                        eVal = keyVal[0];
+                    } else {
+                        eKey = keyVal[0];
+                        eVal = keyVal[1];
+                    }
+                    
+                    // check if there is custom representation for val
+                    CustomConfigObjectRepresentation customRep = lookupCustomRepresentation(customRepresentations, (Class<?>)ptypes[1]);
+                    
+                    if (customRep != null) {
+                        eVal = customRep.unserialize((String) eVal, configCtx);
+                    }
+                    
+                    res.put(eKey,eVal);
+                }
+                
+                value = res;
+                
 
             } else {
 

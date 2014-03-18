@@ -64,4 +64,16 @@ public @interface ConfigField {
 	 * @return
 	 */
 	String def() default "N/A";
+	
+	/**
+	 * For Maps. Which delimeter is used to separate key from value. 
+	 * @return
+	 */
+	String delimeter() default "|";
+	
+	/**
+         * For Maps. Which key to use if only value is provided. 
+         * @return
+         */
+        String defaultKey() default "*";
 }
