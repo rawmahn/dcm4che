@@ -49,6 +49,7 @@ import javax.naming.directory.BasicAttributes;
 import javax.naming.directory.ModificationItem;
 
 import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.ldap.LdapDicomConfiguration;
 import org.dcm4che3.conf.ldap.LdapDicomConfigurationExtension;
 import org.dcm4che3.net.Device;
 import org.dcm4che3.net.DeviceExtension;
@@ -79,10 +80,18 @@ public class LdapGenericConfigExtension<T extends DeviceExtension> extends LdapD
 
 	private Class<T> confClass;
 
+        private ReflectiveConfig reflectiveConfig = new ReflectiveConfig(null, null);
+	
 	private String getCnStr() {
 		return "cn=" + commonName + ",";
 	}
 
+	@Override
+	public void setDicomConfiguration(LdapDicomConfiguration config) {
+	    super.setDicomConfiguration(config);
+	    reflectiveConfig.setConfigCtx(config);
+	}
+	
 	public LdapGenericConfigExtension(Class<T> confClass) throws ConfigurationException {
 		super();
 
@@ -135,7 +144,7 @@ public class LdapGenericConfigExtension<T extends DeviceExtension> extends LdapD
 
 		try {
 
-			ReflectiveConfig.store(confObj, ldapWriter);
+			reflectiveConfig.storeConfig(confObj, ldapWriter);
 
 		} catch (Exception e) {
 			log.error("Unable to store configuration!");
@@ -179,7 +188,7 @@ public class LdapGenericConfigExtension<T extends DeviceExtension> extends LdapD
 
 		try {
 
-			ReflectiveConfig.read(confObj, ldapReader);
+			reflectiveConfig.readConfig(confObj, ldapReader);
 
 		} catch (Exception e) {
 			log.error("Unable to read configuration!");
@@ -213,7 +222,7 @@ public class LdapGenericConfigExtension<T extends DeviceExtension> extends LdapD
 
 		try {
 
-			ReflectiveConfig.storeAllDiffs(prevConfObj, confObj, ldapDiffWriter);
+			reflectiveConfig.storeConfigDiffs(prevConfObj, confObj, ldapDiffWriter);
 
 		} catch (Exception e) {
 			log.error("Unable to store the diffs for configuration!");

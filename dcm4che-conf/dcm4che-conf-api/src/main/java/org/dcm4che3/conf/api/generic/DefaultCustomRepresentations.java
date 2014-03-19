@@ -39,11 +39,19 @@ package org.dcm4che3.conf.api.generic;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 
+import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.CustomConfigObjectRepresentation;
+import org.dcm4che3.net.Device;
 import org.dcm4che3.util.AttributesFormat;
-
+/**
+ * 
+ * @author Roman K
+ *
+ */
 public class DefaultCustomRepresentations {
 
     public static class AttributesFormatRepresentation implements CustomConfigObjectRepresentation<AttributesFormat> {
@@ -57,21 +65,35 @@ public class DefaultCustomRepresentations {
         public AttributesFormat unserialize(String str, DicomConfiguration config) {
             return AttributesFormat.valueOf(str);
         }
-        
-    }
-    
 
-    public static Map<Class, CustomConfigObjectRepresentation> defaultRepresentations; 
-    
+    }
+
+    /**
+     * Device by name
+     */
+    public static class DeviceRepresentation implements CustomConfigObjectRepresentation<Device> {
+
+        @Override
+        public String serialize(Device obj, DicomConfiguration config) {
+            return (obj == null ? null : obj.getDeviceName());
+        }
+
+        @Override
+        public Device unserialize(String str, DicomConfiguration config) throws ConfigurationException {
+            return ( (config == null || str == null) ? null : config.findDevice(str));
+        }
+
+    }
+
+    public static Map<Class, CustomConfigObjectRepresentation> defaultRepresentations;
+
     static {
         defaultRepresentations = new HashMap<Class, CustomConfigObjectRepresentation>();
         defaultRepresentations.put(AttributesFormat.class, new AttributesFormatRepresentation());
-        
-        
-    }
-    
+        defaultRepresentations.put(Device.class, new DeviceRepresentation());
 
-    
+    }
+
     public static Map<Class, CustomConfigObjectRepresentation> get() {
         return defaultRepresentations;
     }

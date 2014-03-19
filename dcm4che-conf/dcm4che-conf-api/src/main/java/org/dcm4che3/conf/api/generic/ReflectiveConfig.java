@@ -45,6 +45,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.naming.NamingException;
 
@@ -56,8 +57,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Generic helper class that provides reflective traversing of classes annotated
- * with Config annotations, and storing/reading config from/to such classes
+ * Generic helper class that provides reflective traversing of classes annotated with Config annotations, and
+ * storing/reading config from/to such classes
  * 
  * @author Roman K
  * 
@@ -74,28 +75,26 @@ public class ReflectiveConfig {
          * 
          * @param obj
          * @param config
-         *            Dicom Configuration object in whose context this writing
-         *            is performed. <b>Can be <i>null</i>!</b>
+         *            Dicom Configuration object in whose context this writing is performed. <b>Can be <i>null</i>!</b>
          * @return
          */
-        String serialize(T obj, DicomConfiguration config);
+        String serialize(T obj, DicomConfiguration config) throws ConfigurationException;
 
         /**
          * Should construct an object from its string representation.
          * 
          * @param str
          * @param config
-         *            Dicom Configuration object in whose context this reading
-         *            is performed. <b>Can be <i>null</i>!</b>
+         *            Dicom Configuration object in whose context this reading is performed. <b>Can be <i>null</i>!</b>
          * @return
+         * @throws ConfigurationException
          */
-        T unserialize(String str, DicomConfiguration config);
+        T unserialize(String str, DicomConfiguration config) throws ConfigurationException;
 
     }
 
     /**
-     * Used by reflective config writer, should implement storage type-specific
-     * methods
+     * Used by reflective config writer, should implement storage type-specific methods
      * 
      * @author Roman K
      */
@@ -108,8 +107,7 @@ public class ReflectiveConfig {
     }
 
     /**
-     * Used by reflective config reader, should implement storage type-specific
-     * methods
+     * Used by reflective config reader, should implement storage type-specific methods
      * 
      * @author Roman K
      */
@@ -128,8 +126,7 @@ public class ReflectiveConfig {
     }
 
     /**
-     * Used by reflective config diff writer, should implement storage
-     * type-specific methods
+     * Used by reflective config diff writer, should implement storage type-specific methods
      * 
      * @author Roman K
      */
@@ -137,29 +134,300 @@ public class ReflectiveConfig {
         void storeDiff(String propName, Object prev, Object curr);
     }
 
+    /*
+     * Static members
+     */
+
     /**
-     * Writes the configuration from the properties of the specified
-     * configuration object into the config storage using the provided writer.
+     * Default singleton instance for simplified usage
+     */
+    private static final ReflectiveConfig singleton = new ReflectiveConfig(null, null);
+
+    /**
+     * Writes the configuration from the properties of the specified configuration object into the config storage using
+     * the provided writer.
      * 
      * @param confObj
      *            Configuration object
      * @param writer
      *            Configuration writer
-     * @throws IllegalAccessException
-     * @throws InvocationTargetException
-     * @throws NoSuchMethodException
      */
-    public static <T> void store(T confObj, ConfigWriter writer) throws IllegalAccessException,
-            InvocationTargetException, NoSuchMethodException {
-        store(confObj, writer, null, null);
+    public static <T> void store(T confObj, ConfigWriter writer) {
+        singleton.storeConfig(confObj, writer);
+    }
+
+    /**
+     * Reads the configuration into the properties of the specified configuration object using the provided reader.
+     * 
+     * @param confObj
+     * @param reader
+     */
+    public static <T> void read(T confObj, ConfigReader reader) {
+        singleton.readConfig(confObj, reader);
+    }
+
+    /**
+     * Calls store diff methods for all pairs of the annotated fields of prevConfObj and confObj
+     * 
+     * @param prevConfObj
+     * @param confObj
+     * @param ldapDiffWriter
+     */
+    public static <T> void storeAllDiffs(T prevConfObj, T confObj, DiffWriter ldapDiffWriter) {
+        singleton.storeConfigDiffs(prevConfObj, confObj, ldapDiffWriter);
+    }
+
+    /*
+     * Non-static class members
+     */
+
+    private Map<Class, CustomConfigObjectRepresentation> customRepresentations;
+    private DicomConfiguration configCtx;
+
+    /**
+     * Creates an instance of ReflectiveConfig that will use the specified config context and custom representations
+     * 
+     * @param customRepresentations
+     *            Null can be provided. class-representation map for types that should be treated in a special way when
+     *            reading/writing the configuration.
+     * @param configCtx
+     *            Null can be provided. DicomCofiguration that will be forwarded to custom representation
+     *            implementations as config context.
+     */
+    public ReflectiveConfig(Map<Class, CustomConfigObjectRepresentation> customRepresentations,
+            DicomConfiguration configCtx) {
+        super();
+        this.customRepresentations = customRepresentations;
+        this.configCtx = configCtx;
+    }
+
+    /**
+     * Reads the configuration into the properties of the specified configuration object using the provided reader.
+     * 
+     * @param confObj
+     * @param reader
+     */
+    public <T> void readConfig(T confObj, ConfigReader reader) {
+        // look through all fields of the config obj, not including superclass
+        // fields
+
+        for (Field field : confObj.getClass().getDeclaredFields()) {
+
+            // if field is not annotated, skip it
+            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
+            if (fieldAnno == null)
+                continue;
+
+            try {
+
+                Object value = null;
+                Class<?> fieldType = field.getType();
+
+                // Determine the class of the field and
+                // use the corresponding method from the provided reader to get
+                // the
+                // value
+
+                if (fieldType.isArray()) {
+                    if (String.class.isAssignableFrom(fieldType.getComponentType())) {
+                        value = reader.asStringArray(fieldAnno.name());
+
+                    } else if (int.class.isAssignableFrom(fieldType.getComponentType())) {
+                        value = reader.asIntArray(fieldAnno.name());
+                    }
+                } else if (String.class.isAssignableFrom(fieldType)) {
+                    value = reader.asString(fieldAnno.name(), (fieldAnno.def().equals("N/A") ? null : fieldAnno.def()));
+
+                } else if (boolean.class.isAssignableFrom(fieldType)) {
+                    value = reader.asBoolean(fieldAnno.name(),
+                            (fieldAnno.def().equals("N/A") ? "false" : fieldAnno.def()));
+
+                } else if (int.class.isAssignableFrom(fieldType)) {
+                    value = reader.asInt(fieldAnno.name(), (fieldAnno.def().equals("N/A") ? "0" : fieldAnno.def()));
+
+                } else if (Map.class.isAssignableFrom(fieldType)) {
+
+                    // expect String array
+                    String[] entries = reader.asStringArray(fieldAnno.name());
+
+                    value = stringArray2MapField(entries, field);
+
+                } else {
+
+                    // if custom representation exists, read as string and use
+                    // fromString
+                    CustomConfigObjectRepresentation customRep = lookupCustomRepresentation(fieldType);
+
+                    if (customRep != null) {
+
+                        String str = reader.asString(fieldAnno.name(), null);
+                        value = customRep.unserialize(str, configCtx);
+
+                    } else
+                        throw new ConfigurationException("Corresponding 'reader' was not found for a field");
+
+                }
+
+                // set the property value through its setter
+                PropertyUtils.setSimpleProperty(confObj, field.getName(), value);
+
+            } catch (IllegalAccessException e) {
+                log.warn("Unable to set configuration field {} in a configuration object", fieldAnno.name());
+                log.info("{}", e);
+            } catch (InvocationTargetException e) {
+                log.warn("Unable to set configuration field {} in a configuration object", fieldAnno.name());
+                log.info("{}", e);
+            } catch (NoSuchMethodException e) {
+                log.warn("Unable to set configuration field {} in a configuration object", fieldAnno.name());
+                log.info("{}", e);
+            } catch (Exception e) {
+                log.warn("Unable to read configuration property {}", fieldAnno.name());
+                log.info("{}", e);
+            }
+        }
+    }
+
+    /**
+     * Writes the configuration from the properties of the specified configuration object into the config storage using
+     * the provided writer.
+     * 
+     * @param confObj
+     * @param writer
+     */
+    @SuppressWarnings("unchecked")
+    public <T> void storeConfig(T confObj, ConfigWriter writer) {
+
+        // look through all fields of the config obj, not including
+        // superclass fields
+        for (Field field : confObj.getClass().getDeclaredFields()) {
+
+            // if field is not annotated, skip it
+            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
+            if (fieldAnno == null)
+                continue;
+
+            try {
+
+                // read a configuration value using its getter
+                Object value = PropertyUtils.getSimpleProperty(confObj, field.getName());
+
+                Class<?> fieldType = field.getType();
+
+                // if it is a map, use special map serializer
+                if (Map.class.isAssignableFrom(fieldType)) {
+
+                    String[] serializedMap = mapField2StringArray((Map<String, Object>) value, field);
+                    writer.storeNotEmpty(fieldAnno.name(), serializedMap);
+
+                    continue;
+                }
+                ;
+
+                // if custom representation exists, call toString and then store it
+                // using storeNotNull
+                CustomConfigObjectRepresentation customRep = lookupCustomRepresentation(fieldType);
+
+                if (customRep != null) {
+                    writer.storeNotNull(fieldAnno.name(), customRep.serialize(value, configCtx));
+                    continue;
+                }
+
+                // otherwise call appropriate store method based of field type and
+                // default value specified
+
+                if (!fieldAnno.def().equals("N/A"))
+                    writer.storeNotDef(fieldAnno.name(), value, fieldAnno.def());
+                else if (fieldType.isArray())
+                    writer.storeNotEmpty(fieldAnno.name(), value);
+                else
+                    writer.storeNotNull(fieldAnno.name(), value);
+
+            } catch (ConfigurationException e) {
+                log.warn("Unable to serialize configuration field {}", fieldAnno.name());
+                log.info("{}", e);
+            } catch (IllegalAccessException e) {
+                log.warn("Unable to read configuration field from a configuration object {}", fieldAnno.name());
+                log.info("{}", e);
+            } catch (InvocationTargetException e) {
+                log.warn("Unable to read configuration field from a configuration object {}", fieldAnno.name());
+                log.info("{}", e);
+            } catch (NoSuchMethodException e) {
+                log.warn("Unable to read configuration field from a configuration object {}", fieldAnno.name());
+                log.info("{}", e);
+            } catch (Exception e) {
+                log.warn("Unable to store configuration field {}", fieldAnno.name());
+                log.info("{}", e);
+            }
+
+        }
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> CustomConfigObjectRepresentation<T> lookupCustomRepresentation(
-            Map<Class, CustomConfigObjectRepresentation> customRepresentations, Class<T> clazz) {
+    public <T> void storeConfigDiffs(T prevConfObj, T confObj, DiffWriter ldapDiffWriter) {
 
-        CustomConfigObjectRepresentation<T> customRep = null;        
-        
+        // look through all fields of the config class, not including
+        // superclass fields
+        for (Field field : confObj.getClass().getDeclaredFields()) {
+
+            // if field is not annotated, skip it
+            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
+            if (fieldAnno == null)
+                continue;
+
+            try {
+
+                Object prev = PropertyUtils.getSimpleProperty(prevConfObj, field.getName());
+                Object curr = PropertyUtils.getSimpleProperty(confObj, field.getName());
+
+                // if it is a map, use serialized form for diffs
+                if (Map.class.isAssignableFrom(field.getType())) {
+                    prev = mapField2StringArray((Map<String, Object>) prev, field);
+                    curr = mapField2StringArray((Map<String, Object>) curr, field);
+                }
+
+                // if there is a custom representation, use serialized form for
+                // diffs
+                CustomConfigObjectRepresentation customRep = lookupCustomRepresentation(field.getType());
+                if (customRep != null) {
+                    prev = customRep.serialize(prev, configCtx);
+                    curr = customRep.serialize(curr, configCtx);
+                }
+
+                ldapDiffWriter.storeDiff(fieldAnno.name(), prev, curr);
+
+            } catch (ConfigurationException e) {
+                log.warn("Unable to serialize configuration field {}", fieldAnno.name());
+                log.info("{}", e);
+            } catch (IllegalAccessException e) {
+                log.warn("Unable to read configuration field in a configuration object {}", fieldAnno.name());
+                log.info("{}", e);
+            } catch (InvocationTargetException e) {
+                log.warn("Unable to read configuration field in a configuration object {}", fieldAnno.name());
+                log.info("{}", e);
+            } catch (NoSuchMethodException e) {
+                log.warn("Unable to read configuration field in a configuration object {}", fieldAnno.name());
+                log.info("{}", e);
+            } catch (Exception e) {
+                log.warn("Unable to store diff for a configuration field {}", fieldAnno.name());
+                log.info("{}", e);
+            }
+
+        }
+    }
+
+    public void setCustomRepresentations(Map<Class, CustomConfigObjectRepresentation> customRepresentations) {
+        this.customRepresentations = customRepresentations;
+    }
+
+    public void setConfigCtx(DicomConfiguration configCtx) {
+        this.configCtx = configCtx;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> CustomConfigObjectRepresentation<T> lookupCustomRepresentation(Class<T> clazz) {
+
+        CustomConfigObjectRepresentation<T> customRep = null;
+
         // try find in defaults
         Map<Class, CustomConfigObjectRepresentation> def = DefaultCustomRepresentations.get();
         if (def != null)
@@ -173,237 +441,93 @@ public class ReflectiveConfig {
 
     }
 
-    /**
-     * Writes the configuration from the properties of the specified
-     * configuration object into the config storage using the provided writer.
-     * 
-     * @param confObj
-     * @param writer
-     * @param customRepresentations
-     *            Null can be provided. class-representation map for types that
-     *            should be treated in a special way when reading/writing the
-     *            configuration.
-     * @param configCtx
-     *            Null can be provided. DicomCofiguration that will be forwarded
-     *            to custom representation impls as config context.
-     * @throws IllegalAccessException
-     * @throws InvocationTargetException
-     * @throws NoSuchMethodException
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> void store(T confObj, ConfigWriter writer,
-            Map<Class, CustomConfigObjectRepresentation> customRepresentations, DicomConfiguration configCtx)
-            throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+    private String[] mapField2StringArray(Map<String, Object> map, Field field) throws ConfigurationException {
 
-        // look through all fields of the config obj, not including
-        // superclass fields
-        for (Field field : confObj.getClass().getDeclaredFields()) {
+        ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
 
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
+        ParameterizedType pt = (ParameterizedType) field.getGenericType();
 
-            // read a configuration value using its getter
-            Object value = PropertyUtils.getSimpleProperty(confObj, field.getName());
+        Type[] ptypes = pt.getActualTypeArguments();
 
-            Class<?> fieldType = field.getType();
+        // there must be only 2 parameterized types, and the key must be string
+        if (ptypes.length != 2)
+            throw new MalformedParameterizedTypeException();
+        if (ptypes[0] != String.class)
+            throw new MalformedParameterizedTypeException();
 
-            // if custom representation exists, call toString and then store it
-            // using storeNotNull
-            CustomConfigObjectRepresentation customRep = lookupCustomRepresentation(customRepresentations, fieldType);
+        String[] res = new String[map.size()];
 
-            if (customRep != null) {
-                writer.storeNotNull(fieldAnno.name(), customRep.serialize(value, configCtx));
-                continue;
-            }
+        // go through all entries
+        int i = 0;
+        for (Entry<String, Object> e : map.entrySet()) {
 
-            // otherwise call appropriate store method based of field type and
-            // default value specified
+            // check if there is custom representation for val
+            CustomConfigObjectRepresentation customRep = lookupCustomRepresentation((Class<?>) ptypes[1]);
 
-            if (!fieldAnno.def().equals("N/A"))
-                writer.storeNotDef(fieldAnno.name(), value, fieldAnno.def());
-            else if (fieldType.isArray())
-                writer.storeNotEmpty(fieldAnno.name(), value);
+            String val;
+            if (customRep != null)
+                val = customRep.serialize(e.getValue(), configCtx);
             else
-                writer.storeNotNull(fieldAnno.name(), value);
+                val = e.getValue().toString();
+
+            res[i++] = e.getKey() + fieldAnno.delimeter() + val;
         }
+
+        return res;
+
     }
 
-    /**
-     * Reads the configuration into the properties of the specified
-     * configuration object using the provided reader.
-     * 
-     * @param confObj
-     * @param reader
-     * @throws NamingException
-     * @throws NoSuchMethodException
-     * @throws InvocationTargetException
-     * @throws IllegalAccessException
-     */
-    public static <T> void read(T confObj, ConfigReader reader) throws NamingException, IllegalAccessException,
-            InvocationTargetException, NoSuchMethodException {
-        read(confObj, reader, null, null);
-    }
+    private Object stringArray2MapField(String[] src, Field field) throws ConfigurationException {
 
-    /**
-     * Reads the configuration into the properties of the specified
-     * configuration object using the provided reader.
-     * 
-     * @param confObj
-     * @param reader
-     * @param customRepresentations
-     *            Null can be provided. class-representation map for types that
-     *            should be treated in a special way when reading/writing the
-     *            configuration.
-     * @param configCtx
-     *            Null can be provided. DicomCofiguration that will be forwarded
-     *            to custom representation impls as config context.
-     * @throws NamingException
-     * @throws IllegalAccessException
-     * @throws InvocationTargetException
-     * @throws NoSuchMethodException
-     */
-    public static <T> void read(T confObj, ConfigReader reader,
-    Map<Class, CustomConfigObjectRepresentation> customRepresentations, DicomConfiguration configCtx)
-            throws NamingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        // look through all fields of the config obj, not including superclass
-        // fields
+        ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
 
-        for (Field field : confObj.getClass().getDeclaredFields()) {
+        ParameterizedType pt = (ParameterizedType) field.getGenericType();
 
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
+        Type[] ptypes = pt.getActualTypeArguments();
 
-            Object value = null;
-            Class<?> fieldType = field.getType();
+        // there must be only 2 parameterized types, and the key must be string
+        if (ptypes.length != 2)
+            throw new MalformedParameterizedTypeException();
+        if (ptypes[0] != String.class)
+            throw new MalformedParameterizedTypeException();
 
-            // Determine the class of the field and
-            // use the corresponding method from the provided reader to get the
-            // value
+        Map<String, Object> res = new HashMap<String, Object>();
 
-            if (fieldType.isArray()) {
-                if (String.class.isAssignableFrom(fieldType.getComponentType())) {
-                    value = reader.asStringArray(fieldAnno.name());
+        // go through all entries
+        for (String e : src) {
 
-                } else if (int.class.isAssignableFrom(fieldType.getComponentType())) {
-                    value = reader.asIntArray(fieldAnno.name());
-                }
-            } else if (String.class.isAssignableFrom(fieldType)) {
-                value = reader.asString(fieldAnno.name(), (fieldAnno.def().equals("N/A") ? null : fieldAnno.def()));
+            // split string with delimeter
+            String[] keyVal = e.split("\\" + fieldAnno.delimeter(), 2);
 
-            } else if (boolean.class.isAssignableFrom(fieldType)) {
-                value = reader.asBoolean(fieldAnno.name(), (fieldAnno.def().equals("N/A")? "false" : fieldAnno.def()));
+            String eKey;
+            Object eVal;
 
-            } else if (int.class.isAssignableFrom(fieldType)) {
-                value = reader.asInt(fieldAnno.name(), (fieldAnno.def().equals("N/A")? "0" : fieldAnno.def()));
-
-            } else if (Map.class.isAssignableFrom(fieldType)) {
-                
-                ParameterizedType pt = (ParameterizedType) field.getGenericType();
-                
-                Type[] ptypes = pt.getActualTypeArguments();
-                
-                // there must be only 2 parameterized types, and the key must be string
-                if (ptypes.length != 2) throw new MalformedParameterizedTypeException(); 
-                if (ptypes[0] != String.class) throw new MalformedParameterizedTypeException(); 
-
-                // expect String array, go through all entries
-                String[] entries = reader.asStringArray(fieldAnno.name());
-                
-                Map<String,Object> res = new HashMap<String,Object>();
-                
-                for (String e:entries) {
-                    
-                    String[] keyVal = e.split(fieldAnno.delimeter(),1);
-                    
-                    String eKey;
-                    Object eVal;
-                    
-                    
-                    if (keyVal.length == 1) {
-                        eKey = fieldAnno.defaultKey();
-                        eVal = keyVal[0];
-                    } else {
-                        eKey = keyVal[0];
-                        eVal = keyVal[1];
-                    }
-                    
-                    // check if there is custom representation for val
-                    CustomConfigObjectRepresentation customRep = lookupCustomRepresentation(customRepresentations, (Class<?>)ptypes[1]);
-                    
-                    if (customRep != null) {
-                        eVal = customRep.unserialize((String) eVal, configCtx);
-                    }
-                    
-                    res.put(eKey,eVal);
-                }
-                
-                value = res;
-                
-
+            if (keyVal.length == 1) {
+                eKey = fieldAnno.defaultKey();
+                eVal = keyVal[0];
             } else {
-
-                // if custom representation exists, read as string and use
-                // fromString
-                CustomConfigObjectRepresentation customRep = lookupCustomRepresentation(customRepresentations,
-                        fieldType);
-
-                if (customRep != null) {
-
-                    String str = reader.asString(fieldAnno.name(), null);
-                    value = customRep.unserialize(str, configCtx);
-
-                } else
-                    log.warn("Unable to read configuration field {}", fieldAnno.name());
-
+                eKey = keyVal[0];
+                eVal = keyVal[1];
             }
 
-            // set the property value through its setter
-            PropertyUtils.setSimpleProperty(confObj, field.getName(), value);
+            // check if there is custom representation for val
+            CustomConfigObjectRepresentation customRep = lookupCustomRepresentation((Class<?>) ptypes[1]);
 
-        }
-    }
-
-    public static <T> void storeAllDiffs(T prevConfObj, T confObj, DiffWriter ldapDiffWriter ) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        storeAllDiffs(prevConfObj, confObj, ldapDiffWriter, null, null);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> void storeAllDiffs(T prevConfObj, T confObj, DiffWriter ldapDiffWriter, Map<Class, CustomConfigObjectRepresentation> customRepresentations, DicomConfiguration configCtx)
-            throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-
-        // look through all fields of the config class, not including
-        // superclass fields
-        for (Field field : confObj.getClass().getDeclaredFields()) {
-
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
-
-            Object prev = PropertyUtils.getSimpleProperty(prevConfObj, field.getName());
-            Object curr = PropertyUtils.getSimpleProperty(confObj, field.getName());
-            
-            // if there is a custom representation, use serialized form for diffs
-            CustomConfigObjectRepresentation customRep = lookupCustomRepresentation(customRepresentations, field.getType());
             if (customRep != null) {
-                prev = customRep.serialize(prev,configCtx);
-                curr = customRep.serialize(curr,configCtx);
+                eVal = customRep.unserialize((String) eVal, configCtx);
             }
 
-            ldapDiffWriter.storeDiff(fieldAnno.name(), prev, curr);
-
+            res.put(eKey, eVal);
         }
+
+        return res;
+
     }
 
     /**
      * Walk through the <b>from</b> object and for each field annotated with
      * 
-     * @ConfigField, copy the value by using getter/setter to the <b>to</b>
-     *               object.
+     * @ConfigField, copy the value by using getter/setter to the <b>to</b> object.
      * 
      * @param from
      * @param to

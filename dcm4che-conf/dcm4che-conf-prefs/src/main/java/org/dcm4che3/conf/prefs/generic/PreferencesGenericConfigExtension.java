@@ -42,6 +42,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.prefs.PreferencesDicomConfiguration;
 import org.dcm4che3.conf.prefs.PreferencesDicomConfigurationExtension;
 import org.dcm4che3.net.Device;
 import org.dcm4che3.net.DeviceExtension;
@@ -69,7 +70,15 @@ public class PreferencesGenericConfigExtension<T extends DeviceExtension> extend
 	private String nodename;
 
 	private Class<T> confClass;
+	
+	private ReflectiveConfig reflectiveConfig = new ReflectiveConfig(null, null);
 
+	@Override
+	public void setDicomConfiguration(PreferencesDicomConfiguration config) {
+	    super.setDicomConfiguration(config);
+	    reflectiveConfig.setConfigCtx(config);
+	}
+	
 	public PreferencesGenericConfigExtension(Class<T> confClass) throws ConfigurationException {
 		super();
 
@@ -102,7 +111,7 @@ public class PreferencesGenericConfigExtension<T extends DeviceExtension> extend
 
 		try {
 
-			ReflectiveConfig.store(confObj, prefsWriter);
+		    reflectiveConfig.storeConfig(confObj, prefsWriter);
 
 		} catch (Exception e) {
 			log.error("Unable to store configuration!");
@@ -136,7 +145,7 @@ public class PreferencesGenericConfigExtension<T extends DeviceExtension> extend
 
 		try {
 
-			ReflectiveConfig.read(confObj, ldapReader);
+		    reflectiveConfig.readConfig(confObj, ldapReader);
 
 		} catch (Exception e) {
 			log.error("Unable to read configuration!");
@@ -168,7 +177,7 @@ public class PreferencesGenericConfigExtension<T extends DeviceExtension> extend
 
 		try {
 
-			ReflectiveConfig.storeAllDiffs(prevConfObj, confObj, prefsDiffWriter);
+		    reflectiveConfig.storeConfigDiffs(prevConfObj, confObj, prefsDiffWriter);
 
 		} catch (Exception e) {
 			log.error("Unable to store the diffs for configuration!");
