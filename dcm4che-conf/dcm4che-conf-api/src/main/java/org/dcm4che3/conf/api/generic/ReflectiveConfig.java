@@ -68,7 +68,7 @@ public class ReflectiveConfig {
 
     public static final Logger log = LoggerFactory.getLogger(ReflectiveConfig.class);
 
-    public interface CustomConfigObjectRepresentation<T> {
+    public interface CustomConfigTypeAdapter<T,ST> {
 
         /**
          * Should return string representation of <b>obj</b>.
@@ -76,9 +76,13 @@ public class ReflectiveConfig {
          * @param obj
          * @param config
          *            Dicom Configuration object in whose context this writing is performed. <b>Can be <i>null</i>!</b>
+         * @param writer ConfigWriter to use
+         * @param field Config field. Can be used to read additional annotations, check type, etc.
          * @return
          */
-        String serialize(T obj, DicomConfiguration config) throws ConfigurationException;
+        void write(ST serialized, ReflectiveConfig config, ConfigWriter writer, Field field) throws ConfigurationException;
+
+        ST serialize(T obj, ReflectiveConfig config, Field field) throws ConfigurationException;
 
         /**
          * Should construct an object from its string representation.
@@ -86,10 +90,15 @@ public class ReflectiveConfig {
          * @param str
          * @param config
          *            Dicom Configuration object in whose context this reading is performed. <b>Can be <i>null</i>!</b>
+         * @param writer ConfigWriter to use
+         * @param field Config field. Can be used to read additional annotations, check type, etc.
          * @return
          * @throws ConfigurationException
+         * @throws NamingException 
          */
-        T unserialize(String str, DicomConfiguration config) throws ConfigurationException;
+        ST read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException, NamingException;
+        
+        T deserialize(ST serialized, ReflectiveConfig config, Field field) throws ConfigurationException;
 
     }
 
@@ -181,8 +190,10 @@ public class ReflectiveConfig {
      * Non-static class members
      */
 
-    private Map<Class, CustomConfigObjectRepresentation> customRepresentations;
-    private DicomConfiguration configCtx;
+    private Map<Class, CustomConfigTypeAdapter> customRepresentations;
+    private DicomConfiguration dicomConfiguration;
+
+
 
     /**
      * Creates an instance of ReflectiveConfig that will use the specified config context and custom representations
@@ -194,11 +205,11 @@ public class ReflectiveConfig {
      *            Null can be provided. DicomCofiguration that will be forwarded to custom representation
      *            implementations as config context.
      */
-    public ReflectiveConfig(Map<Class, CustomConfigObjectRepresentation> customRepresentations,
+    public ReflectiveConfig(Map<Class, CustomConfigTypeAdapter> customRepresentations,
             DicomConfiguration configCtx) {
         super();
         this.customRepresentations = customRepresentations;
-        this.configCtx = configCtx;
+        this.dicomConfiguration = configCtx;
     }
 
     /**
@@ -245,23 +256,15 @@ public class ReflectiveConfig {
                 } else if (int.class.isAssignableFrom(fieldType)) {
                     value = reader.asInt(fieldAnno.name(), (fieldAnno.def().equals("N/A") ? "0" : fieldAnno.def()));
 
-                } else if (Map.class.isAssignableFrom(fieldType)) {
-
-                    // expect String array
-                    String[] entries = reader.asStringArray(fieldAnno.name());
-
-                    value = stringArray2MapField(entries, field);
-
                 } else {
 
                     // if custom representation exists, read as string and use
                     // fromString
-                    CustomConfigObjectRepresentation customRep = lookupCustomRepresentation(fieldType);
+                    CustomConfigTypeAdapter customRep = lookupCustomTypeAdapter(fieldType);
 
                     if (customRep != null) {
 
-                        String str = reader.asString(fieldAnno.name(), null);
-                        value = customRep.unserialize(str, configCtx);
+                        value = customRep.read(this, reader, field);
 
                     } else
                         throw new ConfigurationException("Corresponding 'reader' was not found for a field");
@@ -325,10 +328,10 @@ public class ReflectiveConfig {
 
                 // if custom representation exists, call toString and then store it
                 // using storeNotNull
-                CustomConfigObjectRepresentation customRep = lookupCustomRepresentation(fieldType);
+                CustomConfigTypeAdapter customRep = lookupCustomTypeAdapter(fieldType);
 
                 if (customRep != null) {
-                    writer.storeNotNull(fieldAnno.name(), customRep.serialize(value, configCtx));
+                    customRep.write(value, this, writer, field);
                     continue;
                 }
 
@@ -385,12 +388,28 @@ public class ReflectiveConfig {
                     curr = mapField2StringArray((Map<String, Object>) curr, field);
                 }
 
+                // use all no-op writer just to get serialized form for diffs
+                ConfigWriter nullWriter = new ConfigWriter() {
+                    @Override
+                    public void storeNotNull(String propName, Object value) {
+                    }
+                    
+                    @Override
+                    public void storeNotEmpty(String propName, Object value) {
+                    }
+                    
+                    @Override
+                    public void storeNotDef(String propName, Object value, String def) {
+                    }
+                };
+                
+                
                 // if there is a custom representation, use serialized form for
                 // diffs
-                CustomConfigObjectRepresentation customRep = lookupCustomRepresentation(field.getType());
+                CustomConfigTypeAdapter customRep = lookupCustomTypeAdapter(field.getType());
                 if (customRep != null) {
-                    prev = customRep.serialize(prev, configCtx);
-                    curr = customRep.serialize(curr, configCtx);
+                    prev = customRep.write(prev, this, nullWriter, field);
+                    curr = customRep.write(curr, this, nullWriter, field);
                 }
 
                 ldapDiffWriter.storeDiff(fieldAnno.name(), prev, curr);
@@ -415,21 +434,13 @@ public class ReflectiveConfig {
         }
     }
 
-    public void setCustomRepresentations(Map<Class, CustomConfigObjectRepresentation> customRepresentations) {
-        this.customRepresentations = customRepresentations;
-    }
-
-    public void setConfigCtx(DicomConfiguration configCtx) {
-        this.configCtx = configCtx;
-    }
-
     @SuppressWarnings("unchecked")
-    private <T> CustomConfigObjectRepresentation<T> lookupCustomRepresentation(Class<T> clazz) {
+    public <T> CustomConfigTypeAdapter<T> lookupCustomTypeAdapter(Class<T> clazz) {
 
-        CustomConfigObjectRepresentation<T> customRep = null;
+        CustomConfigTypeAdapter<T> customRep = null;
 
         // try find in defaults
-        Map<Class, CustomConfigObjectRepresentation> def = DefaultCustomRepresentations.get();
+        Map<Class, CustomConfigTypeAdapter> def = DefaultConfigTypeAdapters.get();
         if (def != null)
             customRep = def.get(clazz);
 
@@ -439,6 +450,18 @@ public class ReflectiveConfig {
 
         return customRep;
 
+    }
+
+    public DicomConfiguration getDicomConfiguration() {
+        return dicomConfiguration;
+    }
+
+    public void setDicomConfiguration(DicomConfiguration dicomConfiguration) {
+        this.dicomConfiguration = dicomConfiguration;
+    }
+
+    public void setCustomRepresentations(Map<Class, CustomConfigTypeAdapter> customRepresentations) {
+        this.customRepresentations = customRepresentations;
     }
 
     private String[] mapField2StringArray(Map<String, Object> map, Field field) throws ConfigurationException {
@@ -462,11 +485,11 @@ public class ReflectiveConfig {
         for (Entry<String, Object> e : map.entrySet()) {
 
             // check if there is custom representation for val
-            CustomConfigObjectRepresentation customRep = lookupCustomRepresentation((Class<?>) ptypes[1]);
+            CustomConfigTypeAdapter customRep = lookupCustomTypeAdapter((Class<?>) ptypes[1]);
 
             String val;
             if (customRep != null)
-                val = customRep.serialize(e.getValue(), configCtx);
+                val = customRep.write(e.getValue(), dicomConfiguration, null, null);
             else
                 val = e.getValue().toString();
 
@@ -511,10 +534,10 @@ public class ReflectiveConfig {
             }
 
             // check if there is custom representation for val
-            CustomConfigObjectRepresentation customRep = lookupCustomRepresentation((Class<?>) ptypes[1]);
+            CustomConfigTypeAdapter customRep = lookupCustomTypeAdapter((Class<?>) ptypes[1]);
 
             if (customRep != null) {
-                eVal = customRep.unserialize((String) eVal, configCtx);
+                eVal = customRep.read((String) eVal, dicomConfiguration, null, null);
             }
 
             res.put(eKey, eVal);

@@ -89,7 +89,7 @@ public class LdapGenericConfigExtension<T extends DeviceExtension> extends LdapD
 	@Override
 	public void setDicomConfiguration(LdapDicomConfiguration config) {
 	    super.setDicomConfiguration(config);
-	    reflectiveConfig.setConfigCtx(config);
+	    reflectiveConfig.setDicomConfiguration(config);
 	}
 	
 	public LdapGenericConfigExtension(Class<T> confClass) throws ConfigurationException {

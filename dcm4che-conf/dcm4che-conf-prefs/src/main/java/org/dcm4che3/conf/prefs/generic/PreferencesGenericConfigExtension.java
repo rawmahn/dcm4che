@@ -76,7 +76,7 @@ public class PreferencesGenericConfigExtension<T extends DeviceExtension> extend
 	@Override
 	public void setDicomConfiguration(PreferencesDicomConfiguration config) {
 	    super.setDicomConfiguration(config);
-	    reflectiveConfig.setConfigCtx(config);
+	    reflectiveConfig.setDicomConfiguration(config);
 	}
 	
 	public PreferencesGenericConfigExtension(Class<T> confClass) throws ConfigurationException {
