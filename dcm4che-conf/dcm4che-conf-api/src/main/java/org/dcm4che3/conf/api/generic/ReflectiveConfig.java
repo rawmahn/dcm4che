@@ -44,15 +44,18 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.MalformedParameterizedTypeException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.naming.NamingException;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
+import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.util.AttributesFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,6 +113,24 @@ public class ReflectiveConfig {
     }
 
     /**
+     * Generic serialized representation of a config 'node' that has properties and children nodes
+     * @author Roman K
+     *
+     */
+    public static class ConfigNode {
+        /**
+         * Object can be either serialized representation of a field or a ConfigNode
+         */
+        Map<String,Object> properties;
+        
+        @Override
+        public String toString() {
+            // TODO implement nice toString for diffs
+            return super.toString();
+        }
+    }
+    
+    /**
      * Used by reflective config writer, should implement storage type-specific methods
      * 
      * @author Roman K
@@ -139,7 +160,8 @@ public class ReflectiveConfig {
 
         boolean asBoolean(String propName, String def) throws NamingException;
 
-        //readChildren();
+        Map<String, ConfigReader> readCollection(String propName, String keyName) throws NamingException;
+
         
     }
 
@@ -195,6 +217,82 @@ public class ReflectiveConfig {
         singleton.storeConfigDiffs(prevConfObj, confObj, ldapDiffWriter);
     }
 
+    public static class ReflectiveAdapter<T> implements CustomConfigTypeAdapter<T, ConfigNode> {
+
+        private Class clazz; 
+        
+        
+        
+        public ReflectiveAdapter(Class clazz) {
+            super();
+            this.clazz = clazz;
+        }
+
+        @Override
+        public void write(ConfigNode serialized, ReflectiveConfig config, ConfigWriter writer, Field field)
+                throws ConfigurationException {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public ConfigNode serialize(T obj, ReflectiveConfig config, Field field) throws ConfigurationException {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        
+        /**
+         * field is not actually used, the class must be set by the constrctor though
+         */
+        @Override
+        public ConfigNode read(ReflectiveConfig config, ConfigReader reader, Field field)
+                throws ConfigurationException, NamingException {
+            
+            ConfigNode cnode = new ConfigNode();
+            for (Field classField : clazz.getDeclaredFields()) {
+
+                // if field is not annotated, skip it
+                ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
+                if (fieldAnno == null)
+                    continue;
+
+                    Object value = null;
+                    Class<?> fieldType = classField.getType();
+
+                    // Determine the class of the field anduse the corresponding method from the provided reader to get
+                    // the value
+
+                    // find typeadapter
+                    CustomConfigTypeAdapter customRep;
+
+                    // array is special case
+                    if (fieldType.isArray())
+                        customRep = config.lookupCustomTypeAdapter(Array.class);
+                    else
+                        customRep = config.lookupCustomTypeAdapter(fieldType);
+
+                    if (customRep != null) {
+                        value = customRep.read(config, reader, classField);
+                    } else
+                        throw new ConfigurationException("Corresponding 'reader' was not found for a field");
+
+                    // put in a map
+                    cnode.properties.put(fieldAnno.name(), value);
+            }
+            return cnode;
+
+            }
+
+        @Override
+        public T deserialize(ConfigNode serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
+            // TODO Auto-generated method stub
+            return null;
+        }
+        
+    }
+    
+    
     /*
      * Non-static class members
      */
@@ -387,6 +485,8 @@ public class ReflectiveConfig {
 
         CustomConfigTypeAdapter<T, ?> customRep = null;
 
+        // TODO: check if there is a ConfigClass annotation and use reflective 
+        
         // try find in defaults
         Map<Class, CustomConfigTypeAdapter> def = DefaultConfigTypeAdapters.get();
         if (def != null)

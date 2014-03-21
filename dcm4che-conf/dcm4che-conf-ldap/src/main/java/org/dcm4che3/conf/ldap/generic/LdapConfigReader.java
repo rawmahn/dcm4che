@@ -37,41 +37,91 @@
  * ***** END LICENSE BLOCK ***** */
 package org.dcm4che3.conf.ldap.generic;
 
+import java.util.HashMap;
+import java.util.Map;
+import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
+import javax.naming.directory.SearchResult;
 
+import org.dcm4che3.conf.ldap.LdapDicomConfiguration;
 import org.dcm4che3.conf.ldap.LdapUtils;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 
 public class LdapConfigReader implements ConfigReader {
-	private final Attributes attrs;
+    private final Attributes attrs;
 
-	public LdapConfigReader(Attributes attrs) {
-		this.attrs = attrs;
-	}
+    /**
+     * readCollection won't work with this constructor
+     * @param attrs
+     */
+    @Deprecated
+    public LdapConfigReader(Attributes attrs) {
+        this.attrs = attrs;
+    }
 
-	@Override
-	public String[] asStringArray(String propName) throws NamingException {
-		return LdapUtils.stringArray(attrs.get(propName));
-	}
+    public LdapConfigReader(Attributes attrs, String dn, LdapDicomConfiguration config) {
+        super();
+        this.attrs = attrs;
+        this.dn = dn;
+        this.config = config;
+    }
 
-	@Override
-	public int[] asIntArray(String propName) throws NamingException {
-		return LdapUtils.intArray(attrs.get(propName));
-	}
+    /**
+     * DN with the whatever extension included
+     */
+    private String dn;
+    private LdapDicomConfiguration config;
 
-	@Override
-	public int asInt(String propName, String def) throws NamingException {
-		return LdapUtils.intValue(attrs.get(propName), Integer.parseInt(def));
-	}
+    @Override
+    public String[] asStringArray(String propName) throws NamingException {
+        return LdapUtils.stringArray(attrs.get(propName));
+    }
 
-	@Override
-	public String asString(String propName, String def) throws NamingException {
-		return LdapUtils.stringValue(attrs.get(propName), def);
-	}
+    @Override
+    public int[] asIntArray(String propName) throws NamingException {
+        return LdapUtils.intArray(attrs.get(propName));
+    }
 
-	@Override
-	public boolean asBoolean(String propName, String def) throws NamingException {
-		return LdapUtils.booleanValue(attrs.get(propName), Boolean.parseBoolean(def));
-	}
+    @Override
+    public int asInt(String propName, String def) throws NamingException {
+        return LdapUtils.intValue(attrs.get(propName), Integer.parseInt(def));
+    }
+
+    @Override
+    public String asString(String propName, String def) throws NamingException {
+        return LdapUtils.stringValue(attrs.get(propName), def);
+    }
+
+    @Override
+    public boolean asBoolean(String propName, String def) throws NamingException {
+        return LdapUtils.booleanValue(attrs.get(propName), Boolean.parseBoolean(def));
+    }
+
+    @Override
+    public Map<String, ConfigReader> readCollection(String propName, String keyName) throws NamingException {
+        // do ldap search
+        NamingEnumeration<SearchResult> ne = 
+                config.search(String.format("cn=%s, %s",propName,dn), String.format("(%s=*)",keyName));
+        try {
+            Map<String, ConfigReader> map = new HashMap<String, ConfigReader>();
+            
+            while (ne.hasMore()) {
+                SearchResult sr = ne.next();
+                
+                Attributes attrs = sr.getAttributes();
+                String keyValue = LdapUtils.stringValue(attrs.get(keyName), null);
+                
+                if (keyValue == null) throw new NamingException("A key attribute for a map cannot be read");
+                
+                // generate a reader for nested node (i.e. map entry) 
+                map.put(keyValue, new LdapConfigReader(attrs, String.format("%s=%s, cn=%s, %s",keyName, keyValue, propName,dn), config));
+            }
+
+            return map;
+            
+        } finally {
+            LdapUtils.safeClose(ne);
+        }
+    }
 }

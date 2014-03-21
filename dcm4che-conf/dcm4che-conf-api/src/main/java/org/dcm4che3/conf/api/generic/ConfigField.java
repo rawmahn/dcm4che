@@ -66,14 +66,32 @@ public @interface ConfigField {
 	String def() default "N/A";
 	
 	/**
+	 * What is used as a map key, e.g. which names ldap nodes have like if a key is 'name', then nodes are 
+	 * name=registry, name=repository
+	 * @return
+	 */
+	String mapKey() default "cn";
+	
+	
+	
+	
+	
+	
+	
+	/**
 	 * For Maps. Which delimeter is used to separate key from value. 
 	 * @return
 	 */
+	@Deprecated
 	String delimeter() default "|";
 	
 	/**
          * For Maps. Which key to use if only value is provided. 
          * @return
          */
+        @Deprecated        
         String defaultKey() default "*";
+        
+        
+        
 }

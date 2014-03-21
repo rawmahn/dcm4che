@@ -42,6 +42,7 @@ import java.util.prefs.Preferences;
 import javax.naming.NamingException;
 
 import org.dcm4che3.conf.prefs.PreferencesUtils;
+import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigNode;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 
 public class PrefsConfigReader implements ConfigReader {
@@ -74,5 +75,11 @@ public class PrefsConfigReader implements ConfigReader {
 	@Override
 	public boolean asBoolean(String propName, String def) throws NamingException {
 		return PreferencesUtils.booleanValue(prefs.get(propName, def));
+	}
+	
+	@Override
+	public ConfigNode readCollection(String propName, String keyName) throws NamingException {
+	// TODO Auto-generated method stub
+	return null;
 	}
 }

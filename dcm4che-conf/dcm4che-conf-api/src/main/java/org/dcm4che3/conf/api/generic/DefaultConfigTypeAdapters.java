@@ -51,6 +51,7 @@ import javax.naming.NamingException;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
+import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigNode;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.CustomConfigTypeAdapter;
@@ -70,6 +71,7 @@ public class DefaultConfigTypeAdapters {
      */
     public abstract static class PrimitiveAbstractTypeAdapter<T> implements CustomConfigTypeAdapter<T, T> {
 
+        
         @Override
         public T deserialize(T serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
             return serialized;
@@ -214,21 +216,7 @@ public class DefaultConfigTypeAdapters {
     }
 
     
-    /**
-     * Generic serialized representation of a config 'node' that has properties and children nodes
-     * @author Roman K
-     *
-     */
-    public static class ConfigNode {
-        Map<String,Object> properties;
-        Map<String,ConfigNode> children;
-        
-        @Override
-        public String toString() {
-            // TODO implement nice toString for diffs
-            return super.toString();
-        }
-    }
+
     
     /**
      * Map
