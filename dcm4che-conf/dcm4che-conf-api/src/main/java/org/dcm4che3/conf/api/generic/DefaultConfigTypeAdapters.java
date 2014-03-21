@@ -252,7 +252,9 @@ public class DefaultConfigTypeAdapters {
                 }
                 */
                 
-                CustomConfigTypeAdapter keyAdapter = config.lookupCustomTypeAdapter(keyClass);
+                //CustomConfigTypeAdapter keyAdapter = config.lookupCustomTypeAdapter(keyClass);
+                
+                reader.readCollection(fieldAnno.name(), fieldAnno.mapKey());
                 
                 
                 return null;
