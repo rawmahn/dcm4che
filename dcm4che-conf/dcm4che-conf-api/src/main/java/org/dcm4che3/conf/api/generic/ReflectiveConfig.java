@@ -38,6 +38,7 @@
 
 package org.dcm4che3.conf.api.generic;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.MalformedParameterizedTypeException;
@@ -68,7 +69,7 @@ public class ReflectiveConfig {
 
     public static final Logger log = LoggerFactory.getLogger(ReflectiveConfig.class);
 
-    public interface CustomConfigTypeAdapter<T,ST> {
+    public interface CustomConfigTypeAdapter<T, ST> {
 
         /**
          * Should return string representation of <b>obj</b>.
@@ -76,11 +77,14 @@ public class ReflectiveConfig {
          * @param obj
          * @param config
          *            Dicom Configuration object in whose context this writing is performed. <b>Can be <i>null</i>!</b>
-         * @param writer ConfigWriter to use
-         * @param field Config field. Can be used to read additional annotations, check type, etc.
+         * @param writer
+         *            ConfigWriter to use
+         * @param field
+         *            Config field. Can be used to read additional annotations, check type, etc.
          * @return
          */
-        void write(ST serialized, ReflectiveConfig config, ConfigWriter writer, Field field) throws ConfigurationException;
+        void write(ST serialized, ReflectiveConfig config, ConfigWriter writer, Field field)
+                throws ConfigurationException;
 
         ST serialize(T obj, ReflectiveConfig config, Field field) throws ConfigurationException;
 
@@ -90,14 +94,17 @@ public class ReflectiveConfig {
          * @param str
          * @param config
          *            Dicom Configuration object in whose context this reading is performed. <b>Can be <i>null</i>!</b>
-         * @param writer ConfigWriter to use
-         * @param field Config field. Can be used to read additional annotations, check type, etc.
+         * @param writer
+         *            ConfigWriter to use
+         * @param field
+         *            Config field. Can be used to read additional annotations, check type, etc.
          * @return
          * @throws ConfigurationException
-         * @throws NamingException 
+         * @throws NamingException
          */
-        ST read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException, NamingException;
-        
+        ST read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException,
+                NamingException;
+
         T deserialize(ST serialized, ReflectiveConfig config, Field field) throws ConfigurationException;
 
     }
@@ -132,6 +139,8 @@ public class ReflectiveConfig {
 
         boolean asBoolean(String propName, String def) throws NamingException;
 
+        //readChildren();
+        
     }
 
     /**
@@ -193,8 +202,6 @@ public class ReflectiveConfig {
     private Map<Class, CustomConfigTypeAdapter> customRepresentations;
     private DicomConfiguration dicomConfiguration;
 
-
-
     /**
      * Creates an instance of ReflectiveConfig that will use the specified config context and custom representations
      * 
@@ -205,8 +212,7 @@ public class ReflectiveConfig {
      *            Null can be provided. DicomCofiguration that will be forwarded to custom representation
      *            implementations as config context.
      */
-    public ReflectiveConfig(Map<Class, CustomConfigTypeAdapter> customRepresentations,
-            DicomConfiguration configCtx) {
+    public ReflectiveConfig(Map<Class, CustomConfigTypeAdapter> customRepresentations, DicomConfiguration configCtx) {
         super();
         this.customRepresentations = customRepresentations;
         this.dicomConfiguration = configCtx;
@@ -218,6 +224,7 @@ public class ReflectiveConfig {
      * @param confObj
      * @param reader
      */
+    @SuppressWarnings("unchecked")
     public <T> void readConfig(T confObj, ConfigReader reader) {
         // look through all fields of the config obj, not including superclass
         // fields
@@ -234,42 +241,22 @@ public class ReflectiveConfig {
                 Object value = null;
                 Class<?> fieldType = field.getType();
 
-                // Determine the class of the field and
-                // use the corresponding method from the provided reader to get
-                // the
-                // value
+                // Determine the class of the field anduse the corresponding method from the provided reader to get
+                // the value
 
-                if (fieldType.isArray()) {
-                    if (String.class.isAssignableFrom(fieldType.getComponentType())) {
-                        value = reader.asStringArray(fieldAnno.name());
+                // find typeadapter
+                CustomConfigTypeAdapter customRep;
 
-                    } else if (int.class.isAssignableFrom(fieldType.getComponentType())) {
-                        value = reader.asIntArray(fieldAnno.name());
-                    }
-                } else if (String.class.isAssignableFrom(fieldType)) {
-                    value = reader.asString(fieldAnno.name(), (fieldAnno.def().equals("N/A") ? null : fieldAnno.def()));
+                // array is special case
+                if (fieldType.isArray())
+                    customRep = lookupCustomTypeAdapter(Array.class);
+                else
+                    customRep = lookupCustomTypeAdapter(fieldType);
 
-                } else if (boolean.class.isAssignableFrom(fieldType)) {
-                    value = reader.asBoolean(fieldAnno.name(),
-                            (fieldAnno.def().equals("N/A") ? "false" : fieldAnno.def()));
-
-                } else if (int.class.isAssignableFrom(fieldType)) {
-                    value = reader.asInt(fieldAnno.name(), (fieldAnno.def().equals("N/A") ? "0" : fieldAnno.def()));
-
-                } else {
-
-                    // if custom representation exists, read as string and use
-                    // fromString
-                    CustomConfigTypeAdapter customRep = lookupCustomTypeAdapter(fieldType);
-
-                    if (customRep != null) {
-
-                        value = customRep.read(this, reader, field);
-
-                    } else
-                        throw new ConfigurationException("Corresponding 'reader' was not found for a field");
-
-                }
+                if (customRep != null) {
+                    value = customRep.deserialize(customRep.read(this, reader, field), this, field);
+                } else
+                    throw new ConfigurationException("Corresponding 'reader' was not found for a field");
 
                 // set the property value through its setter
                 PropertyUtils.setSimpleProperty(confObj, field.getName(), value);
@@ -316,34 +303,18 @@ public class ReflectiveConfig {
 
                 Class<?> fieldType = field.getType();
 
-                // if it is a map, use special map serializer
-                if (Map.class.isAssignableFrom(fieldType)) {
-
-                    String[] serializedMap = mapField2StringArray((Map<String, Object>) value, field);
-                    writer.storeNotEmpty(fieldAnno.name(), serializedMap);
-
-                    continue;
-                }
-                ;
-
-                // if custom representation exists, call toString and then store it
-                // using storeNotNull
-                CustomConfigTypeAdapter customRep = lookupCustomTypeAdapter(fieldType);
+                // find typeadapter
+                CustomConfigTypeAdapter customRep;
+                if (fieldType.isArray())
+                    customRep = lookupCustomTypeAdapter(Array.class);
+                else
+                    customRep = lookupCustomTypeAdapter(fieldType);
 
                 if (customRep != null) {
-                    customRep.write(value, this, writer, field);
-                    continue;
+                    customRep.write(customRep.serialize(value, this, field), this, writer, field);
+                } else {
+                    throw new ConfigurationException("Corresponding 'writer' was not found for a field");
                 }
-
-                // otherwise call appropriate store method based of field type and
-                // default value specified
-
-                if (!fieldAnno.def().equals("N/A"))
-                    writer.storeNotDef(fieldAnno.name(), value, fieldAnno.def());
-                else if (fieldType.isArray())
-                    writer.storeNotEmpty(fieldAnno.name(), value);
-                else
-                    writer.storeNotNull(fieldAnno.name(), value);
 
             } catch (ConfigurationException e) {
                 log.warn("Unable to serialize configuration field {}", fieldAnno.name());
@@ -382,34 +353,11 @@ public class ReflectiveConfig {
                 Object prev = PropertyUtils.getSimpleProperty(prevConfObj, field.getName());
                 Object curr = PropertyUtils.getSimpleProperty(confObj, field.getName());
 
-                // if it is a map, use serialized form for diffs
-                if (Map.class.isAssignableFrom(field.getType())) {
-                    prev = mapField2StringArray((Map<String, Object>) prev, field);
-                    curr = mapField2StringArray((Map<String, Object>) curr, field);
-                }
-
-                // use all no-op writer just to get serialized form for diffs
-                ConfigWriter nullWriter = new ConfigWriter() {
-                    @Override
-                    public void storeNotNull(String propName, Object value) {
-                    }
-                    
-                    @Override
-                    public void storeNotEmpty(String propName, Object value) {
-                    }
-                    
-                    @Override
-                    public void storeNotDef(String propName, Object value, String def) {
-                    }
-                };
-                
-                
-                // if there is a custom representation, use serialized form for
-                // diffs
+                // use serialized form for diffs  
                 CustomConfigTypeAdapter customRep = lookupCustomTypeAdapter(field.getType());
                 if (customRep != null) {
-                    prev = customRep.write(prev, this, nullWriter, field);
-                    curr = customRep.write(curr, this, nullWriter, field);
+                    prev = customRep.serialize(prev, this, field);
+                    curr = customRep.serialize(curr, this, field);
                 }
 
                 ldapDiffWriter.storeDiff(fieldAnno.name(), prev, curr);
@@ -435,9 +383,9 @@ public class ReflectiveConfig {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> CustomConfigTypeAdapter<T> lookupCustomTypeAdapter(Class<T> clazz) {
+    public <T> CustomConfigTypeAdapter<T, ?> lookupCustomTypeAdapter(Class<T> clazz) {
 
-        CustomConfigTypeAdapter<T> customRep = null;
+        CustomConfigTypeAdapter<T, ?> customRep = null;
 
         // try find in defaults
         Map<Class, CustomConfigTypeAdapter> def = DefaultConfigTypeAdapters.get();
@@ -464,88 +412,69 @@ public class ReflectiveConfig {
         this.customRepresentations = customRepresentations;
     }
 
-    private String[] mapField2StringArray(Map<String, Object> map, Field field) throws ConfigurationException {
-
-        ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
-
-        ParameterizedType pt = (ParameterizedType) field.getGenericType();
-
-        Type[] ptypes = pt.getActualTypeArguments();
-
-        // there must be only 2 parameterized types, and the key must be string
-        if (ptypes.length != 2)
-            throw new MalformedParameterizedTypeException();
-        if (ptypes[0] != String.class)
-            throw new MalformedParameterizedTypeException();
-
-        String[] res = new String[map.size()];
-
-        // go through all entries
-        int i = 0;
-        for (Entry<String, Object> e : map.entrySet()) {
-
-            // check if there is custom representation for val
-            CustomConfigTypeAdapter customRep = lookupCustomTypeAdapter((Class<?>) ptypes[1]);
-
-            String val;
-            if (customRep != null)
-                val = customRep.write(e.getValue(), dicomConfiguration, null, null);
-            else
-                val = e.getValue().toString();
-
-            res[i++] = e.getKey() + fieldAnno.delimeter() + val;
-        }
-
-        return res;
-
-    }
-
-    private Object stringArray2MapField(String[] src, Field field) throws ConfigurationException {
-
-        ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
-
-        ParameterizedType pt = (ParameterizedType) field.getGenericType();
-
-        Type[] ptypes = pt.getActualTypeArguments();
-
-        // there must be only 2 parameterized types, and the key must be string
-        if (ptypes.length != 2)
-            throw new MalformedParameterizedTypeException();
-        if (ptypes[0] != String.class)
-            throw new MalformedParameterizedTypeException();
-
-        Map<String, Object> res = new HashMap<String, Object>();
-
-        // go through all entries
-        for (String e : src) {
-
-            // split string with delimeter
-            String[] keyVal = e.split("\\" + fieldAnno.delimeter(), 2);
-
-            String eKey;
-            Object eVal;
-
-            if (keyVal.length == 1) {
-                eKey = fieldAnno.defaultKey();
-                eVal = keyVal[0];
-            } else {
-                eKey = keyVal[0];
-                eVal = keyVal[1];
-            }
-
-            // check if there is custom representation for val
-            CustomConfigTypeAdapter customRep = lookupCustomTypeAdapter((Class<?>) ptypes[1]);
-
-            if (customRep != null) {
-                eVal = customRep.read((String) eVal, dicomConfiguration, null, null);
-            }
-
-            res.put(eKey, eVal);
-        }
-
-        return res;
-
-    }
+    /*
+     * private String[] mapField2StringArray(Map<String, Object> map, Field field) throws ConfigurationException {
+     * 
+     * ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
+     * 
+     * ParameterizedType pt = (ParameterizedType) field.getGenericType();
+     * 
+     * Type[] ptypes = pt.getActualTypeArguments();
+     * 
+     * // there must be only 2 parameterized types, and the key must be string if (ptypes.length != 2) throw new
+     * MalformedParameterizedTypeException(); if (ptypes[0] != String.class) throw new
+     * MalformedParameterizedTypeException();
+     * 
+     * String[] res = new String[map.size()];
+     * 
+     * // go through all entries int i = 0; for (Entry<String, Object> e : map.entrySet()) {
+     * 
+     * // check if there is custom representation for val CustomConfigTypeAdapter customRep =
+     * lookupCustomTypeAdapter((Class<?>) ptypes[1]);
+     * 
+     * String val; if (customRep != null) val = customRep.write(e.getValue(), dicomConfiguration, null, null); else val
+     * = e.getValue().toString();
+     * 
+     * res[i++] = e.getKey() + fieldAnno.delimeter() + val; }
+     * 
+     * return res;
+     * 
+     * }
+     * 
+     * private Object stringArray2MapField(String[] src, Field field) throws ConfigurationException {
+     * 
+     * ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
+     * 
+     * ParameterizedType pt = (ParameterizedType) field.getGenericType();
+     * 
+     * Type[] ptypes = pt.getActualTypeArguments();
+     * 
+     * // there must be only 2 parameterized types, and the key must be string if (ptypes.length != 2) throw new
+     * MalformedParameterizedTypeException(); if (ptypes[0] != String.class) throw new
+     * MalformedParameterizedTypeException();
+     * 
+     * Map<String, Object> res = new HashMap<String, Object>();
+     * 
+     * // go through all entries for (String e : src) {
+     * 
+     * // split string with delimeter String[] keyVal = e.split("\\" + fieldAnno.delimeter(), 2);
+     * 
+     * String eKey; Object eVal;
+     * 
+     * if (keyVal.length == 1) { eKey = fieldAnno.defaultKey(); eVal = keyVal[0]; } else { eKey = keyVal[0]; eVal =
+     * keyVal[1]; }
+     * 
+     * // check if there is custom representation for val CustomConfigTypeAdapter customRep =
+     * lookupCustomTypeAdapter((Class<?>) ptypes[1]);
+     * 
+     * if (customRep != null) { eVal = customRep.read((String) eVal, dicomConfiguration, null, null); }
+     * 
+     * res.put(eKey, eVal); }
+     * 
+     * return res;
+     * 
+     * }
+     */
 
     /**
      * Walk through the <b>from</b> object and for each field annotated with
