@@ -54,7 +54,7 @@ import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigNode;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.CustomConfigTypeAdapter;
+import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigTypeAdapter;
 import org.dcm4che3.net.Device;
 import org.dcm4che3.util.AttributesFormat;
 
@@ -69,7 +69,7 @@ public class DefaultConfigTypeAdapters {
      * Common Read/Write methods for primitives that have same serialized and deserialized representation, and same
      * write method
      */
-    public abstract static class PrimitiveAbstractTypeAdapter<T> implements CustomConfigTypeAdapter<T, T> {
+    public abstract static class PrimitiveAbstractTypeAdapter<T> implements ConfigTypeAdapter<T, T> {
 
         
         @Override
@@ -98,7 +98,7 @@ public class DefaultConfigTypeAdapters {
     /**
      * Common Read/Write methods for String representation
      */
-    public abstract static class CommonAbstractTypeAdapter<T> implements CustomConfigTypeAdapter<T, String> {
+    public abstract static class CommonAbstractTypeAdapter<T> implements ConfigTypeAdapter<T, String> {
 
         @Override
         public String read(ReflectiveConfig config, ConfigReader reader, Field field) throws NamingException {
@@ -199,7 +199,7 @@ public class DefaultConfigTypeAdapters {
     /**
      * Device by name
      */
-    public static class DeviceRepresentation extends CommonAbstractTypeAdapter<Device> {
+    public static class DeviceTypeAdapter extends CommonAbstractTypeAdapter<Device> {
 
         @Override
         public Device deserialize(String serialized, ReflectiveConfig config, Field field)
@@ -225,7 +225,7 @@ public class DefaultConfigTypeAdapters {
      * can have properties/children 
      */
 
-    public static class MapRepresentation<K, V> implements CustomConfigTypeAdapter<Map<K, V>, Map<String, ConfigNode>> {
+    public static class MapRepresentation<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<String, ConfigNode>> {
 
         
         
@@ -353,28 +353,26 @@ public class DefaultConfigTypeAdapters {
                     writer.storeNotEmpty(fieldAnno.name(), serializedMap);
     }*/
 
-    public static Map<Class, CustomConfigTypeAdapter> defaultRepresentations;
+    public static Map<Class, ConfigTypeAdapter> defaultTypeAdapters;
 
     static {
-        defaultRepresentations = new HashMap<Class, CustomConfigTypeAdapter>();
+        defaultTypeAdapters = new HashMap<Class, ConfigTypeAdapter>();
 
-        defaultRepresentations.put(Array.class, new ArrayTypeAdapter());
+        defaultTypeAdapters.put(String.class, new StringTypeAdapter());
 
-        defaultRepresentations.put(String.class, new StringTypeAdapter());
+        defaultTypeAdapters.put(int.class, new IntegerTypeAdapter());
+        defaultTypeAdapters.put(Integer.class, new IntegerTypeAdapter());
 
-        defaultRepresentations.put(int.class, new IntegerTypeAdapter());
-        defaultRepresentations.put(Integer.class, new IntegerTypeAdapter());
+        defaultTypeAdapters.put(Boolean.class, new BooleanTypeAdapter());
+        defaultTypeAdapters.put(boolean.class, new BooleanTypeAdapter());
 
-        defaultRepresentations.put(Boolean.class, new BooleanTypeAdapter());
-        defaultRepresentations.put(boolean.class, new BooleanTypeAdapter());
-
-        defaultRepresentations.put(AttributesFormat.class, new AttributeFormatTypeAdapter());
-        defaultRepresentations.put(Device.class, new DeviceRepresentation());
+        defaultTypeAdapters.put(AttributesFormat.class, new AttributeFormatTypeAdapter());
+        defaultTypeAdapters.put(Device.class, new DeviceTypeAdapter());
 
     }
 
-    public static Map<Class, CustomConfigTypeAdapter> get() {
-        return defaultRepresentations;
+    public static Map<Class, ConfigTypeAdapter> get() {
+        return defaultTypeAdapters;
     }
 
 }
