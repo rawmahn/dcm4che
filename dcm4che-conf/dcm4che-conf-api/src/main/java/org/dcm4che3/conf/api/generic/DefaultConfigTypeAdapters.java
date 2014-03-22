@@ -44,6 +44,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -219,67 +220,86 @@ public class DefaultConfigTypeAdapters {
 
     
     /**
-     * Map
+     * Map<br>
      * 
-     * Serialized representation is Map<String, ConfigNode> since an entry corresponds to a child of an element, and the child
-     * can have properties/children 
+     * Only String keys are supported so far!
+     * 
+     * Serialized representation is Map&lt;String, Object&gt;, Object can be ConfigNode 
      */
 
-    public static class MapRepresentation<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<String, ConfigNode>> {
+    public static class MapRepresentation<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<String, Object>> {
 
+
+        private ConfigTypeAdapter<V, ?> getValueAdapter(Field field, ReflectiveConfig config) {
+            ParameterizedType pt = (ParameterizedType) field.getGenericType();
+
+            Type[] ptypes = pt.getActualTypeArguments();
+
+            // there must be only 2 parameterized types
+            if (ptypes.length != 2)
+                throw new MalformedParameterizedTypeException();
+
+            // figure out the classes of declared generic parameters and
+            // get value adapter
+            return config.lookupTypeAdapter((Class<V>) ptypes[1]);
+            
+        }
         
-        
-        
+        @SuppressWarnings("unchecked")
         @Override
-        public Map<String, ConfigNode> read(ReflectiveConfig config, ConfigReader reader, Field field)
+        public Map<String, Object> read(ReflectiveConfig config, ConfigReader reader, Field field)
                 throws ConfigurationException, NamingException {
                 ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
 
-                ParameterizedType pt = (ParameterizedType) field.getGenericType();
-
-                Type[] ptypes = pt.getActualTypeArguments();
-
-                // there must be only 2 parameterized types
-                if (ptypes.length != 2)
-                    throw new MalformedParameterizedTypeException();
-
-                // figure out the classes of declared generic parameters
-                Class<K> keyClass = (Class<K>) ptypes[0]; 
-                Class<V> valClass = (Class<V>) ptypes[1]; 
+                Map<String,Object> cnodeMap = new HashMap<String, Object>();
                 
-                /* not supported
-                if (keyClass.getAnnotation(ConfigClass.class) != null) {
+
+                // read collection
+                String collectionName = (fieldAnno.alternativeCollectionName().equals("N/A") ? fieldAnno.name() : fieldAnno.alternativeCollectionName());
+                Map<String,ConfigReader> map = reader.readCollection(collectionName, fieldAnno.mapKey());
+                
+                // getValueAdapter
+                ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
+                
+                // for each element, read it using the value adapter
+                for (Entry<String,ConfigReader> e : map.entrySet()) {
+                    cnodeMap.put(e.getKey(), valueAdapter.read(config, e.getValue(), field));
                 }
-                */
-                
-                //CustomConfigTypeAdapter keyAdapter = config.lookupCustomTypeAdapter(keyClass);
-                
-                reader.readCollection(fieldAnno.name(), fieldAnno.mapKey());
-                
-                
-                return null;
+                return cnodeMap;
             }
 
+        @SuppressWarnings("unchecked")
         @Override
-        public void write(Map<String, ConfigNode> serialized, ReflectiveConfig config, ConfigWriter writer, Field field)
+        public Map<K, V> deserialize(Map<String, Object> serialized, ReflectiveConfig config, Field field)
+                throws ConfigurationException {
+
+            //getValueAdapter
+            ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
+            
+            // deserialize entries
+            Map<K,V> map = new HashMap<K, V>();
+            for (Entry<String,Object> e : serialized.entrySet()) {
+                map.put((K) e.getKey(), valueAdapter.deserialize(e.getValue(), config, field));
+            }
+            
+            return map;
+        }        
+        
+        @Override
+        public void write(Map<String, Object> serialized, ReflectiveConfig config, ConfigWriter writer, Field field)
                 throws ConfigurationException {
             // TODO Auto-generated method stub
             
         }
 
         @Override
-        public Map<String, ConfigNode> serialize(Map<K, V> obj, ReflectiveConfig config, Field field)
+        public Map<String, Object> serialize(Map<K, V> obj, ReflectiveConfig config, Field field)
                 throws ConfigurationException {
             // TODO Auto-generated method stub
             return null;
         }
 
-        @Override
-        public Map<K, V> deserialize(Map<String, ConfigNode> serialized, ReflectiveConfig config, Field field)
-                throws ConfigurationException {
-            // TODO Auto-generated method stub
-            return null;
-        }
+
 
 
 

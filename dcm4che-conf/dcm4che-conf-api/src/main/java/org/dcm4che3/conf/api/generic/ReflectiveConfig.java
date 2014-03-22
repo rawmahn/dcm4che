@@ -38,25 +38,14 @@
 
 package org.dcm4che3.conf.api.generic;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.MalformedParameterizedTypeException;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import javax.naming.NamingException;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
-import org.dcm4che3.util.AttributesFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
