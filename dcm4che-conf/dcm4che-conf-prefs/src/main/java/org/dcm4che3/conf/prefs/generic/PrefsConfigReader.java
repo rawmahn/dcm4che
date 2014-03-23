@@ -79,7 +79,7 @@ public class PrefsConfigReader implements ConfigReader {
 	}
 
 	@Override
-	public Map<String, ConfigReader> readCollection(String propName, String keyName) throws NamingException {
+	public Map<String, ConfigReader> readCollection(String propName, String keyName) {
 	    // TODO Auto-generated method stub
 	    return null;
 	}

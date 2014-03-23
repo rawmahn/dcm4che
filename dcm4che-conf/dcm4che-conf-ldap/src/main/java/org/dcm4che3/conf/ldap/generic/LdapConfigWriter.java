@@ -37,54 +37,114 @@
  * ***** END LICENSE BLOCK ***** */
 package org.dcm4che3.conf.ldap.generic;
 
+import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
+import javax.naming.directory.BasicAttributes;
 
+import org.dcm4che3.conf.ldap.LdapDicomConfiguration;
 import org.dcm4che3.conf.ldap.LdapUtils;
+import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class LdapConfigWriter implements ConfigWriter {
 
-	public static final Logger log = LoggerFactory.getLogger(LdapConfigWriter.class);
+    public static final Logger log = LoggerFactory.getLogger(LdapConfigWriter.class);
 
-	private final Attributes attrs;
+    private final Attributes attrs;
 
-	public LdapConfigWriter(Attributes attrs) {
-		this.attrs = attrs;
-	}
+    /**
+     * DN with the whatever extension included
+     */
+    private String dn;
+    private LdapDicomConfiguration config;
+    
+    public LdapConfigWriter(Attributes attrs) {
+        this.attrs = attrs;
+    }
 
-	@Override
-	public void storeNotDef(String propName, Object value, String def) {
+    public LdapConfigWriter(Attributes attrs, String dn, LdapDicomConfiguration config) {
+        super();
+        this.attrs = attrs;
+        this.dn = dn;
+        this.config = config;
+    }
 
-		if (value instanceof Boolean) {
-			LdapUtils.storeNotDef(attrs, propName, (Boolean) value, Boolean.parseBoolean(def));
-		} else if (value instanceof Integer) {
-			LdapUtils.storeNotDef(attrs, propName, (Integer) value, Integer.parseInt(def));
-		}
-	}
+    @Override
+    public void storeNotDef(String propName, Object value, String def) {
 
-	@Override
-	public void storeNotEmpty(String propName, Object value) {
+        if (value instanceof Boolean) {
+            LdapUtils.storeNotDef(attrs, propName, (Boolean) value, Boolean.parseBoolean(def));
+        } else if (value instanceof Integer) {
+            LdapUtils.storeNotDef(attrs, propName, (Integer) value, Integer.parseInt(def));
+        }
+    }
 
-		// workaround for arrays since varargs would perceive them
-		// as Object not as Object[]
-		if (value != null && value.getClass().isArray())
-			LdapUtils.storeNotEmpty(attrs, propName, (Object[]) value);
-		else
-			log.error("Cannot use storeNotEmpty for a non-array");
+    @Override
+    public void storeNotEmpty(String propName, Object value) {
+
+        // workaround for arrays since varargs would perceive them
+        // as Object not as Object[]
+        if (value != null && value.getClass().isArray())
+            LdapUtils.storeNotEmpty(attrs, propName, (Object[]) value);
+        else
+            log.error("Cannot use storeNotEmpty for a non-array");
+
+    }
+
+    @Override
+    public void storeNotNull(String propName, Object value) {
+
+        // workaround for arrays since varargs would perceive them
+        // as Object not as Object[]
+        if (value != null && value.getClass().isArray())
+            LdapUtils.storeNotNull(attrs, propName, (Object[]) value);
+        LdapUtils.storeNotNull(attrs, propName, value);
+
+    }
+
+    @Override
+    public void flush() throws ConfigurationException {
+        
+        // if flush enabled, do replace attributes
+        if (config != null) {
+            try {
+                config.replaceAttributes(dn, attrs);
+            } catch (NamingException e) {
+                throw new ConfigurationException(e);
+            }
+        }
+    }
+    
+    @Override
+    public ConfigWriter createChild(String propName) throws ConfigurationException  {
+        String folderDn = LdapUtils.dnOf("cn", propName, dn);
+
+        // create 'folder'
+        try {
+            config.createSubcontext(folderDn, new BasicAttributes(true));
+        } catch (NamingException e) {
+            throw new ConfigurationException(e);
+        }
+        
+        return new LdapConfigWriter(new BasicAttributes(true), folderDn, config);
+    }
+    
+    @Override
+    public ConfigWriter getCollectionElementWriter(String keyName, String keyValue) throws ConfigurationException {
+
+        try {
+            String collectionElementDn = LdapUtils.dnOf(keyName, keyValue, dn);
+
+            // create empty child context
+            config.createSubcontext(collectionElementDn, new BasicAttributes(true));
+            
+            return new LdapConfigWriter(new BasicAttributes(true), collectionElementDn, config);
+        } catch (NamingException e) {
+            throw new ConfigurationException(e);
+        }
+    }
 
 
-	}
-
-	@Override
-	public void storeNotNull(String propName, Object value) {
-
-		// workaround for arrays since varargs would perceive them
-		// as Object not as Object[]
-		if (value != null && value.getClass().isArray())
-			LdapUtils.storeNotNull(attrs, propName, (Object[]) value);
-		LdapUtils.storeNotNull(attrs, propName, value);
-
-	}
 }

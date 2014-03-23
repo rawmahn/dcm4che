@@ -1621,6 +1621,12 @@ public final class LdapDicomConfiguration implements DicomConfiguration {
             ctx.modifyAttributes(dn, mods.toArray(new ModificationItem[mods.size()]));
     }
 
+    public void replaceAttributes(String dn, Attributes attrs)
+            throws NamingException {
+        ctx.modifyAttributes(dn, DirContext.REPLACE_ATTRIBUTE, attrs);
+    }
+
+    
     private void merge(Collection<TransferCapability> prevs,
             Collection<TransferCapability> tcs, String aeDN) throws NamingException {
         for (TransferCapability tc : prevs) {

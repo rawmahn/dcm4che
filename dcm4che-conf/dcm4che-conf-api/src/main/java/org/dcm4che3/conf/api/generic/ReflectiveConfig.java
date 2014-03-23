@@ -41,11 +41,15 @@ package org.dcm4che3.conf.api.generic;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.naming.NamingException;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
+import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
+import org.dcm4che3.conf.api.generic.adapters.DefaultConfigTypeAdapters;
+import org.dcm4che3.conf.api.generic.adapters.ReflectiveAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,11 +66,16 @@ public class ReflectiveConfig {
     public static final Logger log = LoggerFactory.getLogger(ReflectiveConfig.class);
 
     /**
-     * Type adapter that handles configuration read/write/serialize/deserialize for a specific java class.
+     * Type adapter that handles configuration read/write/serialize/deserialize
+     * for a specific java class.
+     * 
      * @author Roman K
-     *
-     * @param <T> Java class 
-     * @param <ST> Serialized representation - this intermediate format is needed for store diffs, so only the actual config data is used.
+     * 
+     * @param <T>
+     *            Java class
+     * @param <ST>
+     *            Serialized representation - this intermediate format is needed
+     *            for merging, so only the actual config data is used.
      */
     public interface ConfigTypeAdapter<T, ST> {
 
@@ -75,7 +84,8 @@ public class ReflectiveConfig {
          * 
          * @param obj
          * @param config
-         *           ReflectiveConfig that can be used e.g. to retrieve DicomConfiguration <b>Can be <i>null</i>!</b>
+         *            ReflectiveConfig that can be used e.g. to retrieve
+         *            DicomConfiguration <b>Can be <i>null</i>!</b>
          * @param writer
          *            ConfigWriter to use
          * @param field
@@ -87,9 +97,11 @@ public class ReflectiveConfig {
 
         /**
          * Constructs a serialized representation of an object
+         * 
          * @param obj
          * @param config
-         *           ReflectiveConfig that can be used e.g. to retrieve DicomConfiguration <b>Can be <i>null</i>!</b>
+         *            ReflectiveConfig that can be used e.g. to retrieve
+         *            DicomConfiguration <b>Can be <i>null</i>!</b>
          * @param field
          *            Config field. Can be used to read additional annotations,
          *            check type, etc.
@@ -103,7 +115,8 @@ public class ReflectiveConfig {
          * 
          * @param str
          * @param config
-         *            ReflectiveConfig that can be used e.g. to retrieve DicomConfiguration <b>Can be <i>null</i>!</b>
+         *            ReflectiveConfig that can be used e.g. to retrieve
+         *            DicomConfiguration <b>Can be <i>null</i>!</b>
          * @param reader
          *            ConfigReader to use
          * @param field
@@ -117,9 +130,11 @@ public class ReflectiveConfig {
 
         /**
          * Constructs an object from its serialized form
+         * 
          * @param serialized
          * @param config
-         *            ReflectiveConfig that can be used e.g. to retrieve DicomConfiguration <b>Can be <i>null</i>!</b>
+         *            ReflectiveConfig that can be used e.g. to retrieve
+         *            DicomConfiguration <b>Can be <i>null</i>!</b>
          * @param field
          *            Config field. Can be used to read additional annotations,
          *            check type, etc.
@@ -127,6 +142,8 @@ public class ReflectiveConfig {
          * @throws ConfigurationException
          */
         T deserialize(ST serialized, ReflectiveConfig config, Field field) throws ConfigurationException;
+
+        void merge(T prev, T curr, ReflectiveConfig config, DiffWriter diffwriter, Field field) throws ConfigurationException;
 
     }
 
@@ -147,7 +164,7 @@ public class ReflectiveConfig {
          * Object can be either serialized representation of a field or a
          * ConfigNode
          */
-        Map<String, Object> attributes;
+        public Map<String, Object> attributes;
 
         @Override
         public String toString() {
@@ -168,6 +185,13 @@ public class ReflectiveConfig {
         void storeNotEmpty(String propName, Object value);
 
         void storeNotNull(String propName, Object value);
+
+        ConfigWriter getCollectionElementWriter(String keyName, String keyValue) throws ConfigurationException;
+        
+        public ConfigWriter createChild(String propName) throws ConfigurationException;
+
+        void flush() throws ConfigurationException;
+        
     }
 
     /**
@@ -188,7 +212,9 @@ public class ReflectiveConfig {
 
         boolean asBoolean(String propName, String def) throws NamingException;
 
-        Map<String, ConfigReader> readCollection(String propName, String keyName) throws NamingException;
+        Map<String, ConfigReader> readCollection(String propName, String keyName) throws ConfigurationException;
+
+        ConfigReader getChild(String propName);
 
     }
 
@@ -200,6 +226,7 @@ public class ReflectiveConfig {
      */
     public interface DiffWriter {
         void storeDiff(String propName, Object prev, Object curr);
+        // void storeDiffCollection(String propName, )
     }
 
     /*
@@ -236,6 +263,38 @@ public class ReflectiveConfig {
     }
 
     /**
+     * Walk through the <b>from</b> object and for each field annotated with
+     * 
+     * @ConfigField, copy the value by using getter/setter to the <b>to</b>
+     *               object.
+     * 
+     * @param from
+     * @param to
+     */
+    public static <T> void reconfigure(T from, T to) {
+    
+        // look through all fields of the config class, not including
+        // superclass fields
+        for (Field field : from.getClass().getDeclaredFields()) {
+    
+            // if field is not annotated, skip it
+            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
+            if (fieldAnno == null)
+                continue;
+    
+            try {
+    
+                PropertyUtils.setSimpleProperty(to, field.getName(), PropertyUtils.getSimpleProperty(from, field.getName()));
+    
+            } catch (Exception e) {
+                log.error("Unable to reconfigure a device: {}", e);
+            }
+    
+        }
+    
+    }
+
+    /**
      * Calls store diff methods for all pairs of the annotated fields of
      * prevConfObj and confObj
      * 
@@ -247,173 +306,7 @@ public class ReflectiveConfig {
         singleton.storeConfigDiffs(prevConfObj, confObj, ldapDiffWriter);
     }
 
-    /**
-     * Reflective adapter that handles classes with ConfigClass annotations.<br/><br/>
-     * 
-     * <b>field</b> argument is not actually used in the methods, the class must be set in the
-     * constructor.
-     * 
-     * User has to use 2 arg constructor and initialize providedConfObj when
-     * doing first level parsing, e.g. in ReflectiveConfig.readConfig
-     * 
-     */
-    public static class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
-
-        private Class<T> clazz;
-
-        /**
-         * Initialized only when doing first level parsing, e.g. in
-         * ReflectiveConfig.readConfig
-         */
-        private T providedConfObj;
-
-        public ReflectiveAdapter(Class<T> clazz) {
-            super();
-            this.clazz = clazz;
-        }
-
-        public ReflectiveAdapter(Class<T> clazz, T providedConfObj) {
-            super();
-            this.clazz = clazz;
-            this.providedConfObj = providedConfObj;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public void write(ConfigNode serialized, ReflectiveConfig config, ConfigWriter writer, Field field) throws ConfigurationException {
-
-                ConfigNode cnode = new ConfigNode();
-                for (Field classField : clazz.getDeclaredFields()) {
-
-                    // if field is not annotated, skip it
-                    ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
-                    if (fieldAnno == null)
-                        continue;
-
-                    // find typeadapter
-                    ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
-                    if (customRep != null) {
-                        customRep.write(serialized.attributes.get(fieldAnno.name()), config, writer, classField);
-                    } else {
-                        throw new ConfigurationException("Corresponding 'writer' was not found for field"+ fieldAnno.name());
-                    }
-                }
-
-
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public ConfigNode serialize(T obj, ReflectiveConfig config, Field field) throws ConfigurationException {
-
-            ConfigNode cnode = new ConfigNode();
-            for (Field classField : clazz.getDeclaredFields()) {
-
-                // if field is not annotated, skip it
-                ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
-                if (fieldAnno == null)
-                    continue;
-
-                // read a configuration value using its getter
-                Object value;
-
-                try {
-                    value = PropertyUtils.getSimpleProperty(obj, classField.getName());
-                } catch (Exception e) {
-                    throw new ConfigurationException("Error while writing configuration field " + fieldAnno.name(),e);
-                }
-
-                // find typeadapter
-                ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
-                if (customRep != null) {
-                    Object serialized = customRep.serialize(value, config, classField);
-                    cnode.attributes.put(fieldAnno.name(), serialized);
-                } else {
-                    throw new ConfigurationException("Corresponding 'writer' was not found for field" + fieldAnno.name());
-                }
-
-            }
-            return cnode;
-
-        }
-
-        @Override
-        public ConfigNode read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException, NamingException {
-
-            ConfigNode cnode = new ConfigNode();
-            for (Field classField : clazz.getDeclaredFields()) {
-
-                // if field is not annotated, skip it
-                ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
-                if (fieldAnno == null)
-                    continue;
-
-                // find typeadapter
-                ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
-                if (customRep != null) {
-
-                    Object value = customRep.read(config, reader, classField);
-                    cnode.attributes.put(fieldAnno.name(), value);
-
-                } else
-                    throw new ConfigurationException("Corresponding 'reader' was not found for field " + fieldAnno.name());
-
-            }
-
-            return cnode;
-
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public T deserialize(ConfigNode serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
-
-            T confObj;
-
-            // create instance or use provided when it was created earlier,
-            // e.g., in other config extensions
-            if (providedConfObj == null) {
-                try {
-                    confObj = (T) clazz.newInstance();
-                } catch (Exception e) {
-                    throw new ConfigurationException("Error while instantiating config class " + clazz.getSimpleName(), e);
-                }
-            } else
-                confObj = providedConfObj;
-
-            for (Field classField : clazz.getDeclaredFields()) {
-
-                // if field is not annotated, skip it
-                ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
-                if (fieldAnno == null)
-                    continue;
-
-                // find typeadapter
-                ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
-                if (customRep != null) {
-                    try {
-                        Object value = customRep.deserialize(serialized.attributes.get(fieldAnno.name()), config, classField);
-
-                        // set using a setter
-                        PropertyUtils.setSimpleProperty(confObj, classField.getName(), value);
-                    } catch (Exception e) {
-                        throw new ConfigurationException("Error while reading configuration field " + fieldAnno.name(), e);
-                    }
-
-                } else
-                    throw new ConfigurationException("Corresponding 'reader' was not found for field " + fieldAnno.name());
-
-            }
-
-            return confObj;
-
-        }
-
-    }
+    
 
     /*
      * Non-static class members
@@ -440,34 +333,21 @@ public class ReflectiveConfig {
         this.dicomConfiguration = configCtx;
     }
 
-    /**
-     * Reads the configuration into the properties of the specified
-     * configuration object using the provided reader.
-     * 
-     * @param confObj
-     * @param reader
-     */
     @SuppressWarnings("unchecked")
     public <T> void readConfig(T confObj, ConfigReader reader) {
 
         ReflectiveAdapter<T> adapter = new ReflectiveAdapter<T>((Class<T>) confObj.getClass(), confObj);
 
         try {
+
             adapter.deserialize(adapter.read(this, reader, null), this, null);
+
         } catch (Exception e) {
             log.error("Unable to read configuration");
             log.info("{}", e);
         }
-
     }
 
-    /**
-     * Writes the configuration from the properties of the specified
-     * configuration object into the config storage using the provided writer.
-     * 
-     * @param confObj
-     * @param writer
-     */
     @SuppressWarnings("unchecked")
     public <T> void storeConfig(T confObj, ConfigWriter writer) {
 
@@ -476,7 +356,7 @@ public class ReflectiveConfig {
         try {
 
             adapter.write(adapter.serialize(confObj, this, null), this, writer, null);
-
+        
         } catch (Exception e) {
             log.error("Unable to store configuration");
             log.info("{}", e);
@@ -485,35 +365,15 @@ public class ReflectiveConfig {
 
     @SuppressWarnings("unchecked")
     public <T> void storeConfigDiffs(T prevConfObj, T confObj, DiffWriter ldapDiffWriter) {
+        ReflectiveAdapter<T> adapter = new ReflectiveAdapter<T>((Class<T>) confObj.getClass());
 
-        // look through all fields of the config class, not including
-        // superclass fields
-        for (Field field : confObj.getClass().getDeclaredFields()) {
-
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
-
-            try {
-
-                Object prev = PropertyUtils.getSimpleProperty(prevConfObj, field.getName());
-                Object curr = PropertyUtils.getSimpleProperty(confObj, field.getName());
-
-                // use serialized form for diffs
-                ConfigTypeAdapter customRep = lookupTypeAdapter(field.getType());
-                if (customRep != null) {
-                    prev = customRep.serialize(prev, this, field);
-                    curr = customRep.serialize(curr, this, field);
-                }
-
-                ldapDiffWriter.storeDiff(fieldAnno.name(), prev, curr);
-
-            } catch (Exception e) {
-                log.warn("Unable to store diff for a configuration field {}", fieldAnno.name());
-                log.info("{}", e);
-            }
-
+        try {
+        
+            adapter.merge(prevConfObj, confObj, this, ldapDiffWriter, null);
+        
+        } catch (Exception e) {
+            log.error("Unable to merge configuration");
+            log.info("{}", e);
         }
     }
 
@@ -552,39 +412,6 @@ public class ReflectiveConfig {
 
     public void setCustomRepresentations(Map<Class, ConfigTypeAdapter> customRepresentations) {
         this.customRepresentations = customRepresentations;
-    }
-
-
-    /**
-     * Walk through the <b>from</b> object and for each field annotated with
-     * 
-     * @ConfigField, copy the value by using getter/setter to the <b>to</b>
-     *               object.
-     * 
-     * @param from
-     * @param to
-     */
-    public static <T> void reconfigure(T from, T to) {
-
-        // look through all fields of the config class, not including
-        // superclass fields
-        for (Field field : from.getClass().getDeclaredFields()) {
-
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
-
-            try {
-
-                PropertyUtils.setSimpleProperty(to, field.getName(), PropertyUtils.getSimpleProperty(from, field.getName()));
-
-            } catch (Exception e) {
-                log.error("Unable to reconfigure a device: {}", e);
-            }
-
-        }
-
     }
 
 }

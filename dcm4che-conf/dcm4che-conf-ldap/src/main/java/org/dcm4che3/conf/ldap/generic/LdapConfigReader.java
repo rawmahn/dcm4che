@@ -39,6 +39,7 @@ package org.dcm4che3.conf.ldap.generic;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
@@ -46,6 +47,7 @@ import javax.naming.directory.SearchResult;
 
 import org.dcm4che3.conf.ldap.LdapDicomConfiguration;
 import org.dcm4che3.conf.ldap.LdapUtils;
+import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 
 public class LdapConfigReader implements ConfigReader {
@@ -53,6 +55,7 @@ public class LdapConfigReader implements ConfigReader {
 
     /**
      * readCollection won't work with this constructor
+     * 
      * @param attrs
      */
     @Deprecated
@@ -98,30 +101,52 @@ public class LdapConfigReader implements ConfigReader {
         return LdapUtils.booleanValue(attrs.get(propName), Boolean.parseBoolean(def));
     }
 
+    public ConfigReader getChild(String propName) {
+        String folderDn = LdapUtils.dnOf("cn", propName, dn);
+        return new LdapConfigReader(attrs, folderDn, config);
+    }
+    
     @Override
-    public Map<String, ConfigReader> readCollection(String propName, String keyName) throws NamingException {
-        // do ldap search
-        NamingEnumeration<SearchResult> ne = 
-                config.search(String.format("cn=%s, %s",propName,dn), String.format("(%s=*)",keyName));
-        try {
-            Map<String, ConfigReader> map = new HashMap<String, ConfigReader>();
-            
-            while (ne.hasMore()) {
-                SearchResult sr = ne.next();
-                
-                Attributes attrs = sr.getAttributes();
-                String keyValue = LdapUtils.stringValue(attrs.get(keyName), null);
-                
-                if (keyValue == null) throw new NamingException("A key attribute for a map cannot be read");
-                
-                // generate a reader for nested node (i.e. map entry) 
-                map.put(keyValue, new LdapConfigReader(attrs, String.format("%s=%s, cn=%s, %s",keyName, keyValue, propName,dn), config));
-            }
+    public Map<String, ConfigReader> readCollection(String propName, String keyName) throws ConfigurationException {
 
-            return map;
-            
-        } finally {
-            LdapUtils.safeClose(ne);
+        try {
+
+            if (dn == null)
+                throw new NamingException("dn was not provided for readCollection");
+
+
+            // do ldap search
+            NamingEnumeration<SearchResult> ne =
+            // get 'folder' (cn=propName), then lookup all its children with
+            // keyname=*
+
+            config.search(dn, String.format("(%s=*)", keyName));
+            Map<String, ConfigReader> map = new HashMap<String, ConfigReader>();
+
+            try {
+
+                while (ne.hasMore()) {
+                    SearchResult sr = ne.next();
+
+                    Attributes attrs = sr.getAttributes();
+                    String keyValue = LdapUtils.stringValue(attrs.get(keyName), null);
+
+                    if (keyValue == null)
+                        throw new NamingException("A key attribute for a map cannot be read");
+
+                    String collectionElementDn = LdapUtils.dnOf(keyName, keyValue, dn);
+
+                    // generate a reader for nested node (i.e. map entry)
+                    map.put(keyValue, new LdapConfigReader(attrs, collectionElementDn, config));
+                }
+
+                return map;
+
+            } finally {
+                LdapUtils.safeClose(ne);
+            }
+        } catch (NamingException e) {
+            throw new ConfigurationException(e);
         }
     }
 }
