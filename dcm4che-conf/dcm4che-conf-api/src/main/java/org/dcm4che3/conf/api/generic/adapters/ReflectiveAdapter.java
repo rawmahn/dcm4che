@@ -47,11 +47,10 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
         this.providedConfObj = providedConfObj;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void write(ConfigNode serialized, ReflectiveConfig config, ConfigWriter writer, Field field) throws ConfigurationException {
 
-        ConfigNode cnode = new ConfigNode();
         for (Field classField : clazz.getDeclaredFields()) {
 
             // if field is not annotated, skip it
@@ -74,7 +73,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
 
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public ConfigNode serialize(T obj, ReflectiveConfig config, Field field) throws ConfigurationException {
 
@@ -110,6 +109,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
 
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public ConfigNode read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException, NamingException {
 
@@ -138,7 +138,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
 
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public T deserialize(ConfigNode serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
 
@@ -184,6 +184,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
 
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void merge(T prev, T curr, ReflectiveConfig config, DiffWriter diffwriter, Field field) throws ConfigurationException {
         // look through all fields of the config class, not including
@@ -210,6 +211,9 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
             }
 
         }
+        
+        // do actual merge
+        diffwriter.flushDiffs();
 
     }
 

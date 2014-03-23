@@ -37,6 +37,7 @@
  * ***** END LICENSE BLOCK ***** */
 package org.dcm4che3.conf.ldap.generic;
 
+import java.awt.dnd.DnDConstants;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -138,7 +139,7 @@ public class LdapGenericConfigExtension<T extends DeviceExtension> extends LdapD
         else
             attrs.put(new BasicAttribute("objectclass", objectClassName));
 
-        ConfigWriter ldapWriter = new LdapConfigWriter(attrs, getCnStr() + deviceDN, config);
+        ConfigWriter ldapWriter = new LdapConfigIO(attrs, getCnStr() + deviceDN, config);
 
         try {
 
@@ -165,7 +166,7 @@ public class LdapGenericConfigExtension<T extends DeviceExtension> extends LdapD
 
             T confObj = confClass.newInstance();
 
-            ConfigReader ldapReader = new LdapConfigReader(attrs, getCnStr() + deviceDN, config);
+            ConfigReader ldapReader = new LdapConfigIO(attrs, getCnStr() + deviceDN, config);
 
             reflectiveConfig.readConfig(confObj, ldapReader);
 
@@ -193,13 +194,7 @@ public class LdapGenericConfigExtension<T extends DeviceExtension> extends LdapD
             return;
         }
 
-        List<ModificationItem> modifiedItems = storeDiffs(prevConfObj, confObj, deviceDN, new ArrayList<ModificationItem>());
-        config.modifyAttributes(getCnStr() + deviceDN, modifiedItems);
-    }
-
-    private List<ModificationItem> storeDiffs(T prevConfObj, T confObj, String deviceDN, final ArrayList<ModificationItem> mods) {
-
-        DiffWriter ldapDiffWriter = new LdapDiffWriter(mods);
+        DiffWriter ldapDiffWriter = new LdapConfigIO(null, getCnStr() + deviceDN, config);
 
         try {
 
@@ -209,7 +204,5 @@ public class LdapGenericConfigExtension<T extends DeviceExtension> extends LdapD
             log.error("Unable to store the diffs for configuration!");
             log.error("{}", e);
         }
-
-        return mods;
     }
 }

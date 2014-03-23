@@ -186,6 +186,8 @@ public class ReflectiveConfig {
 
         void storeNotNull(String propName, Object value);
 
+        // collections
+
         ConfigWriter getCollectionElementWriter(String keyName, String keyValue) throws ConfigurationException;
         
         public ConfigWriter createChild(String propName) throws ConfigurationException;
@@ -212,9 +214,11 @@ public class ReflectiveConfig {
 
         boolean asBoolean(String propName, String def) throws NamingException;
 
+        // collections
+        
         Map<String, ConfigReader> readCollection(String propName, String keyName) throws ConfigurationException;
 
-        ConfigReader getChild(String propName);
+        ConfigReader getChildReader(String propName) throws ConfigurationException;
 
     }
 
@@ -227,6 +231,10 @@ public class ReflectiveConfig {
     public interface DiffWriter {
         void storeDiff(String propName, Object prev, Object curr);
         // void storeDiffCollection(String propName, )
+
+        void flushDiffs() throws ConfigurationException;
+
+        void removeChild(String propName) throws ConfigurationException;
     }
 
     /*

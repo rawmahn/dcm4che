@@ -4,11 +4,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.MalformedParameterizedTypeException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.naming.NamingException;
+import javax.naming.directory.BasicAttributes;
+import javax.naming.directory.ModificationItem;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.generic.ConfigField;
@@ -18,6 +21,7 @@ import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigTypeAdapter;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.DiffWriter;
+import org.dcm4che3.net.TransferCapability;
 
 /**
  * Map<br>
@@ -122,7 +126,27 @@ public class MapAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, ConfigNode
     public void merge(Map<K, V> prev, Map<K, V> curr, ReflectiveConfig config, DiffWriter diffwriter, Field field)
             throws ConfigurationException {
 
-        //TODO
+        
+        for (Entry<K,V> e : prev.entrySet()) {
+            // if existed in prev, but not in curr,  
+            if (curr.get(e.getKey()) == null)
+                
+            
+        }
+        
+        for (TransferCapability tc : prevs) {
+            String dn = dnOf(tc, aeDN);
+            if (findByDN(aeDN, tcs, dn) == null)
+                destroySubcontext(dn);
+        }
+        for (TransferCapability tc : tcs) {
+            String dn = dnOf(tc, aeDN);
+            TransferCapability prev = findByDN(aeDN, prevs, dn);
+            if (prev == null)
+                createSubcontext(dn, storeTo(tc, new BasicAttributes(true)));
+            else
+                modifyAttributes(dn, storeDiffs(prev, tc, new ArrayList<ModificationItem>()));
+        }
         
     }
 
