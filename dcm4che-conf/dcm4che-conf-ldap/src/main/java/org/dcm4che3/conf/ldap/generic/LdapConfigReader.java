@@ -101,6 +101,7 @@ public class LdapConfigReader implements ConfigReader {
         return LdapUtils.booleanValue(attrs.get(propName), Boolean.parseBoolean(def));
     }
 
+    @Override
     public ConfigReader getChild(String propName) {
         String folderDn = LdapUtils.dnOf("cn", propName, dn);
         return new LdapConfigReader(attrs, folderDn, config);
