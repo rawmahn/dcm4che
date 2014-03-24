@@ -63,7 +63,9 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("rawtypes")
 public class ReflectiveConfig {
 
+    
     public static final Logger log = LoggerFactory.getLogger(ReflectiveConfig.class);
+    
 
     /**
      * Type adapter that handles configuration read/write/serialize/deserialize
@@ -143,7 +145,9 @@ public class ReflectiveConfig {
          */
         T deserialize(ST serialized, ReflectiveConfig config, Field field) throws ConfigurationException;
 
-        void merge(T prev, T curr, ReflectiveConfig config, DiffWriter diffwriter, Field field) throws ConfigurationException;
+        void merge(T prev, T curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException;
+
+        boolean isWritingChildren();
 
     }
 
@@ -192,7 +196,18 @@ public class ReflectiveConfig {
         
         public ConfigWriter createChild(String propName) throws ConfigurationException;
 
-        void flush() throws ConfigurationException;
+        void flushWriter() throws ConfigurationException;
+        
+        void storeDiff(String propName, Object prev, Object curr);
+
+        void flushDiffs() throws ConfigurationException;
+
+        void removeCollectionElement(String keyName, String keyValue) throws ConfigurationException;
+
+        ConfigWriter getCollectionElementDiffWriter(String keyName, String keyValue);
+
+        ConfigWriter getChildDiffWriter(String propName);
+        
         
     }
 
@@ -216,26 +231,12 @@ public class ReflectiveConfig {
 
         // collections
         
-        Map<String, ConfigReader> readCollection(String propName, String keyName) throws ConfigurationException;
+        Map<String, ConfigReader> readCollection(String keyName) throws ConfigurationException;
 
         ConfigReader getChildReader(String propName) throws ConfigurationException;
 
     }
 
-    /**
-     * Used by reflective config diff writer, should implement storage
-     * type-specific methods
-     * 
-     * @author Roman K
-     */
-    public interface DiffWriter {
-        void storeDiff(String propName, Object prev, Object curr);
-        // void storeDiffCollection(String propName, )
-
-        void flushDiffs() throws ConfigurationException;
-
-        void removeChild(String propName) throws ConfigurationException;
-    }
 
     /*
      * Static members
@@ -310,7 +311,7 @@ public class ReflectiveConfig {
      * @param confObj
      * @param ldapDiffWriter
      */
-    public static <T> void storeAllDiffs(T prevConfObj, T confObj, DiffWriter ldapDiffWriter) {
+    public static <T> void storeAllDiffs(T prevConfObj, T confObj, ConfigWriter ldapDiffWriter) {
         singleton.storeConfigDiffs(prevConfObj, confObj, ldapDiffWriter);
     }
 
@@ -372,7 +373,7 @@ public class ReflectiveConfig {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> void storeConfigDiffs(T prevConfObj, T confObj, DiffWriter ldapDiffWriter) {
+    public <T> void storeConfigDiffs(T prevConfObj, T confObj, ConfigWriter ldapDiffWriter) {
         ReflectiveAdapter<T> adapter = new ReflectiveAdapter<T>((Class<T>) confObj.getClass());
 
         try {

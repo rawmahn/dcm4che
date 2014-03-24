@@ -58,7 +58,6 @@ import org.dcm4che3.conf.api.generic.ConfigClass;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.DiffWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,7 +193,7 @@ public class LdapGenericConfigExtension<T extends DeviceExtension> extends LdapD
             return;
         }
 
-        DiffWriter ldapDiffWriter = new LdapConfigIO(null, getCnStr() + deviceDN, config);
+        ConfigWriter ldapDiffWriter = new LdapConfigIO(new ArrayList<ModificationItem>(), getCnStr() + deviceDN, config);
 
         try {
 

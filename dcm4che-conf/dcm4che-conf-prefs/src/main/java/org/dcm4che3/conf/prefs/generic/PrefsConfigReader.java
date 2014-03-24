@@ -43,6 +43,7 @@ import java.util.prefs.Preferences;
 import javax.naming.NamingException;
 
 import org.dcm4che3.conf.prefs.PreferencesUtils;
+import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigNode;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 
@@ -79,8 +80,14 @@ public class PrefsConfigReader implements ConfigReader {
 	}
 
 	@Override
-	public Map<String, ConfigReader> readCollection(String propName, String keyName) {
+	public Map<String, ConfigReader> readCollection(String keyName) {
 	    // TODO Auto-generated method stub
 	    return null;
 	}
+
+    @Override
+    public ConfigReader getChildReader(String propName) throws ConfigurationException {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

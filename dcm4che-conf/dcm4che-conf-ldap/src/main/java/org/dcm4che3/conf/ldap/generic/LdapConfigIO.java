@@ -37,10 +37,12 @@
  * ***** END LICENSE BLOCK ***** */
 package org.dcm4che3.conf.ldap.generic;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.naming.NameAlreadyBoundException;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
@@ -53,14 +55,16 @@ import org.dcm4che3.conf.ldap.LdapUtils;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.DiffWriter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LdapConfigIO implements ConfigWriter, ConfigReader, DiffWriter {
+public class LdapConfigIO implements ConfigWriter, ConfigReader {
 
     public static final Logger log = LoggerFactory.getLogger(LdapConfigIO.class);
 
+    public static final String FOLDER_OBJECT_CLASS = "dcmCollection";
+    
     /**
      * DN with the whatever extension included
      */
@@ -80,6 +84,16 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader, DiffWriter {
     }
     
     
+    
+    // for diff writer
+    public LdapConfigIO(List<ModificationItem> mods, String dn, LdapDicomConfiguration config) {
+        super();
+        this.dn = dn;
+        this.config = config;
+        this.mods = mods;
+    }
+
+    // for writer
     public LdapConfigIO(Attributes attrs, String dn, LdapDicomConfiguration config) {
         super();
         this.attrs = attrs;
@@ -129,16 +143,15 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader, DiffWriter {
 
     @Override
     public ConfigReader getChildReader(String propName) throws ConfigurationException {
-        String folderDn = getFolderDn(propName);
         try {
-            return new LdapConfigIO(config.getAttributes(folderDn), folderDn, config);
+            return new LdapConfigIO(config.getAttributes(getFolderDn(propName)), getFolderDn(propName), config);
         } catch (NamingException e) {
             throw new ConfigurationException(e);
         }
     }
     
     @Override
-    public Map<String, ConfigReader> readCollection(String propName, String keyName) throws ConfigurationException {
+    public Map<String, ConfigReader> readCollection(String keyName) throws ConfigurationException {
 
         try {
 
@@ -198,8 +211,7 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader, DiffWriter {
     @Override
     public void storeNotEmpty(String propName, Object value) {
 
-        // workaround for arrays since varargs would perceive them
-        // as Object not as Object[]
+        //  check needed since varargs would perceive as Object not as Object[]
         if (value != null && value.getClass().isArray())
             LdapUtils.storeNotEmpty(attrs, propName, (Object[]) value);
         else
@@ -210,8 +222,7 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader, DiffWriter {
     @Override
     public void storeNotNull(String propName, Object value) {
 
-        // workaround for arrays since varargs would perceive them
-        // as Object not as Object[]
+        //  check needed since varargs would perceive as Object not as Object[]
         if (value != null && value.getClass().isArray())
             LdapUtils.storeNotNull(attrs, propName, (Object[]) value);
         LdapUtils.storeNotNull(attrs, propName, value);
@@ -219,12 +230,12 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader, DiffWriter {
     }
 
     @Override
-    public void flush() throws ConfigurationException {
+    public void flushWriter() throws ConfigurationException {
         
         // if flush enabled, do replace attributes
         if (config != null) {
             try {
-                config.replaceAttributes(dn, attrs);
+                config.createSubcontext(dn, attrs);
             } catch (NamingException e) {
                 throw new ConfigurationException(e);
             }
@@ -237,7 +248,11 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader, DiffWriter {
 
         // create 'folder'
         try {
-            config.createSubcontext(folderDn, new BasicAttributes(true));
+            Attributes attrs = new BasicAttributes(true);
+            attrs.put("cn", propName);
+            attrs.put("objectClass", FOLDER_OBJECT_CLASS);
+            
+            config.createSubcontext(folderDn, attrs);
         } catch (NamingException e) {
             throw new ConfigurationException(e);
         }
@@ -248,15 +263,7 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader, DiffWriter {
     @Override
     public ConfigWriter getCollectionElementWriter(String keyName, String keyValue) throws ConfigurationException {
 
-        try {
-
-            // create empty child context
-            config.createSubcontext(getCollectionElementDn(keyName, keyValue), new BasicAttributes(true));
-            
-            return new LdapConfigIO(new BasicAttributes(true), getCollectionElementDn(keyName, keyValue), config);
-        } catch (NamingException e) {
-            throw new ConfigurationException(e);
-        }
+        return new LdapConfigIO(new BasicAttributes(true), getCollectionElementDn(keyName, keyValue), config);
     }
 
     @Override
@@ -272,11 +279,23 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader, DiffWriter {
     }
     
     
-    public void removeChild(String propName) throws ConfigurationException {};
+    @Override
+    public void removeCollectionElement(String keyName, String keyValue) throws ConfigurationException {
+        try {
+            config.destroySubcontextWithChilds(getCollectionElementDn(keyName, keyValue));
+        } catch (NamingException e) {
+            throw new ConfigurationException();
+        }
+    };
     
+    @Override
+    public ConfigWriter getCollectionElementDiffWriter(String keyName, String keyValue) {
+        return new LdapConfigIO(new ArrayList<ModificationItem>(), getCollectionElementDn(keyName, keyValue), config);
+    }
     
-    public DiffWriter getCollectionElementDiffWriter(String propName) {
-        return null;
+    @Override    
+    public ConfigWriter getChildDiffWriter(String propName) {
+        return new LdapConfigIO(new ArrayList<ModificationItem>(), getFolderDn(propName), config);
     }
     
     @Override
@@ -286,7 +305,8 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader, DiffWriter {
             LdapUtils.storeDiff(mods, propName, (Object[]) prev, (Object[]) curr);
         else
             LdapUtils.storeDiff(mods, propName, prev, curr);
-    }    
+    }
+
     
 
 }

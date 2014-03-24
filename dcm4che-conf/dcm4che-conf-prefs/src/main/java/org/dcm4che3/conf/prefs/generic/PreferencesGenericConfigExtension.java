@@ -50,7 +50,6 @@ import org.dcm4che3.conf.api.generic.ConfigClass;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.DiffWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,7 +172,7 @@ public class PreferencesGenericConfigExtension<T extends DeviceExtension> extend
 
 	private void storeDiffs(final Preferences prefs, T prevConfObj, T confObj) {
 
-		DiffWriter prefsDiffWriter = new PrefsDiffWriter(prefs);
+		ConfigWriter prefsDiffWriter = new PrefsConfigWriter(prefs);
 
 		try {
 

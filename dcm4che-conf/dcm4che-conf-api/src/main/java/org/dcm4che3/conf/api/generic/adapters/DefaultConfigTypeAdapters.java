@@ -53,7 +53,6 @@ import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigTypeAdapter;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.DiffWriter;
 import org.dcm4che3.net.Device;
 import org.dcm4che3.util.AttributesFormat;
 
@@ -70,6 +69,11 @@ public class DefaultConfigTypeAdapters {
      */
     public abstract static class PrimitiveAbstractTypeAdapter<T> implements ConfigTypeAdapter<T, T> {
 
+        @Override
+        public boolean isWritingChildren() {
+            return false;
+        }
+        
         @Override
         public T deserialize(T serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
             return serialized;
@@ -91,7 +95,7 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public void merge(T prev, T curr, ReflectiveConfig config, DiffWriter diffwriter, Field field) throws ConfigurationException {
+        public void merge(T prev, T curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException {
             ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
 
             T prevSerialized = serialize(prev, config, field);
@@ -108,6 +112,11 @@ public class DefaultConfigTypeAdapters {
     public abstract static class CommonAbstractTypeAdapter<T> implements ConfigTypeAdapter<T, String> {
 
         @Override
+        public boolean isWritingChildren() {
+            return false;
+        }
+        
+        @Override
         public String read(ReflectiveConfig config, ConfigReader reader, Field field) throws NamingException {
             ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
             return reader.asString(fieldAnno.name(), null);
@@ -120,7 +129,7 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public void merge(T prev, T curr, ReflectiveConfig config, DiffWriter diffwriter, Field field) throws ConfigurationException {
+        public void merge(T prev, T curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException {
             ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
 
             String prevSerialized = serialize(prev, config, field);
@@ -170,6 +179,11 @@ public class DefaultConfigTypeAdapters {
      */
     public static class ArrayTypeAdapter extends PrimitiveAbstractTypeAdapter<Object> {
 
+        @Override
+        public boolean isWritingChildren() {
+            return false;
+        }
+        
         @Override
         public Object read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException, NamingException {
             ConfigField fieldAnno = field.getAnnotation(ConfigField.class);

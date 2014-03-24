@@ -20,7 +20,6 @@ import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigNode;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigTypeAdapter;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.DiffWriter;
 import org.dcm4che3.net.TransferCapability;
 
 /**
@@ -28,11 +27,17 @@ import org.dcm4che3.net.TransferCapability;
  * 
  * Only String keys are supported so far!
  * 
- * Serialized representation is Map&lt;String, Object&gt;, Object can be
- * ConfigNode
+ * Ldap only will support ConfigClass'ed classes as values
+ * 
+ * Serialized representation is Map&lt;String, Object&gt;, Object can be ConfigNode
  */
 
-public class MapAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, ConfigNode> {
+public class MapAdapter<V> implements ConfigTypeAdapter<Map<String, V>, ConfigNode> {
+
+    @Override
+    public boolean isWritingChildren() {
+        return true;
+    }
 
     private ConfigTypeAdapter<V, ?> getValueAdapter(Field field, ReflectiveConfig config) {
         ParameterizedType pt = (ParameterizedType) field.getGenericType();
@@ -56,11 +61,9 @@ public class MapAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, ConfigNode
 
         ConfigNode cnode = new ConfigNode();
 
-
         // read collection
-        String collectionName = (fieldAnno.alternativeCollectionName().equals("N/A") ? fieldAnno.name() : fieldAnno.alternativeCollectionName());
-        ConfigReader collectionReader = reader.getChild(collectionName);
-        Map<String, ConfigReader> map = collectionReader.readCollection(collectionName, fieldAnno.mapKey());
+        ConfigReader collectionReader = reader.getChildReader(getCollectionName(fieldAnno));
+        Map<String, ConfigReader> map = collectionReader.readCollection(fieldAnno.mapKey());
 
         // getValueAdapter
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
@@ -74,33 +77,37 @@ public class MapAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, ConfigNode
 
     @SuppressWarnings("unchecked")
     @Override
-    public Map<K, V> deserialize(ConfigNode serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
+    public Map<String, V> deserialize(ConfigNode serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
 
         // getValueAdapter
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
 
         // deserialize entries
-        Map<K, V> map = new HashMap<K, V>();
+        Map<String, V> map = new HashMap<String, V>();
         for (Entry<String, Object> e : serialized.attributes.entrySet()) {
-            map.put((K) e.getKey(), valueAdapter.deserialize(e.getValue(), config, field));
+            map.put((String) e.getKey(), valueAdapter.deserialize(e.getValue(), config, field));
         }
 
         return map;
     }
 
     @Override
-    public ConfigNode serialize(Map<K, V> obj, ReflectiveConfig config, Field field) throws ConfigurationException {
+    public ConfigNode serialize(Map<String, V> obj, ReflectiveConfig config, Field field) throws ConfigurationException {
 
         ConfigNode cnode = new ConfigNode();
 
         // getValueAdapter
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
 
-        for (Entry<K, V> e : obj.entrySet()) {
+        for (Entry<String, V> e : obj.entrySet()) {
             cnode.attributes.put((String) e.getKey(), valueAdapter.serialize(e.getValue(), config, field));
         }
 
         return cnode;
+    }
+
+    private String getCollectionName(ConfigField fieldAnno) {
+        return (fieldAnno.alternativeCollectionName().equals("N/A") ? fieldAnno.name() : fieldAnno.alternativeCollectionName());
     }
 
     @Override
@@ -110,44 +117,44 @@ public class MapAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, ConfigNode
         // getValueAdapter
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
 
-        String collectionName = (fieldAnno.alternativeCollectionName().equals("N/A") ? fieldAnno.name() : fieldAnno.alternativeCollectionName());
-        ConfigWriter collectionWriter = writer.createChild(collectionName);
-        
+        ConfigWriter collectionWriter = writer.createChild(getCollectionName(fieldAnno));
+
         for (Entry<String, Object> e : serialized.attributes.entrySet()) {
-            
-            ConfigWriter elementWriter = collectionWriter.getCollectionElementWriter( fieldAnno.mapKey(), e.getKey());
-            
+
+            ConfigWriter elementWriter = collectionWriter.getCollectionElementWriter(fieldAnno.mapKey(), e.getKey());
             valueAdapter.write(e.getValue(), config, elementWriter, field);
-            elementWriter.flush();
         }
     }
 
     @Override
-    public void merge(Map<K, V> prev, Map<K, V> curr, ReflectiveConfig config, DiffWriter diffwriter, Field field)
-            throws ConfigurationException {
+    public void merge(Map<String, V> prev, Map<String, V> curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException {
+        ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
 
+        // getValueAdapter
+        ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
         
-        for (Entry<K,V> e : prev.entrySet()) {
-            // if existed in prev, but not in curr,  
-            if (curr.get(e.getKey()) == null)
-                
+        ConfigWriter collectionWriter = diffwriter.getChildDiffWriter(getCollectionName(fieldAnno));
+        
+        // remove nodes that were deleted since prev
+        for (Entry<String,V> e : prev.entrySet())
+            if (curr.get(e.getKey()) == null) 
+                collectionWriter.removeCollectionElement(fieldAnno.mapKey(), e.getKey());
+        
+        // add new nodes and merge existing
+        for (Entry<String,V> e : curr.entrySet()) {
             
+            // if new node
+            if (prev.get(e.getKey()) == null) {
+                ConfigWriter elementWriter = collectionWriter.getCollectionElementWriter(fieldAnno.mapKey(), e.getKey());
+                // serialize
+                Object serialized = valueAdapter.serialize(e.getValue(), config, field);
+                valueAdapter.write(serialized, config, elementWriter, field);
+            } 
+            // existing node
+            else {
+                ConfigWriter elementWriter = collectionWriter.getCollectionElementDiffWriter(fieldAnno.mapKey(), e.getKey());
+                valueAdapter.merge(prev.get(e.getKey()), e.getValue(), config, elementWriter, field);
+            }
         }
-        
-        for (TransferCapability tc : prevs) {
-            String dn = dnOf(tc, aeDN);
-            if (findByDN(aeDN, tcs, dn) == null)
-                destroySubcontext(dn);
-        }
-        for (TransferCapability tc : tcs) {
-            String dn = dnOf(tc, aeDN);
-            TransferCapability prev = findByDN(aeDN, prevs, dn);
-            if (prev == null)
-                createSubcontext(dn, storeTo(tc, new BasicAttributes(true)));
-            else
-                modifyAttributes(dn, storeDiffs(prev, tc, new ArrayList<ModificationItem>()));
-        }
-        
     }
-
 }

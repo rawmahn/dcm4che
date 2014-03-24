@@ -1,6 +1,8 @@
 package org.dcm4che3.conf.api.generic.adapters;
 
 import java.lang.reflect.Field;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.naming.NamingException;
 
@@ -12,7 +14,6 @@ import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigNode;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigTypeAdapter;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.DiffWriter;
 
 /**
  * Reflective adapter that handles classes with ConfigClass annotations.<br/>
@@ -47,6 +48,11 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
         this.providedConfObj = providedConfObj;
     }
 
+    @Override
+    public boolean isWritingChildren() {
+        return false;
+    }
+    
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void write(ConfigNode serialized, ReflectiveConfig config, ConfigWriter writer, Field field) throws ConfigurationException {
@@ -60,8 +66,12 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
 
             // find typeadapter
             ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
+            
             if (customRep != null) {
+                
+                // this is done in the next phase after flush
+                if (customRep.isWritingChildren()) continue;
+                
                 customRep.write(serialized.attributes.get(fieldAnno.name()), config, writer, classField);
             } else {
                 throw new ConfigurationException("Corresponding 'writer' was not found for field" + fieldAnno.name());
@@ -69,7 +79,24 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
         }
         
         // do actual store
-        writer.flush();
+        writer.flushWriter();
+        
+        
+        // now when we have a node generated, store children
+        for (Field classField : clazz.getDeclaredFields()) {
+
+            // if field is not annotated, skip it
+            ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
+            if (fieldAnno == null)
+                continue;
+
+            // find typeadapter
+            ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
+            
+            if (!customRep.isWritingChildren()) continue;
+            customRep.write(serialized.attributes.get(fieldAnno.name()), config, writer, classField);
+
+        }
 
     }
 
@@ -186,7 +213,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
-    public void merge(T prev, T curr, ReflectiveConfig config, DiffWriter diffwriter, Field field) throws ConfigurationException {
+    public void merge(T prev, T curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException {
         // look through all fields of the config class, not including
         // superclass fields
         for (Field classField : clazz.getDeclaredFields()) {
