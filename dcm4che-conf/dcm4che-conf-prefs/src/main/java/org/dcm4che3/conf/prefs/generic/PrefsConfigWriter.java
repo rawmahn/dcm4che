@@ -37,6 +37,7 @@
  * ***** END LICENSE BLOCK ***** */
 package org.dcm4che3.conf.prefs.generic;
 
+import java.lang.reflect.Field;
 import java.util.prefs.Preferences;
 
 import org.dcm4che3.conf.prefs.PreferencesUtils;
@@ -96,7 +97,7 @@ public class PrefsConfigWriter implements ConfigWriter {
     }
 
     @Override
-    public ConfigWriter getCollectionElementWriter(String keyName, String keyValue) throws ConfigurationException {
+    public ConfigWriter getCollectionElementWriter(String keyName, String keyValue, Field field) throws ConfigurationException {
         // TODO Auto-generated method stub
         return null;
     }

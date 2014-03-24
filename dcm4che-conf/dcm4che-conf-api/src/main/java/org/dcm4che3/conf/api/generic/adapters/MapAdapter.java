@@ -53,6 +53,7 @@ public class MapAdapter<V> implements ConfigTypeAdapter<Map<String, V>, ConfigNo
         return config.lookupTypeAdapter((Class<V>) ptypes[1]);
 
     }
+    
 
     @SuppressWarnings("unchecked")
     @Override
@@ -121,7 +122,7 @@ public class MapAdapter<V> implements ConfigTypeAdapter<Map<String, V>, ConfigNo
 
         for (Entry<String, Object> e : serialized.attributes.entrySet()) {
 
-            ConfigWriter elementWriter = collectionWriter.getCollectionElementWriter(fieldAnno.mapKey(), e.getKey());
+            ConfigWriter elementWriter = collectionWriter.getCollectionElementWriter(fieldAnno.mapKey(), e.getKey(), field);
             valueAdapter.write(e.getValue(), config, elementWriter, field);
         }
     }
@@ -145,7 +146,7 @@ public class MapAdapter<V> implements ConfigTypeAdapter<Map<String, V>, ConfigNo
             
             // if new node
             if (prev.get(e.getKey()) == null) {
-                ConfigWriter elementWriter = collectionWriter.getCollectionElementWriter(fieldAnno.mapKey(), e.getKey());
+                ConfigWriter elementWriter = collectionWriter.getCollectionElementWriter(fieldAnno.mapKey(), e.getKey(), field);
                 // serialize
                 Object serialized = valueAdapter.serialize(e.getValue(), config, field);
                 valueAdapter.write(serialized, config, elementWriter, field);

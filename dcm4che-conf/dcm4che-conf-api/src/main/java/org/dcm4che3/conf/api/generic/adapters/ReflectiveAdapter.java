@@ -128,7 +128,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
                 Object serialized = customRep.serialize(value, config, classField);
                 cnode.attributes.put(fieldAnno.name(), serialized);
             } else {
-                throw new ConfigurationException("Corresponding 'writer' was not found for field" + fieldAnno.name());
+                throw new ConfigurationException("Corresponding 'writer' was not found for field " + fieldAnno.name());
             }
 
         }
@@ -177,7 +177,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
             try {
                 confObj = (T) clazz.newInstance();
             } catch (Exception e) {
-                throw new ConfigurationException("Error while instantiating config class " + clazz.getSimpleName(), e);
+                throw new ConfigurationException("Error while instantiating config class " + clazz.getSimpleName() + ". Check whether null-arg constructor exists.", e);
             }
         } else
             confObj = providedConfObj;

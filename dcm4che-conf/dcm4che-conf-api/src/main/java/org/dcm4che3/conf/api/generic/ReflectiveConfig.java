@@ -192,7 +192,15 @@ public class ReflectiveConfig {
 
         // collections
 
-        ConfigWriter getCollectionElementWriter(String keyName, String keyValue) throws ConfigurationException;
+        /**
+         * 
+         * @param keyName
+         * @param keyValue
+         * @param field Field with the declared collection/map.
+         * @return
+         * @throws ConfigurationException
+         */
+        ConfigWriter getCollectionElementWriter(String keyName, String keyValue, Field field) throws ConfigurationException;
         
         public ConfigWriter createChild(String propName) throws ConfigurationException;
 
@@ -255,8 +263,9 @@ public class ReflectiveConfig {
      *            Configuration object
      * @param writer
      *            Configuration writer
+     * @throws ConfigurationException 
      */
-    public static <T> void store(T confObj, ConfigWriter writer) {
+    public static <T> void store(T confObj, ConfigWriter writer) throws ConfigurationException {
         singleton.storeConfig(confObj, writer);
     }
 
@@ -266,8 +275,9 @@ public class ReflectiveConfig {
      * 
      * @param confObj
      * @param reader
+     * @throws ConfigurationException 
      */
-    public static <T> void read(T confObj, ConfigReader reader) {
+    public static <T> void read(T confObj, ConfigReader reader) throws ConfigurationException {
         singleton.readConfig(confObj, reader);
     }
 
@@ -296,7 +306,7 @@ public class ReflectiveConfig {
                 PropertyUtils.setSimpleProperty(to, field.getName(), PropertyUtils.getSimpleProperty(from, field.getName()));
     
             } catch (Exception e) {
-                log.error("Unable to reconfigure a device: {}", e);
+                throw new RuntimeException("Unable to reconfigure a device!",e);
             }
     
         }
@@ -310,8 +320,9 @@ public class ReflectiveConfig {
      * @param prevConfObj
      * @param confObj
      * @param ldapDiffWriter
+     * @throws ConfigurationException 
      */
-    public static <T> void storeAllDiffs(T prevConfObj, T confObj, ConfigWriter ldapDiffWriter) {
+    public static <T> void storeAllDiffs(T prevConfObj, T confObj, ConfigWriter ldapDiffWriter) throws ConfigurationException {
         singleton.storeConfigDiffs(prevConfObj, confObj, ldapDiffWriter);
     }
 
@@ -343,47 +354,31 @@ public class ReflectiveConfig {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> void readConfig(T confObj, ConfigReader reader) {
+    public <T> void readConfig(T confObj, ConfigReader reader) throws ConfigurationException {
 
         ReflectiveAdapter<T> adapter = new ReflectiveAdapter<T>((Class<T>) confObj.getClass(), confObj);
 
         try {
-
             adapter.deserialize(adapter.read(this, reader, null), this, null);
-
-        } catch (Exception e) {
-            log.error("Unable to read configuration");
-            log.info("{}", e);
+        } catch (NamingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
     }
 
     @SuppressWarnings("unchecked")
-    public <T> void storeConfig(T confObj, ConfigWriter writer) {
+    public <T> void storeConfig(T confObj, ConfigWriter writer) throws ConfigurationException {
 
         ReflectiveAdapter<T> adapter = new ReflectiveAdapter<T>((Class<T>) confObj.getClass());
-
-        try {
-
-            adapter.write(adapter.serialize(confObj, this, null), this, writer, null);
+        adapter.write(adapter.serialize(confObj, this, null), this, writer, null);
         
-        } catch (Exception e) {
-            log.error("Unable to store configuration");
-            log.info("{}", e);
-        }
     }
 
     @SuppressWarnings("unchecked")
-    public <T> void storeConfigDiffs(T prevConfObj, T confObj, ConfigWriter ldapDiffWriter) {
-        ReflectiveAdapter<T> adapter = new ReflectiveAdapter<T>((Class<T>) confObj.getClass());
+    public <T> void storeConfigDiffs(T prevConfObj, T confObj, ConfigWriter ldapDiffWriter) throws ConfigurationException {
 
-        try {
-        
-            adapter.merge(prevConfObj, confObj, this, ldapDiffWriter, null);
-        
-        } catch (Exception e) {
-            log.error("Unable to merge configuration");
-            log.info("{}", e);
-        }
+        ReflectiveAdapter<T> adapter = new ReflectiveAdapter<T>((Class<T>) confObj.getClass());
+        adapter.merge(prevConfObj, confObj, this, ldapDiffWriter, null);
     }
 
     @SuppressWarnings("unchecked")

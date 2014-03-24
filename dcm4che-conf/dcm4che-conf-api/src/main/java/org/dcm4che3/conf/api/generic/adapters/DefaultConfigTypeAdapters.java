@@ -254,6 +254,8 @@ public class DefaultConfigTypeAdapters {
         defaultTypeAdapters.put(AttributesFormat.class, new AttributeFormatTypeAdapter());
         defaultTypeAdapters.put(Device.class, new DeviceTypeAdapter());
 
+        defaultTypeAdapters.put(Map.class, new MapAdapter());
+
     }
 
     public static Map<Class, ConfigTypeAdapter> get() {

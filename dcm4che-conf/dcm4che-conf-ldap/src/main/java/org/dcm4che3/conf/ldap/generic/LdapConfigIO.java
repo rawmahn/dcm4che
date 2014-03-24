@@ -37,6 +37,10 @@
  * ***** END LICENSE BLOCK ***** */
 package org.dcm4che3.conf.ldap.generic;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.MalformedParameterizedTypeException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,9 +57,10 @@ import javax.naming.directory.SearchResult;
 import org.dcm4che3.conf.ldap.LdapDicomConfiguration;
 import org.dcm4che3.conf.ldap.LdapUtils;
 import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.api.generic.ConfigClass;
+import org.dcm4che3.conf.api.generic.ConfigField;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +69,7 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
     public static final Logger log = LoggerFactory.getLogger(LdapConfigIO.class);
 
     public static final String FOLDER_OBJECT_CLASS = "dcmCollection";
-    
+
     /**
      * DN with the whatever extension included
      */
@@ -73,18 +78,15 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
 
     private Attributes attrs;
     private List<ModificationItem> mods;
-    
+
     public LdapConfigIO(Attributes attrs) {
         this.attrs = attrs;
     }
 
-
     public LdapConfigIO(List<ModificationItem> mods) {
         this.mods = mods;
     }
-    
-    
-    
+
     // for diff writer
     public LdapConfigIO(List<ModificationItem> mods, String dn, LdapDicomConfiguration config) {
         super();
@@ -101,16 +103,13 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
         this.config = config;
     }
 
-    
     String getFolderDn(String propName) {
         return LdapUtils.dnOf("cn", propName, dn);
     }
 
-
     String getCollectionElementDn(String keyName, String keyValue) {
         return LdapUtils.dnOf(keyName, keyValue, dn);
     }
-
 
     /**
      * Reader
@@ -149,7 +148,7 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
             throw new ConfigurationException(e);
         }
     }
-    
+
     @Override
     public Map<String, ConfigReader> readCollection(String keyName) throws ConfigurationException {
 
@@ -157,7 +156,6 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
 
             if (dn == null)
                 throw new NamingException("dn was not provided for readCollection");
-
 
             // do ldap search
             NamingEnumeration<SearchResult> ne =
@@ -193,11 +191,11 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
             throw new ConfigurationException(e);
         }
     }
-    
+
     /**
      * Writer
      */
-    
+
     @Override
     public void storeNotDef(String propName, Object value, String def) {
 
@@ -211,7 +209,7 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
     @Override
     public void storeNotEmpty(String propName, Object value) {
 
-        //  check needed since varargs would perceive as Object not as Object[]
+        // check needed since varargs would perceive as Object not as Object[]
         if (value != null && value.getClass().isArray())
             LdapUtils.storeNotEmpty(attrs, propName, (Object[]) value);
         else
@@ -222,7 +220,7 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
     @Override
     public void storeNotNull(String propName, Object value) {
 
-        //  check needed since varargs would perceive as Object not as Object[]
+        // check needed since varargs would perceive as Object not as Object[]
         if (value != null && value.getClass().isArray())
             LdapUtils.storeNotNull(attrs, propName, (Object[]) value);
         LdapUtils.storeNotNull(attrs, propName, value);
@@ -231,7 +229,7 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
 
     @Override
     public void flushWriter() throws ConfigurationException {
-        
+
         // if flush enabled, do replace attributes
         if (config != null) {
             try {
@@ -241,9 +239,9 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
             }
         }
     }
-    
+
     @Override
-    public ConfigWriter createChild(String propName) throws ConfigurationException  {
+    public ConfigWriter createChild(String propName) throws ConfigurationException {
         String folderDn = getFolderDn(propName);
 
         // create 'folder'
@@ -251,34 +249,52 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
             Attributes attrs = new BasicAttributes(true);
             attrs.put("cn", propName);
             attrs.put("objectClass", FOLDER_OBJECT_CLASS);
-            
+
             config.createSubcontext(folderDn, attrs);
         } catch (NamingException e) {
             throw new ConfigurationException(e);
         }
-        
+
         return new LdapConfigIO(new BasicAttributes(true), folderDn, config);
     }
-    
-    @Override
-    public ConfigWriter getCollectionElementWriter(String keyName, String keyValue) throws ConfigurationException {
 
-        return new LdapConfigIO(new BasicAttributes(true), getCollectionElementDn(keyName, keyValue), config);
+    @Override
+    public ConfigWriter getCollectionElementWriter(String keyName, String keyValue, Field field) throws ConfigurationException {
+
+        ParameterizedType pt = (ParameterizedType) field.getGenericType();
+
+        Type[] ptypes = pt.getActualTypeArguments();
+
+        // there must be only 2 parameterized types
+        if (ptypes.length != 2)
+            throw new MalformedParameterizedTypeException();
+
+        // figure out the class of declared generic parameter 
+        Class clazz = (Class) ptypes[1];
+
+        Attributes attrs = new BasicAttributes(true);
+        ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
+        ConfigClass classAnno = (ConfigClass) clazz.getAnnotation(ConfigClass.class);
+
+        if (classAnno != null) {
+            attrs.put("objectClass", classAnno.objectClass());
+        }
+
+        return new LdapConfigIO(attrs, getCollectionElementDn(keyName, keyValue), config);
     }
 
     @Override
     public void flushDiffs() throws ConfigurationException {
-        
+
         // if flush enabled, merge
         if (config != null)
-        try {
-            config.modifyAttributes(dn, mods);
-        } catch (NamingException e) {
-           throw new ConfigurationException(e);
-        }
+            try {
+                config.modifyAttributes(dn, mods);
+            } catch (NamingException e) {
+                throw new ConfigurationException(e);
+            }
     }
-    
-    
+
     @Override
     public void removeCollectionElement(String keyName, String keyValue) throws ConfigurationException {
         try {
@@ -287,17 +303,17 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
             throw new ConfigurationException();
         }
     };
-    
+
     @Override
     public ConfigWriter getCollectionElementDiffWriter(String keyName, String keyValue) {
         return new LdapConfigIO(new ArrayList<ModificationItem>(), getCollectionElementDn(keyName, keyValue), config);
     }
-    
-    @Override    
+
+    @Override
     public ConfigWriter getChildDiffWriter(String propName) {
         return new LdapConfigIO(new ArrayList<ModificationItem>(), getFolderDn(propName), config);
     }
-    
+
     @Override
     public void storeDiff(String propName, Object prev, Object curr) {
 
@@ -306,7 +322,5 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
         else
             LdapUtils.storeDiff(mods, propName, prev, curr);
     }
-
-    
 
 }
