@@ -25,14 +25,11 @@ import org.dcm4che3.net.TransferCapability;
 /**
  * Map<br>
  * 
- * Only String keys are supported so far!
+ * Key type must have String as serialized representation and must not use field when serializing/deserializing!
  * 
- * Ldap only will support ConfigClass'ed classes as values
- * 
- * Serialized representation is Map&lt;String, Object&gt;, Object can be ConfigNode
  */
 
-public class MapAdapter<V> implements ConfigTypeAdapter<Map<String, V>, ConfigNode> {
+public class MapAdapter<K,V> implements ConfigTypeAdapter<Map<K, V>, ConfigNode> {
 
     @Override
     public boolean isWritingChildren() {
@@ -54,6 +51,21 @@ public class MapAdapter<V> implements ConfigTypeAdapter<Map<String, V>, ConfigNo
 
     }
     
+    private ConfigTypeAdapter<V, ?> getKeyAdapter(Field field, ReflectiveConfig config) {
+        ParameterizedType pt = (ParameterizedType) field.getGenericType();
+
+        Type[] ptypes = pt.getActualTypeArguments();
+
+        // there must be only 2 parameterized types
+        if (ptypes.length != 2)
+            throw new MalformedParameterizedTypeException();
+
+        // figure out the classes of declared generic parameters and
+        // get key  adapter
+        return config.lookupTypeAdapter((Class<V>) ptypes[0]);
+
+    }
+    
 
     @SuppressWarnings("unchecked")
     @Override
@@ -66,7 +78,6 @@ public class MapAdapter<V> implements ConfigTypeAdapter<Map<String, V>, ConfigNo
         ConfigReader collectionReader = reader.getChildReader(getCollectionName(fieldAnno));
         Map<String, ConfigReader> map = collectionReader.readCollection(fieldAnno.mapKey());
 
-        // getValueAdapter
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
 
         // for each element, read it using the value adapter
@@ -78,30 +89,31 @@ public class MapAdapter<V> implements ConfigTypeAdapter<Map<String, V>, ConfigNo
 
     @SuppressWarnings("unchecked")
     @Override
-    public Map<String, V> deserialize(ConfigNode serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
+    public Map<K, V> deserialize(ConfigNode serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
 
-        // getValueAdapter
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
+        ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) getKeyAdapter(field, config);
 
         // deserialize entries
-        Map<String, V> map = new HashMap<String, V>();
+        Map<K, V> map = new HashMap<K, V>();
         for (Entry<String, Object> e : serialized.attributes.entrySet()) {
-            map.put((String) e.getKey(), valueAdapter.deserialize(e.getValue(), config, field));
+            map.put(keyAdapter.deserialize(e.getKey(), config, null), valueAdapter.deserialize(e.getValue(), config, field));
         }
 
         return map;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public ConfigNode serialize(Map<String, V> obj, ReflectiveConfig config, Field field) throws ConfigurationException {
+    public ConfigNode serialize(Map<K, V> obj, ReflectiveConfig config, Field field) throws ConfigurationException {
 
         ConfigNode cnode = new ConfigNode();
 
-        // getValueAdapter
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
+        ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) getKeyAdapter(field, config);
 
-        for (Entry<String, V> e : obj.entrySet()) {
-            cnode.attributes.put((String) e.getKey(), valueAdapter.serialize(e.getValue(), config, field));
+        for (Entry<K, V> e : obj.entrySet()) {
+            cnode.attributes.put(keyAdapter.serialize(e.getKey(), config, null), valueAdapter.serialize(e.getValue(), config, field));
         }
 
         return cnode;
@@ -111,6 +123,7 @@ public class MapAdapter<V> implements ConfigTypeAdapter<Map<String, V>, ConfigNo
         return (fieldAnno.alternativeCollectionName().equals("N/A") ? fieldAnno.name() : fieldAnno.alternativeCollectionName());
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void write(ConfigNode serialized, ReflectiveConfig config, ConfigWriter writer, Field field) throws ConfigurationException {
         ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
@@ -127,33 +140,37 @@ public class MapAdapter<V> implements ConfigTypeAdapter<Map<String, V>, ConfigNo
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public void merge(Map<String, V> prev, Map<String, V> curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException {
+    public void merge(Map<K, V> prev, Map<K, V> curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException {
         ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
 
-        // getValueAdapter
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
+        ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) getKeyAdapter(field, config);
         
         ConfigWriter collectionWriter = diffwriter.getChildDiffWriter(getCollectionName(fieldAnno));
         
         // remove nodes that were deleted since prev
-        for (Entry<String,V> e : prev.entrySet())
+        for (Entry<K,V> e : prev.entrySet())
             if (curr.get(e.getKey()) == null) 
-                collectionWriter.removeCollectionElement(fieldAnno.mapKey(), e.getKey());
+                collectionWriter.removeCollectionElement(fieldAnno.mapKey(), keyAdapter.serialize(e.getKey(), config, null));
         
         // add new nodes and merge existing
-        for (Entry<String,V> e : curr.entrySet()) {
+        for (Entry<K,V> e : curr.entrySet()) {
+            
+            // serialize key
+            String serializedKey = keyAdapter.serialize(e.getKey(), config, null);
             
             // if new node
             if (prev.get(e.getKey()) == null) {
-                ConfigWriter elementWriter = collectionWriter.getCollectionElementWriter(fieldAnno.mapKey(), e.getKey(), field);
+                ConfigWriter elementWriter = collectionWriter.getCollectionElementWriter(fieldAnno.mapKey(), serializedKey, field);
                 // serialize
                 Object serialized = valueAdapter.serialize(e.getValue(), config, field);
                 valueAdapter.write(serialized, config, elementWriter, field);
             } 
             // existing node
             else {
-                ConfigWriter elementWriter = collectionWriter.getCollectionElementDiffWriter(fieldAnno.mapKey(), e.getKey());
+                ConfigWriter elementWriter = collectionWriter.getCollectionElementDiffWriter(fieldAnno.mapKey(), serializedKey);
                 valueAdapter.merge(prev.get(e.getKey()), e.getValue(), config, elementWriter, field);
             }
         }
