@@ -120,7 +120,7 @@ public class MapAdapter<K,V> implements ConfigTypeAdapter<Map<K, V>, ConfigNode>
     }
 
     private String getCollectionName(ConfigField fieldAnno) {
-        return (fieldAnno.alternativeCollectionName().equals("N/A") ? fieldAnno.name() : fieldAnno.alternativeCollectionName());
+        return (fieldAnno.mapName().equals("N/A") ? fieldAnno.name() : fieldAnno.mapName());
     }
 
     @SuppressWarnings("unchecked")

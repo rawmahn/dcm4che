@@ -278,8 +278,8 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
 
         if (classAnno != null) {
             attrs.put("objectClass", classAnno.objectClass());
-        } else if (!fieldAnno.collectionElementObjectClass().equals("")) {
-            attrs.put("objectClass", fieldAnno.collectionElementObjectClass());
+        } else if (!fieldAnno.mapElementObjectClass().equals("")) {
+            attrs.put("objectClass", fieldAnno.mapElementObjectClass());
         } else throw new ConfigurationException("objectClass for collection element cannot be resolved, key ("+keyName+" - "+keyValue+")");
 
         return new LdapConfigIO(attrs, getCollectionElementDn(keyName, keyValue), config);

@@ -80,14 +80,14 @@ public @interface ConfigField {
      * What to use for LDAP collection elements as object class if the value class is not a composite ConfigClass'ed type
      * @return
      */
-    String collectionElementObjectClass() default "";
-    
+    String mapElementObjectClass() default "";
+
     /**
-     * Maps support primitive value types as well. As an attribute name in child
+     * Maps support non-ConfigClass'ed value types as well. As an attribute name in child
      * nodes, name() will be used. If you need a different name for the
      * collection node itself in this case, use this parameter.
      */
-    String alternativeCollectionName() default "N/A";
+    String mapName() default "N/A";
 
     /**
      * For Maps. Which delimeter is used to separate key from value.
