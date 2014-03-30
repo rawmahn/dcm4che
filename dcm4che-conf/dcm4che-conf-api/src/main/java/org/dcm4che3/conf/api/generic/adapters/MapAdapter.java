@@ -137,6 +137,7 @@ public class MapAdapter<K,V> implements ConfigTypeAdapter<Map<K, V>, ConfigNode>
 
             ConfigWriter elementWriter = collectionWriter.getCollectionElementWriter(fieldAnno.mapKey(), e.getKey(), field);
             valueAdapter.write(e.getValue(), config, elementWriter, field);
+            elementWriter.flushWriter();
         }
     }
 
@@ -148,7 +149,7 @@ public class MapAdapter<K,V> implements ConfigTypeAdapter<Map<K, V>, ConfigNode>
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) getValueAdapter(field, config);
         ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) getKeyAdapter(field, config);
         
-        ConfigWriter collectionWriter = diffwriter.getChildDiffWriter(getCollectionName(fieldAnno));
+        ConfigWriter collectionWriter = diffwriter.getChildWriter(getCollectionName(fieldAnno));
         
         // remove nodes that were deleted since prev
         for (Entry<K,V> e : prev.entrySet())
@@ -167,11 +168,13 @@ public class MapAdapter<K,V> implements ConfigTypeAdapter<Map<K, V>, ConfigNode>
                 // serialize
                 Object serialized = valueAdapter.serialize(e.getValue(), config, field);
                 valueAdapter.write(serialized, config, elementWriter, field);
+                elementWriter.flushWriter();
             } 
             // existing node
             else {
                 ConfigWriter elementWriter = collectionWriter.getCollectionElementDiffWriter(fieldAnno.mapKey(), serializedKey);
                 valueAdapter.merge(prev.get(e.getKey()), e.getValue(), config, elementWriter, field);
+                elementWriter.flushDiffs();;
             }
         }
     }

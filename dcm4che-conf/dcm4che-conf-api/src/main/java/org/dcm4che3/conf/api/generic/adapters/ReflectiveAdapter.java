@@ -229,7 +229,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
         // if this object is a property, get a child
         if (field != null && field.getType().equals(clazz)) {
             ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
-            diffwriter = diffwriter.getChildDiffWriter(fieldAnno.name());
+            diffwriter = diffwriter.getChildWriter(fieldAnno.name());
         }
 
         // look through all fields of the config class, not including
@@ -252,7 +252,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, ConfigNode> {
                 customRep.merge(prevProp, currProp, config, diffwriter, classField);
 
             } catch (Exception e) {
-                throw new ConfigurationException("Cannot store diff for field " + fieldAnno.name());
+                throw new ConfigurationException("Cannot store diff for field " + fieldAnno.name(),e);
             }
 
         }

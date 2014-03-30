@@ -133,7 +133,7 @@ public class PrefsConfigWriter implements ConfigWriter {
     }
 
     @Override
-    public ConfigWriter getChildDiffWriter(String propName) {
+    public ConfigWriter getChildWriter(String propName) {
         // TODO Auto-generated method stub
         return null;
     }

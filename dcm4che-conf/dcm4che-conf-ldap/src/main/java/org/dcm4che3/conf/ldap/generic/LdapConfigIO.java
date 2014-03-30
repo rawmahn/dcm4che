@@ -78,7 +78,9 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
 
     private Attributes attrs;
     private List<ModificationItem> mods;
-
+    
+    private boolean writerFlushed = false;
+    
     public LdapConfigIO(Attributes attrs) {
         this.attrs = attrs;
     }
@@ -93,6 +95,7 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
         this.dn = dn;
         this.config = config;
         this.mods = mods;
+        attrs = new BasicAttributes();
     }
 
     // for writer
@@ -230,14 +233,18 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
     @Override
     public void flushWriter() throws ConfigurationException {
 
+        
         // if flush enabled, do replace attributes
-        if (config != null) {
+        if (config != null && !writerFlushed) {
             try {
                 config.createSubcontext(dn, attrs);
             } catch (NamingException e) {
                 throw new ConfigurationException(e);
             }
         }
+
+        writerFlushed = true;
+
     }
 
     @Override
@@ -295,6 +302,7 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
             } catch (NamingException e) {
                 throw new ConfigurationException(e);
             }
+        
     }
 
     @Override
@@ -312,7 +320,7 @@ public class LdapConfigIO implements ConfigWriter, ConfigReader {
     }
 
     @Override
-    public ConfigWriter getChildDiffWriter(String propName) {
+    public ConfigWriter getChildWriter(String propName) {
         return new LdapConfigIO(new ArrayList<ModificationItem>(), getFolderDn(propName), config);
     }
 

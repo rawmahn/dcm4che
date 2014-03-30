@@ -214,7 +214,7 @@ public class ReflectiveConfig {
 
         ConfigWriter getCollectionElementDiffWriter(String keyName, String keyValue);
 
-        ConfigWriter getChildDiffWriter(String propName);
+        ConfigWriter getChildWriter(String propName);
         
         
     }
