@@ -154,28 +154,6 @@ public class ReflectiveConfig {
 
     }
 
-    /**
-     * Generic serialized representation of a config 'node' that has attributes
-     * and children nodes. Object can be either a serialized representation of a field or a ConfigNode
-     * 
-     * @author Roman K
-     * 
-     */
-    public static class ConfigNode extends HashMap<String,Object>{
-
-        public ConfigNode() {
-            super();
-            //attributes = new HashMap<String, Object>();
-        }
-
-
-        @Override
-        public String toString() {
-            // TODO implement nice toString for 
-            return super.toString();
-        }
-    }
-
     @Deprecated
     public interface DiffWriter extends ConfigWriter {
     }
