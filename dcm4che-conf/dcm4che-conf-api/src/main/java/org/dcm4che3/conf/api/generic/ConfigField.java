@@ -132,4 +132,5 @@ public @interface ConfigField {
     @Deprecated
     String defaultKey() default "*";
 
+    String path() default "/";
 }

@@ -13,7 +13,7 @@ import java.util.Map;
  * Main class that is used to initialize annotated Java objects with settings fetched from a configuration backend.
  * These are mostly low-level access methods.
  */
-public class SetupManagerFactory {
+public class BeanVitalizer {
 
     static <T> T newConfiguredInstance(Class<T> clazz, Map<String, Object> configNode) throws ConfigurationException {
         try {

@@ -1,5 +1,6 @@
 package org.dcm4che.conf.core;
 
+import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
 /**
@@ -8,5 +9,19 @@ import javax.inject.Inject;
 public class TestConfigUser {
 
     @Inject
-    TestConfigurableObject configedObject;
+    TestConfigurableObject configuredObject;
+
+
+
+
+
+    @Produces
+    TestConfigurableObject getAnObject() {
+
+        Configuration conf;
+
+        BeanVitalizer.newConfiguredInstance(TestConfigurableObject.class, conf.getRoot());
+
+        return null;
+    }
 }
