@@ -125,7 +125,7 @@ public final class LdapDicomConfiguration implements DicomConfiguration {
      * Devices that have been created but not fully loaded are added to this threadlocal. See loadDevice.
      */
     private ThreadLocal<Map<String,Device>> currentlyLoadedDevicesLocal = new ThreadLocal<Map<String,Device>>();
-    
+
 
     public LdapDicomConfiguration() throws ConfigurationException {
         this(ResourceManager.getInitialEnvironment());

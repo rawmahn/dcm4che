@@ -9,7 +9,6 @@ import javax.inject.Inject;
 /**
  * Created by player on 30-Sep-14.
  */
-@DynamicallyDecoratable
 public class FullTextSearchService {
 
 

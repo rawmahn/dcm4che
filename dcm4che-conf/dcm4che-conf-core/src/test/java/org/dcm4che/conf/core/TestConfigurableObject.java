@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Created by aprvf on 29/09/2014.
  */
-@ConfigClass(path="DicomConfiguration")
+@ConfigClass
 public class TestConfigurableObject {
 
     @ConfigField(name="myProp1")

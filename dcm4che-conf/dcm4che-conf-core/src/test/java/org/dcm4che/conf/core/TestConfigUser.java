@@ -1,5 +1,7 @@
 package org.dcm4che.conf.core;
 
+import org.dcm4che3.conf.api.ConfigurationException;
+
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
@@ -16,11 +18,13 @@ public class TestConfigUser {
 
 
     @Produces
-    TestConfigurableObject getAnObject() {
+    TestConfigurableObject getAnObject() throws ConfigurationException {
 
-        Configuration conf;
+        BasicConfiguration conf = new BasicConfiguration();
 
-        BeanVitalizer.newConfiguredInstance(TestConfigurableObject.class, conf.getRoot());
+        BeanVitalizer.newConfiguredInstance(TestConfigurableObject.class, conf.getConfigurationRoot());
+
+        conf.search("124");
 
         return null;
     }

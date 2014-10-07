@@ -27,6 +27,13 @@ public class BeanVitalizer {
         }
     }
 
+    /**
+     * Scans for annotations in <i>object</i> and initializes all its properties from the provided configuration node.
+     * @param object
+     * @param configNode
+     * @param <T>
+     * @return
+     */
     static <T> T configureInstance(T object, Map<String, Object> configNode) {
         return null;
     }
