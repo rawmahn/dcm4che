@@ -299,6 +299,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
         // go through all annotated fields
         for (Field classField : clazz.getDeclaredFields()) {
 
+
             // if field is not annotated, skip it
             ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
             if (fieldAnno == null)

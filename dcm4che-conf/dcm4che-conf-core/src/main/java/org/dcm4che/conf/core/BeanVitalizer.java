@@ -15,6 +15,8 @@ import java.util.Map;
  */
 public class BeanVitalizer {
 
+
+
     static <T> T newConfiguredInstance(Class<T> clazz, Map<String, Object> configNode) throws ConfigurationException {
         try {
 
