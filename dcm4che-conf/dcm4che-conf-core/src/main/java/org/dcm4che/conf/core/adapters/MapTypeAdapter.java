@@ -1,25 +1,19 @@
-package org.dcm4che3.conf.api.generic.adapters;
+package org.dcm4che.conf.core.adapters;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.MalformedParameterizedTypeException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import javax.naming.NamingException;
-import javax.naming.directory.BasicAttributes;
-import javax.naming.directory.ModificationItem;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.generic.ConfigField;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigTypeAdapter;
+import org.dcm4che3.conf.api.generic.ConfigTypeAdapter;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
-import org.dcm4che3.net.TransferCapability;
 
 /**
  * Map<br>

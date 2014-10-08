@@ -1,12 +1,8 @@
-package org.dcm4che3.conf.api.generic.adapters;
+package org.dcm4che.conf.core.adapters;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-
-import javax.naming.NamingException;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.api.ConfigurationException;
@@ -14,7 +10,7 @@ import org.dcm4che3.conf.api.ConfigurationNotFoundException;
 import org.dcm4che3.conf.api.generic.ConfigField;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigTypeAdapter;
+import org.dcm4che3.conf.api.generic.ConfigTypeAdapter;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
 
 /**

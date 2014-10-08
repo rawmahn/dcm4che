@@ -39,15 +39,11 @@
 package org.dcm4che3.conf.api.generic;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.Map;
-
-import javax.naming.NamingException;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.adapters.DefaultConfigTypeAdapters;
 import org.dcm4che3.conf.api.generic.adapters.ReflectiveAdapter;
 import org.dcm4che3.data.Code;
@@ -66,97 +62,7 @@ public class ReflectiveConfig {
 
     public static final Logger log = LoggerFactory.getLogger(ReflectiveConfig.class);
 
-    /**
-     * Type adapter that handles configuration read/write/serialize/deserialize
-     * for a specific config java class.
-     * 
-     * @author Roman K
-     * 
-     * @param <T>
-     *            Java class
-     * @param <ST>
-     *            Serialized representation - this intermediate format is used by UIs and storeDiffs.
-     */
-    public interface ConfigTypeAdapter<T, ST> {
-
-        /**
-         * Writes the serialized representation to the configuration backend.
-         * 
-         * @param obj
-         * @param config
-         *            ReflectiveConfig that can be used e.g. to retrieve
-         *            DicomConfiguration <b>Can be <i>null</i>!</b>
-         * @param writer
-         *            ConfigWriter to use
-         * @param field
-         *            Config field. Can be used to read additional annotations,
-         *            check type, etc.
-         * @return
-         */
-        void write(ST serialized, ReflectiveConfig config, ConfigWriter writer, Field field) throws ConfigurationException;
-
-        /**
-         * Constructs a serialized representation of an object
-         * 
-         * @param obj
-         * @param config
-         *            ReflectiveConfig that can be used e.g. to retrieve
-         *            DicomConfiguration <b>Can be <i>null</i>!</b>
-         * @param field
-         *            Config field. Can be used to read additional annotations,
-         *            check type, etc.
-         * @return
-         * @throws ConfigurationException
-         */
-        ST serialize(T obj, ReflectiveConfig config, Field field) throws ConfigurationException;
-
-        /**
-         * Reads an attribute from configuration into its serialized form
-         * 
-         * @param str
-         * @param config
-         *            ReflectiveConfig that can be used e.g. to retrieve
-         *            DicomConfiguration <b>Can be <i>null</i>!</b>
-         * @param reader
-         *            ConfigReader to use
-         * @param field
-         *            Config field. Can be used to read additional annotations,
-         *            check type, etc.
-         * @return
-         * @throws ConfigurationException
-         * @throws NamingException
-         */
-        ST read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException;
-
-        /**
-         * Constructs an object from its serialized form
-         * 
-         * @param serialized
-         * @param config
-         *            ReflectiveConfig that can be used e.g. to retrieve
-         *            DicomConfiguration <b>Can be <i>null</i>!</b>
-         * @param field
-         *            Config field. Can be used to read additional annotations,
-         *            check type, etc.
-         * @return
-         * @throws ConfigurationException
-         */
-        T deserialize(ST serialized, ReflectiveConfig config, Field field) throws ConfigurationException;
-
-        void merge(T prev, T curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException;
-
-        /**
-         * Should indicate whether the specified field will generate a child when writing configuration
-         * @param field
-         * @return
-         */
-        boolean isWritingChildren(Field field);
-
-        Map<String, Object> getMetadata(ReflectiveConfig config, Field field) throws ConfigurationException;
-
-    }
-
-    @Deprecated 
+    @Deprecated
     public interface DiffWriter extends ConfigWriter {
     }
 
@@ -365,33 +271,7 @@ public class ReflectiveConfig {
         adapter.merge(prevConfObj, confObj, this, ldapDiffWriter, null);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> ConfigTypeAdapter<T, ?> lookupTypeAdapter(Class<T> clazz) {
 
-        ConfigTypeAdapter<T, ?> adapter = null;
-
-        Map<Class, ConfigTypeAdapter> def = DefaultConfigTypeAdapters.get();
-
-        // if it is a config class, use reflective adapter
-        if (clazz.getAnnotation(ConfigClass.class) != null) {
-            adapter = new ReflectiveAdapter(clazz);
-        } else if (clazz.isArray()) {
-            // if array
-            adapter = (ConfigTypeAdapter<T, ?>) new DefaultConfigTypeAdapters.ArrayTypeAdapter();
-        } else {
-            if (clazz.isEnum()) {
-                adapter = def.get(Enum.class);
-            } else {
-                adapter = def.get(clazz);
-            }
-        }
-        // if still not found, try custom
-        if (adapter == null && customRepresentations != null)
-            adapter = customRepresentations.get(clazz);
-
-        return adapter;
-
-    }
 
     public DicomConfiguration getDicomConfiguration() {
         return dicomConfiguration;

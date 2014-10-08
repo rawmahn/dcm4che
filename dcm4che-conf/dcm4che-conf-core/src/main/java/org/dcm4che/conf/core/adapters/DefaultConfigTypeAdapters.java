@@ -35,7 +35,7 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-package org.dcm4che3.conf.api.generic.adapters;
+package org.dcm4che.conf.core.adapters;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -49,7 +49,7 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.generic.ConfigField;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigTypeAdapter;
+import org.dcm4che3.conf.api.generic.ConfigTypeAdapter;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
 import org.dcm4che3.data.Code;
 import org.dcm4che3.net.Device;
@@ -71,28 +71,8 @@ public class DefaultConfigTypeAdapters {
         Map<String, Object> metadata =  new HashMap<String, Object>();
 
         @Override
-        public boolean isWritingChildren(Field field) {
-            return false;
-        }
-
-        @Override
         public T deserialize(T serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
             return serialized;
-        }
-
-        @Override
-        public T serialize(T obj, ReflectiveConfig config, Field field) throws ConfigurationException {
-            return obj;
-        }
-
-        @Override
-        public void write(T serialized, ReflectiveConfig config, ConfigWriter writer, Field field) throws ConfigurationException {
-            ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
-
-            if (!fieldAnno.def().equals("N/A"))
-                writer.storeNotDef(fieldAnno.name(), serialized, fieldAnno.def());
-            else
-                writer.storeNotNull(fieldAnno.name(), serialized);
         }
 
         @Override
