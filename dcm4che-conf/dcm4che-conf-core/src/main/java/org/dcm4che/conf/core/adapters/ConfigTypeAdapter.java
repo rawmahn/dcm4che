@@ -1,6 +1,7 @@
-package org.dcm4che3.conf.api.generic;
+package org.dcm4che.conf.core.adapters;
 
 import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -18,11 +19,11 @@ public interface ConfigTypeAdapter<T, ST> {
     T fromConfigNode(ST configNode, AnnotatedProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
 
     /**
-     * Optional, may just throw exception. Kept for backward compatibility.
+     * Might
      * @param object
      * @return
      */
-    ST toConfigNode(T object);
+    ST toConfigNode(T object) throws ConfigurationException;
 
     Map<String, Object> getMetadata(ReflectiveConfig config, Field field) throws ConfigurationException;
 

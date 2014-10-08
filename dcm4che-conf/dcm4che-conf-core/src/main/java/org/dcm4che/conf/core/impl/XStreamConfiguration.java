@@ -1,7 +1,8 @@
-package org.dcm4che.conf.core.util;
+package org.dcm4che.conf.core.impl;
 
 import com.thoughtworks.xstream.XStream;
 import org.dcm4che.conf.core.Configuration;
+import org.dcm4che.conf.core.util.ConfigPathUtil;
 import org.dcm4che3.conf.api.ConfigurationException;
 
 import java.io.*;

@@ -9,9 +9,8 @@ import org.dcm4che.conf.core.adapters.ReflectiveAdapter;
 import org.dcm4che.conf.core.util.ConfigIterators;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.generic.ConfigClass;
-import org.dcm4che3.conf.api.generic.ConfigTypeAdapter;
+import org.dcm4che.conf.core.adapters.ConfigTypeAdapter;
 
-import java.lang.reflect.Type;
 import java.util.Map;
 
 /**
