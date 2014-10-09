@@ -1,6 +1,7 @@
 package org.dcm4che.conf.core.util;
 
 
+import org.dcm4che.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.api.generic.ConfigurableProperty;
 
 import java.lang.annotation.Annotation;
@@ -11,20 +12,14 @@ import java.util.*;
 
 public class ConfigIterators {
 
-    public static class AnnotatedProperty {
-        Map<Type, Annotation> annotations;
-        Type type;
-        String name;
-    }
-
     public static class AnnotatedSetter {
         Map<Type, Annotation> annotations;
-        List<AnnotatedProperty> parameters;
+        List<AnnotatedConfigurableProperty> parameters;
         String name;
     }
 
-    public static List<AnnotatedProperty> getAllConfigurableFieldsAndSetterParameters(Class clazz) {
-        List<AnnotatedProperty> fields = getAllConfigurableFields(clazz);
+    public static List<AnnotatedConfigurableProperty> getAllConfigurableFieldsAndSetterParameters(Class clazz) {
+        List<AnnotatedConfigurableProperty> fields = getAllConfigurableFields(clazz);
         for (AnnotatedSetter s : getAllConfigurableSetters(clazz)) fields.addAll(s.parameters);
         return fields;
     }
@@ -35,7 +30,7 @@ public class ConfigIterators {
         // scan all methods including superclasses, assume each is a config-setter
         for (Method m : clazz.getMethods()) {
             AnnotatedSetter annotatedSetter = new AnnotatedSetter();
-            annotatedSetter.parameters = new ArrayList<AnnotatedProperty>();
+            annotatedSetter.parameters = new ArrayList<AnnotatedConfigurableProperty>();
 
             Annotation[][] parameterAnnotations = m.getParameterAnnotations();
             Type[] genericParameterTypes = m.getGenericParameterTypes();
@@ -43,14 +38,14 @@ public class ConfigIterators {
             boolean thisMethodIsNotASetter = false;
             for (int i = 0; i < parameterAnnotations.length; i++) {
 
-                AnnotatedProperty annotatedProperty = new AnnotatedProperty();
-                annotatedProperty.annotations = annotationsArrayToMap(parameterAnnotations[i]);
-                annotatedProperty.type = genericParameterTypes[i];
+                AnnotatedConfigurableProperty property = new AnnotatedConfigurableProperty();
+                property.setAnnotations(annotationsArrayToMap(parameterAnnotations[i]));
+                property.setType(genericParameterTypes[i]);
 
-                annotatedSetter.parameters.add(annotatedProperty);
+                annotatedSetter.parameters.add(property);
 
                 // make sure all the parameters of this setter-wannabe are annotated
-                if (!annotatedProperty.annotations.containsKey(ConfigurableProperty.class)) {
+                if (!property.getAnnotations().containsKey(ConfigurableProperty.class)) {
                     thisMethodIsNotASetter = true;
                     break;
                 }
@@ -66,17 +61,17 @@ public class ConfigIterators {
         return list;
     }
 
-    public static List<AnnotatedProperty> getAllConfigurableFields(Class clazz) {
-        List<AnnotatedProperty> l = new ArrayList<AnnotatedProperty>();
+    public static List<AnnotatedConfigurableProperty> getAllConfigurableFields(Class clazz) {
+        List<AnnotatedConfigurableProperty> l = new ArrayList<AnnotatedConfigurableProperty>();
 
         // scan all fields from this class and superclasses
         for (Field field : getFieldsUpTo(clazz, null)) {
             if (field.getAnnotation(ConfigurableProperty.class) != null) {
 
-                AnnotatedProperty ap = new AnnotatedProperty();
-                ap.annotations = annotationsArrayToMap(field.getAnnotations());
-                ap.type = field.getGenericType();
-                ap.name = field.getName();
+                AnnotatedConfigurableProperty ap = new AnnotatedConfigurableProperty();
+                ap.setAnnotations(annotationsArrayToMap(field.getAnnotations()));
+                ap.setType(field.getGenericType());
+                ap.setName(field.getName());
 
                 l.add(ap);
             }

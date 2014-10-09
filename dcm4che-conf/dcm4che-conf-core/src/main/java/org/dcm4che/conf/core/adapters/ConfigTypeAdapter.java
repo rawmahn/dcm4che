@@ -1,6 +1,9 @@
 package org.dcm4che.conf.core.adapters;
 
+import org.dcm4che.conf.core.AnnotatedConfigurableProperty;
+import org.dcm4che.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.api.ConfigurationUnserializableException;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 
 import java.lang.reflect.Field;
@@ -10,21 +13,27 @@ public interface ConfigTypeAdapter<T, ST> {
 
 
     /**
-     * should include validation
+     * Converts serialized configuration representation to the type provided by this adaptor.
      * @param configNode
-     * @param property
+     * @param property the property which is going to be assigned the returned value (Can be null)
+     * @param vitalizer
      * @return
      * @throws ConfigurationException
      */
-    T fromConfigNode(ST configNode, AnnotatedProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
+    T fromConfigNode(ST configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
 
     /**
-     * Might
+     * <p>Creates a serialized configuration representation for a provided object.
+     * Throws ConfigurationUnserializableException when the object allows configuration
+     * with setters in which case it is impossible to trace the parameters used in the setters back.</p>
+     *
+     * <p>This method should not be used generally, and all the modifications to configuration should
+     * be made through the Configuration access API that performs validation, defaults handling, etc. </p>
      * @param object
      * @return
+     * @throws ConfigurationUnserializableException
      */
-    ST toConfigNode(T object) throws ConfigurationException;
+    ST toConfigNode(T object) throws ConfigurationUnserializableException;
 
-    Map<String, Object> getMetadata(ReflectiveConfig config, Field field) throws ConfigurationException;
-
+    Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
 }

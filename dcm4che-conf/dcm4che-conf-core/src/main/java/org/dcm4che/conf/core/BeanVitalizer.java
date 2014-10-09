@@ -6,11 +6,11 @@ package org.dcm4che.conf.core;
 
 import org.dcm4che.conf.core.adapters.DefaultConfigTypeAdapters;
 import org.dcm4che.conf.core.adapters.ReflectiveAdapter;
-import org.dcm4che.conf.core.util.ConfigIterators;
 import org.dcm4che3.conf.api.ConfigurationException;
-import org.dcm4che3.conf.api.generic.ConfigClass;
 import org.dcm4che.conf.core.adapters.ConfigTypeAdapter;
+import org.dcm4che3.conf.api.generic.ConfigurableClass;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -20,6 +20,8 @@ import java.util.Map;
 public class BeanVitalizer {
 
 
+    private Map<Class, Object> contextMap = new HashMap<Class, Object>();
+    private HashMap<Class, ConfigTypeAdapter> customConfigTypeAdapters= new HashMap<Class, ConfigTypeAdapter>();
 
     static <T> T newConfiguredInstance(Class<T> clazz, Map<String, Object> configNode) throws ConfigurationException {
         try {
@@ -43,9 +45,6 @@ public class BeanVitalizer {
     static <T> T configureInstance(T object, Map<String, Object> configNode) {
 
 
-        for (ConfigIterators.AnnotatedProperty annoProp : ConfigIterators.getConfigurableProperties(object.getClass())) {
-            annoProp.
-        }
 
         return null;
     }
@@ -55,25 +54,41 @@ public class BeanVitalizer {
 
         ConfigTypeAdapter<T, ?> adapter = null;
 
-        Map<Class, ConfigTypeAdapter> def = DefaultConfigTypeAdapters.get();
+        // first check for a custom adapter
+        adapter = customConfigTypeAdapters.get(clazz);
+        if (adapter != null) return adapter;
 
         // if it is a config class, use reflective adapter
-        if (clazz.getAnnotation(ConfigClass.class) != null) {
+        if (clazz.getAnnotation(ConfigurableClass.class) != null)
             adapter = new ReflectiveAdapter(clazz);
-        } else if (clazz.isArray()) {
-            // if array
+        else if (clazz.isArray())
             adapter = (ConfigTypeAdapter<T, ?>) new DefaultConfigTypeAdapters.ArrayTypeAdapter();
-        } else {
-            if (clazz.isEnum()) {
-                adapter = def.get(Enum.class);
-            } else {
-                adapter = def.get(clazz);
-            }
-        }
+        else if (clazz.isEnum())
+            adapter = DefaultConfigTypeAdapters.get(Enum.class);
+        else
+            adapter = DefaultConfigTypeAdapters.get(clazz);
 
         return adapter;
-
     }
 
+    /**
+     * Register any context data needed by custom ConfigTypeAdapters
+     * @return
+     */
+    public void registerContext(Object context) {
+        this.contextMap.put(context.getClass(), context);
+    }
 
+    public <T> T getContext(Class<T> clazz) {
+        return (T) contextMap.get(clazz);
+    }
+
+    /**
+     * Registers a custom type adapter for configurable properties for the specified class
+     * @param clazz
+     * @param typeAdapter
+     */
+    public void registerCustomConfigTypeAdapter(Class clazz, ConfigTypeAdapter typeAdapter) {
+        customConfigTypeAdapters.put(clazz, typeAdapter);
+    }
 }

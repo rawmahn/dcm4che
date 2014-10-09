@@ -40,12 +40,14 @@ package org.dcm4che.conf.core.adapters;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.Type;
+import java.util.*;
 
+import org.dcm4che.conf.core.AnnotatedConfigurableProperty;
+import org.dcm4che.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.api.ConfigurationUnserializableException;
+import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.conf.api.generic.ConfigField;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
@@ -65,172 +67,88 @@ public class DefaultConfigTypeAdapters {
      * Common Read/Write methods for primitives that have same serialized and deserialized representation, and same
      * write method
      */
-    public abstract static class PrimitiveAbstractTypeAdapter<T> implements ConfigTypeAdapter<T, T> {
+    public static class PrimitiveTypeAdapter<T> implements ConfigTypeAdapter<T, T> {
 
         Map<String, Object> metadata =  new HashMap<String, Object>();
 
-        @Override
-        public T deserialize(T serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
-            return serialized;
+        /**
+         * Assign the type for metadata
+         * @param type
+         */
+        protected PrimitiveTypeAdapter(String type) {
+            metadata.put("type", type);
+        }
+
+        public PrimitiveTypeAdapter() {
         }
 
         @Override
-        public void merge(T prev, T curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException {
-            ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
+        public T fromConfigNode(T configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+            return configNode;
+        }
 
-            T prevSerialized = serialize(prev, config, field);
-            T currSerialized = serialize(curr, config, field);
-
-            diffwriter.storeDiff(fieldAnno.name(), prevSerialized, currSerialized);
+        @Override
+        public T toConfigNode(T object) throws ConfigurationUnserializableException {
+            return object;
         }
 
         /**
-         * Constant metadata defined in constructors
+         * Constant metadata
          */
         @Override
-        public Map<String, Object> getMetadata(ReflectiveConfig config, Field field) throws ConfigurationException {
+        public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
             return metadata;
         }
-
-
     }
 
     /**
      * Common Read/Write methods for String representation
      */
     public abstract static class CommonAbstractTypeAdapter<T> implements ConfigTypeAdapter<T, String> {
-
         Map<String, Object> metadata =  new HashMap<String, Object>();
 
-        @Override
-        public boolean isWritingChildren(Field field) {
-            return false;
+        protected CommonAbstractTypeAdapter(String type) {
+            metadata.put("type", type);
         }
 
         @Override
-        public String read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException {
-            ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
-            return reader.asString(fieldAnno.name(), null);
-        }
-
-        @Override
-        public void write(String serialized, ReflectiveConfig config, ConfigWriter writer, Field field) {
-            ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
-            writer.storeNotNull(fieldAnno.name(), serialized);
-        }
-
-        @Override
-        public void merge(T prev, T curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException {
-            ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
-
-            String prevSerialized = serialize(prev, config, field);
-            String currSerialized = serialize(curr, config, field);
-
-            diffwriter.storeDiff(fieldAnno.name(), prevSerialized, currSerialized);
-        }
-
-        @Override
-        public Map<String, Object> getMetadata(ReflectiveConfig config, Field field) throws ConfigurationException {
+        public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
             return metadata;
         }
     }
-
-    /**
-     * String
-     */
-    public static class StringTypeAdapter extends PrimitiveAbstractTypeAdapter<String> {
-
-        public StringTypeAdapter() {
-            metadata.put("type", "String");
-        }
-
-        @Override
-        public String read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException {
-            ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
-            return reader.asString(fieldAnno.name(), (fieldAnno.def().equals("N/A") ? null : fieldAnno.def()));
-        }
-
-    }
-
-    /**
-     * Integer
-     */
-    public static class IntegerTypeAdapter extends PrimitiveAbstractTypeAdapter<Integer> {
-
-        public IntegerTypeAdapter() {
-            metadata.put("type", "Integer");
-        }
-
-        @Override
-        public Integer read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException {
-            ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
-            return reader.asInt(fieldAnno.name(), (fieldAnno.def().equals("N/A") ? "0" : fieldAnno.def()));
-        }
-    }
-
-    /**
-     * Boolean
-     */
-    public static class BooleanTypeAdapter extends PrimitiveAbstractTypeAdapter<Boolean> {
-
-        public BooleanTypeAdapter() {
-            metadata.put("type", "Boolean");
-        }
-
-        @Override
-        public Boolean read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException {
-            ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
-            return reader.asBoolean(fieldAnno.name(), (fieldAnno.def().equals("N/A") ? "false" : fieldAnno.def()));
-        }
-    }
-
     /**
      * Array
      */
-    public static class ArrayTypeAdapter extends PrimitiveAbstractTypeAdapter<Object> {
+    public static class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
 
         @Override
-        public Object deserialize(Object serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
-            // Support for Sets/Lists - needed for JSON deserialization
-            // Creates an array with proper component type
-            if (Collection.class.isAssignableFrom(serialized.getClass())) {
-                Collection l = ((Collection) serialized);
-                Object arr = Array.newInstance(field.getType().getComponentType(), l.size());
+        public Object fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+
+            // if it is a collection, create an array with proper component type
+            if (Collection.class.isAssignableFrom(configNode.getClass())) {
+                Collection l = ((Collection) configNode);
+                Class<?> componentType = property.getType().getClass().getComponentType();
+                Object arr = Array.newInstance(componentType, l.size());
                 int i=0;
-                for (Object el : l) 
+                for (Object el : l) {
+                    // deserialize element
+                    ConfigTypeAdapter elementTypeAdapter = vitalizer.lookupTypeAdapter(componentType);
+                    el = elementTypeAdapter.fromConfigNode(el,new AnnotatedConfigurableProperty(componentType), vitalizer);
+
+                    // push to array
                     Array.set(arr, i++, el);
+                }
                 return arr;
-            }
-            return super.deserialize(serialized, config, field);
+            } else throw new IllegalArgumentException("Object of unexpected type ("+configNode.getClass().getName()+") supplied for conversion into an array. Must be a collection.");
         }
 
         @Override
-        public boolean isWritingChildren(Field field) {
-            return false;
+        public Object toConfigNode(Object object) throws ConfigurationUnserializableException {
+            return Arrays.asList(object);
         }
 
         @Override
-        public Object read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException {
-            ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
-
-            if (String.class.isAssignableFrom(field.getType().getComponentType()))
-                return reader.asStringArray(fieldAnno.name());
-            else if (int.class.isAssignableFrom(field.getType().getComponentType()))
-                return reader.asIntArray(fieldAnno.name());
-            else if (Code.class.isAssignableFrom(field.getType().getComponentType()))
-                return reader.asCodeArray(fieldAnno.name());
-            else
-                return null;
-        }
-
-        @Override
-        public void write(Object serialized, ReflectiveConfig config, ConfigWriter writer, Field field) throws ConfigurationException {
-            ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
-            writer.storeNotEmpty(fieldAnno.name(), serialized);
-        }
-
-        @Override
-        public Map<String, Object> getMetadata(ReflectiveConfig config, Field field) throws ConfigurationException {
+        public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
             Map<String, Object> metadata =  new HashMap<String, Object>();
             Map<String, Object> elementMetadata =  new HashMap<String, Object>();
@@ -238,9 +156,9 @@ public class DefaultConfigTypeAdapters {
             metadata.put("type", "Array");
             metadata.put("elementMetadata", elementMetadata);
 
-            if (String.class.isAssignableFrom(field.getType().getComponentType()))
+            if (String.class.isAssignableFrom(property.getType().getClass().getComponentType()))
                 elementMetadata.put("type", "String");
-            else if (int.class.isAssignableFrom(field.getType().getComponentType()))
+            else if (int.class.isAssignableFrom(property.getType().getClass().getComponentType()))
                 elementMetadata.put("type", "Integer");
 
             return metadata;
@@ -254,19 +172,18 @@ public class DefaultConfigTypeAdapters {
     public static class AttributeFormatTypeAdapter extends CommonAbstractTypeAdapter<AttributesFormat> {
 
         public AttributeFormatTypeAdapter() {
-            metadata.put("type", "AttributesFormat");
+            super("AttributesFormat");
         }
 
         @Override
-        public AttributesFormat deserialize(String serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
-            return AttributesFormat.valueOf(serialized);
+        public AttributesFormat fromConfigNode(String configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+            return AttributesFormat.valueOf(configNode);
         }
 
         @Override
-        public String serialize(AttributesFormat obj, ReflectiveConfig config, Field field) {
+        public String toConfigNode(AttributesFormat object) throws ConfigurationUnserializableException {
             return (obj == null ? null : obj.toString());
         }
-
     }
 
     /**
@@ -275,7 +192,19 @@ public class DefaultConfigTypeAdapters {
     public static class DeviceTypeAdapter extends CommonAbstractTypeAdapter<Device> {
 
         public DeviceTypeAdapter() {
-            metadata.put("type", "Device");
+            super("Device");
+        }
+
+        @Override
+        public Device fromConfigNode(String configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+            vitalizer.getContext(DicomConfiguration.class).findDevice(configNode);
+
+            return ((config == null || serialized == null) ? null : config.getDicomConfiguration().findDevice(serialized));
+        }
+
+        @Override
+        public String toConfigNode(Device object) throws ConfigurationUnserializableException {
+            return null;
         }
 
         @Override
@@ -323,25 +252,33 @@ public class DefaultConfigTypeAdapters {
     static {
         defaultTypeAdapters = new HashMap<Class, ConfigTypeAdapter>();
 
-        defaultTypeAdapters.put(String.class, new StringTypeAdapter());
+        defaultTypeAdapters.put(String.class, new PrimitiveTypeAdapter("String"));
 
-        defaultTypeAdapters.put(int.class, new IntegerTypeAdapter());
-        defaultTypeAdapters.put(Integer.class, new IntegerTypeAdapter());
+        PrimitiveTypeAdapter integerAdapter = new PrimitiveTypeAdapter("Integer");
+        defaultTypeAdapters.put(int.class, integerAdapter);
+        defaultTypeAdapters.put(Integer.class, integerAdapter);
 
-        defaultTypeAdapters.put(Boolean.class, new BooleanTypeAdapter());
-        defaultTypeAdapters.put(boolean.class, new BooleanTypeAdapter());
+        PrimitiveTypeAdapter booleanAdapter = new PrimitiveTypeAdapter("Boolean");
+        defaultTypeAdapters.put(Boolean.class, booleanAdapter);
+        defaultTypeAdapters.put(boolean.class, booleanAdapter);
 
-        defaultTypeAdapters.put(AttributesFormat.class, new AttributeFormatTypeAdapter());
-        defaultTypeAdapters.put(Device.class, new DeviceTypeAdapter());
+        PrimitiveTypeAdapter doubleAdapter = new PrimitiveTypeAdapter("Double");
+        defaultTypeAdapters.put(double.class, doubleAdapter);
+        defaultTypeAdapters.put(float.class, doubleAdapter);
+        defaultTypeAdapters.put(Double.class, doubleAdapter);
+        defaultTypeAdapters.put(Float.class, doubleAdapter);
 
         defaultTypeAdapters.put(Map.class, new MapTypeAdapter());
         defaultTypeAdapters.put(Set.class, new SetTypeAdapter());
 
         defaultTypeAdapters.put(Enum.class, new EnumTypeAdapter());
+
+        defaultTypeAdapters.put(AttributesFormat.class, new AttributeFormatTypeAdapter());
+        defaultTypeAdapters.put(Device.class, new DeviceTypeAdapter());
     }
 
-    public static Map<Class, ConfigTypeAdapter> get() {
-        return defaultTypeAdapters;
+    public static ConfigTypeAdapter get(Class clazz) {
+        return defaultTypeAdapters.get(clazz);
     }
 
 }
