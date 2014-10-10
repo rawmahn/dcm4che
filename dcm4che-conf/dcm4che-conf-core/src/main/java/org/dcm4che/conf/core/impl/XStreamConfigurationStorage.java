@@ -1,8 +1,8 @@
 package org.dcm4che.conf.core.impl;
 
 import com.thoughtworks.xstream.XStream;
-import org.dcm4che.conf.core.Configuration;
-import org.dcm4che.conf.core.util.ConfigPathUtil;
+import org.dcm4che.conf.core.ConfigurationStorage;
+import org.dcm4che.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.conf.api.ConfigurationException;
 
 import java.io.*;
@@ -12,12 +12,12 @@ import java.util.Map;
 /**
  * Created by player on 07-Oct-14.
  */
-public class XStreamConfiguration implements Configuration {
+public class XStreamConfigurationStorage implements ConfigurationStorage {
 
     XStream xstream;
     String fileName;
 
-    public XStreamConfiguration(String fileName) {
+    public XStreamConfigurationStorage(String fileName) {
         this.xstream = new XStream();
         this.fileName = fileName;
     }
@@ -35,17 +35,17 @@ public class XStreamConfiguration implements Configuration {
 
     @Override
     public Object getConfigurationNode(String path) throws ConfigurationException {
-        return ConfigPathUtil.getNode(getConfigurationRoot(), path);
+        return ConfigNodeUtil.getNode(getConfigurationRoot(), path);
     }
 
     @Override
     public void persistNode(String path, Object configNode, Class configurableClass) throws ConfigurationException {
         try {
             Map<String, Object> configurationRoot = getConfigurationRoot();
-            Map<String, Object> node = (Map<String, Object>) ConfigPathUtil.getNode(configurationRoot, path);
+            Map<String, Object> node = (Map<String, Object>) ConfigNodeUtil.getNode(configurationRoot, path);
 
             if (!path.equals("/"))
-                ConfigPathUtil.replaceNode(configurationRoot, path, configNode); else
+                ConfigNodeUtil.replaceNode(configurationRoot, path, configNode); else
                 configurationRoot = (Map<String, Object>) configNode;
 
 
@@ -70,12 +70,12 @@ public class XStreamConfiguration implements Configuration {
     public void removeNode(String path) throws ConfigurationException {
 
         Map<String, Object> configurationRoot = getConfigurationRoot();
-        ConfigPathUtil.removeNode(configurationRoot,path);
+        ConfigNodeUtil.removeNode(configurationRoot, path);
         persistNode("/",configurationRoot, null);
     }
 
     @Override
     public java.util.Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException {
-        return ConfigPathUtil.search(getConfigurationRoot(), liteXPathExpression);
+        return ConfigNodeUtil.search(getConfigurationRoot(), liteXPathExpression);
     }
 }

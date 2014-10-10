@@ -1,196 +1,50 @@
 package org.dcm4che.conf.core.adapters;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.beanutils.PropertyUtils;
+import org.dcm4che.conf.core.AnnotatedConfigurableProperty;
+import org.dcm4che.conf.core.BeanVitalizer;
+import org.dcm4che.conf.core.util.ConfigIterators;
 import org.dcm4che3.conf.api.ConfigurationException;
-import org.dcm4che3.conf.api.ConfigurationNotFoundException;
+import org.dcm4che3.conf.api.ConfigurationUnserializableException;
 import org.dcm4che3.conf.api.generic.ConfigField;
+import org.dcm4che3.conf.api.generic.ConfigurableProperty;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
 
 /**
- * Reflective adapter that handles classes with ConfigClass annotations.<br/>
+ * Reflective adapter that handles classes with ConfigurableClass annotations.<br/>
  * <br/>
- * 
- * <b>field</b> argument is not actually used in the methods, the class must be
- * set in the constructor.
- * 
- * User has to use 2 arg constructor and initialize providedConfObj when the
- * already created conf object should be used instead of instantiating one in
- * deserialize method, as, e.g. in ReflectiveConfig.readConfig
- * 
+ *
+ * User has to use the special constructor and initialize providedConfObj when the
+ * already created conf object should be used instead of instantiating one
  */
 public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Object>> {
 
-    private Class<T> clazz;
-
-    /**
-     * Initialized only when doing first level parsing, e.g. in
-     * ReflectiveConfig.readConfig
-     */
     private T providedConfObj;
 
-    public ReflectiveAdapter(Class<T> clazz) {
-        super();
-        this.clazz = clazz;
+    public ReflectiveAdapter() {
     }
 
-    public ReflectiveAdapter(Class<T> clazz, T providedConfObj) {
-        super();
-        this.clazz = clazz;
+    public ReflectiveAdapter(T providedConfObj) {
         this.providedConfObj = providedConfObj;
     }
 
+
     @Override
-    public boolean isWritingChildren(Field field) {
-        // if this object is a property, create a child
-        return (field != null && field.getType().equals(clazz));
+    public T fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
-    }
+        if (configNode == null) return null;
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    @Override
-    public void write(Map<String,Object> serialized, ReflectiveConfig config, ConfigWriter writer, Field field) throws ConfigurationException {
+        Class<T> clazz = (Class<T>) property.getType();
 
-        if (serialized == null) {
-            return;
-        }
-        
-        // if this object is a property, create a child
-        if (field != null && field.getType().equals(clazz)) {
-            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
-            writer = writer.getChildWriter(fieldAnno.name(), field);
-        }
-
-        for (Field classField : clazz.getDeclaredFields()) {
-
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
-
-            // find typeadapter
-            ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
-            if (customRep != null) {
-
-                // this is done in the next phase after flush
-                if (!customRep.isWritingChildren(classField))
-                    customRep.write(serialized.get(fieldAnno.name()), config, writer, classField);
-            } else {
-                throw new ConfigurationException("Corresponding 'writer' was not found for field" + fieldAnno.name());
-            }
-        }
-
-        // do actual store
-        writer.flushWriter();
-
-        // now when we have a node generated, store children
-        for (Field classField : clazz.getDeclaredFields()) {
-
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
-
-            // find typeadapter
-            ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
-            if (customRep.isWritingChildren(classField))
-                customRep.write(serialized.get(fieldAnno.name()), config, writer, classField);
-
-        }
-
-    }
-
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    @Override
-    public Map<String,Object> serialize(T obj, ReflectiveConfig config, Field field) throws ConfigurationException {
-
-        if (obj == null) return null;
-
-        
-        Map<String,Object> cnode = new HashMap<String,Object>();
-        for (Field classField : clazz.getDeclaredFields()) {
-
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
-
-            // read a configuration value using its getter
-            Object value;
-
-            try {
-                value = PropertyUtils.getSimpleProperty(obj, classField.getName());
-            } catch (Exception e) {
-                throw new ConfigurationException("Error while writing configuration field " + fieldAnno.name(), e);
-            }
-
-            // find typeadapter
-            ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
-            if (customRep != null) {
-                Object serialized = customRep.serialize(value, config, classField);
-                cnode.put(fieldAnno.name(), serialized);
-            } else {
-                throw new ConfigurationException("Corresponding 'writer' was not found for field " + fieldAnno.name());
-            }
-
-        }
-        return cnode;
-
-    }
-
-    @SuppressWarnings("rawtypes")
-    @Override
-    public Map<String,Object> read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException {
-
-        // if this object is a property, get a child
-        if (field != null && field.getType().equals(clazz)) {
-            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
-            reader = reader.getChildReader(fieldAnno.name());
-        }
-
-        Map<String,Object> cnode = new HashMap<String,Object>();
-        for (Field classField : clazz.getDeclaredFields()) {
-
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
-
-            // find typeadapter
-            ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
-            if (customRep != null) {
-                try {
-                    Object value = customRep.read(config, reader, classField);
-                    cnode.put(fieldAnno.name(), value);
-                } catch (ConfigurationNotFoundException e) {
-                    if (fieldAnno.failIfNotPresent()) throw e;
-                }
-            } else
-                throw new ConfigurationException("Corresponding 'reader' was not found for field " + fieldAnno.name());
-        }
-
-        return cnode;
-    }
-
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    @Override
-    public T deserialize(Map<String,Object> serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
-
-        if (serialized == null) return null;
-        
         T confObj;
 
-        // create instance or use provided when it was created earlier,
-        // e.g., in other config extensions
+        // create instance or use provided when it was created for us
         if (providedConfObj == null) {
             try {
                 confObj = (T) clazz.newInstance();
@@ -201,126 +55,88 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
         } else
             confObj = providedConfObj;
 
-        for (Field classField : clazz.getDeclaredFields()) {
+        // iterate and populate annotated fields
+        for (AnnotatedConfigurableProperty fieldProperty : ConfigIterators.getAllConfigurableFields(clazz))
+            try {
+                Object fieldValue = DefaultConfigTypeAdapters.delegateGetChildFromConfigNode(configNode, fieldProperty, vitalizer);
+                PropertyUtils.setSimpleProperty(confObj, fieldProperty.getName(), fieldValue);
+            } catch (Exception e) {
+                throw new ConfigurationException("Error while reading configuration field " + fieldProperty.getName(), e);
+            }
 
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
+        // iterate over setters
+        for (ConfigIterators.AnnotatedSetter setter : ConfigIterators.getAllConfigurableSetters(clazz)) {
+            try {
+                // populate parameters for the setter
+                Object[] args = new Object[setter.getParameters().size()];
+                int i = 0;
+                for (AnnotatedConfigurableProperty paramProperty : setter.getParameters())
+                    args[i++] = DefaultConfigTypeAdapters.delegateGetChildFromConfigNode(configNode, paramProperty, vitalizer);
 
-            // find typeadapter
-            ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
-            if (customRep != null) {
-                try {
-                    Object value = customRep.deserialize(serialized.get(fieldAnno.name()), config, classField);
-
-                    // set using a setter, exception is when failIfNotPresent is false and there were no value
-                    if (value != null || fieldAnno.failIfNotPresent())
-                        PropertyUtils.setSimpleProperty(confObj, classField.getName(), value);
-                } catch (Exception e) {
-                    throw new ConfigurationException("Error while reading configuration field " + fieldAnno.name(), e);
-                }
-
-            } else
-                throw new ConfigurationException("Corresponding 'reader' was not found for field " + fieldAnno.name());
-
+                // invoke setter
+                setter.getMethod().invoke(confObj, args);
+            } catch (Exception e) {
+                throw new ConfigurationException("Error while trying to initialize the object with method "+ setter.getMethod().getName(), e);
+            }
         }
 
         return confObj;
-
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+
     @Override
-    public void merge(T prev, T curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException {
+    public Map<String, Object> toConfigNode(T object, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
 
-        // if this object is a property, get a child
-        if (field != null && field.getType().equals(clazz)) {
-            ConfigField fieldAnno = (ConfigField) field.getAnnotation(ConfigField.class);
-            
-            if (prev == null) {
-                write(serialize(curr, config, field), config, diffwriter, field);
-                return;
-            } else
-            if (curr == null) {
-                diffwriter.getChildWriter(fieldAnno.name(), field).removeCurrentNode();
-                return;
-            }
+        if (object == null) return null;
 
-            diffwriter = diffwriter.getChildWriter(fieldAnno.name(), field);
+        Class<T> clazz = (Class<T>) object.getClass();
 
-        }
+        Map<String,Object> configNode = new HashMap<String,Object>();
 
-        // look through all fields of the config class, not including
-        // superclass fields
-        for (Field classField : clazz.getDeclaredFields()) {
-
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
-
+        // get data from all the configurable fields
+        for (AnnotatedConfigurableProperty fieldProperty : ConfigIterators.getAllConfigurableFields(clazz)) {
             try {
-
-                Object prevProp = PropertyUtils.getSimpleProperty(prev, classField.getName());
-                Object currProp = PropertyUtils.getSimpleProperty(curr, classField.getName());
-
-                // find adapter
-                ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
-                customRep.merge(prevProp, currProp, config, diffwriter, classField);
-
+                Object value = PropertyUtils.getSimpleProperty(object, fieldProperty.getName());
+                DefaultConfigTypeAdapters.delegateChildToConfigNode(value,configNode,fieldProperty, vitalizer);
             } catch (Exception e) {
-                throw new ConfigurationException("Cannot store diff for field " + fieldAnno.name(), e);
+                e.printStackTrace();
             }
-
         }
 
-        // do actual merge
-        diffwriter.flushDiffs();
+        // there must be no setters
+        for (ConfigIterators.AnnotatedSetter setter : ConfigIterators.getAllConfigurableSetters(clazz))
+            throw new ConfigurationUnserializableException("Cannot infer properties which are setter parameters. This object has a setter (" + setter.getMethod().getName() + ")");
 
+        return configNode;
     }
-    
-    @SuppressWarnings("rawtypes")
-    public Map<String,Object> getMetadata(ReflectiveConfig config, Field field) throws ConfigurationException {
+
+
+    @Override
+    public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+
+        Class<T> clazz = (Class<T>) property.getType();
 
         Map<String,Object> classMetaDataWrapper = new HashMap<String,Object>();
         Map<String,Object> classMetaData = new HashMap<String,Object>();
         classMetaDataWrapper.put("attributes", classMetaData);
         classMetaDataWrapper.put("type", clazz.getSimpleName());
-        
-        
-        // go through all annotated fields
-        for (Field classField : clazz.getDeclaredFields()) {
 
+        for (AnnotatedConfigurableProperty configurableChildProperty : ConfigIterators.getAllConfigurableFieldsAndSetterParameters(clazz)) {
 
-            // if field is not annotated, skip it
-            ConfigField fieldAnno = (ConfigField) classField.getAnnotation(ConfigField.class);
-            if (fieldAnno == null)
-                continue;
+            ConfigurableProperty propertyAnnotation = configurableChildProperty.getAnnotation(ConfigurableProperty.class);
 
-            // save metadata
-            Map<String, Object> fieldMetaData = new HashMap<String, Object>();
-            classMetaData.put(fieldAnno.name(), fieldMetaData);
+            Map<String, Object> childPropertyMetadata = new HashMap<String, Object>();
+            classMetaData.put(propertyAnnotation.name(), childPropertyMetadata);
+            childPropertyMetadata.put("label", propertyAnnotation.label());
+            childPropertyMetadata.put("description", propertyAnnotation.description());
+            childPropertyMetadata.put("default", propertyAnnotation.defaultValue());
 
-            fieldMetaData.put("label", fieldAnno.label());
-            fieldMetaData.put("description", fieldAnno.description());
-            fieldMetaData.put("optional", fieldAnno.optional());
-            
-            // find typeadapter
-            ConfigTypeAdapter customRep = config.lookupTypeAdapter(classField.getType());
-
-            if (customRep != null) {
-                Map<String, Object> childMetaData = customRep.getMetadata(config, classField);
-                if (childMetaData != null)
-                    fieldMetaData.putAll(childMetaData);
-            };
-
+            // also merge in the metadata from this child itself
+            ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter((Class) configurableChildProperty.getType());
+            Map<String, Object> childMetaData = adapter.getMetadata(configurableChildProperty, vitalizer);
+            if (childMetaData != null) childPropertyMetadata.putAll(childMetaData);
         }
 
         return classMetaDataWrapper;
-
     }
-
 }

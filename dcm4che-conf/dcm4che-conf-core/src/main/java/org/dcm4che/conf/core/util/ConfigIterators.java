@@ -13,14 +13,42 @@ import java.util.*;
 public class ConfigIterators {
 
     public static class AnnotatedSetter {
-        Map<Type, Annotation> annotations;
-        List<AnnotatedConfigurableProperty> parameters;
-        String name;
+        private Map<Type, Annotation> annotations;
+        private List<AnnotatedConfigurableProperty> parameters;
+        private Method method;
+
+        public Map<Type, Annotation> getAnnotations() {
+            return annotations;
+        }
+
+        public void setAnnotations(Map<Type, Annotation> annotations) {
+            this.annotations = annotations;
+        }
+
+        public <T> T getAnnotation(Class<T> annotationType) {
+            return (T) annotations.get(annotationType);
+        }
+
+        public List<AnnotatedConfigurableProperty> getParameters() {
+            return parameters;
+        }
+
+        public void setParameters(List<AnnotatedConfigurableProperty> parameters) {
+            this.parameters = parameters;
+        }
+
+        public Method getMethod() {
+            return method;
+        }
+
+        public void setMethod(Method method) {
+            this.method = method;
+        }
     }
 
     public static List<AnnotatedConfigurableProperty> getAllConfigurableFieldsAndSetterParameters(Class clazz) {
         List<AnnotatedConfigurableProperty> fields = getAllConfigurableFields(clazz);
-        for (AnnotatedSetter s : getAllConfigurableSetters(clazz)) fields.addAll(s.parameters);
+        for (AnnotatedSetter s : getAllConfigurableSetters(clazz)) fields.addAll(s.getParameters());
         return fields;
     }
 
@@ -30,7 +58,7 @@ public class ConfigIterators {
         // scan all methods including superclasses, assume each is a config-setter
         for (Method m : clazz.getMethods()) {
             AnnotatedSetter annotatedSetter = new AnnotatedSetter();
-            annotatedSetter.parameters = new ArrayList<AnnotatedConfigurableProperty>();
+            annotatedSetter.setParameters(new ArrayList<AnnotatedConfigurableProperty>());
 
             Annotation[][] parameterAnnotations = m.getParameterAnnotations();
             Type[] genericParameterTypes = m.getGenericParameterTypes();
@@ -42,10 +70,10 @@ public class ConfigIterators {
                 property.setAnnotations(annotationsArrayToMap(parameterAnnotations[i]));
                 property.setType(genericParameterTypes[i]);
 
-                annotatedSetter.parameters.add(property);
+                annotatedSetter.getParameters().add(property);
 
                 // make sure all the parameters of this setter-wannabe are annotated
-                if (!property.getAnnotations().containsKey(ConfigurableProperty.class)) {
+                if (property.getAnnotation(ConfigurableProperty.class) == null) {
                     thisMethodIsNotASetter = true;
                     break;
                 }
@@ -55,8 +83,8 @@ public class ConfigIterators {
             if (thisMethodIsNotASetter) continue;
 
             list.add(annotatedSetter);
-            annotatedSetter.annotations = annotationsArrayToMap(m.getAnnotations());
-            annotatedSetter.name = m.getName();
+            annotatedSetter.setAnnotations(annotationsArrayToMap(m.getAnnotations()));
+            annotatedSetter.setMethod(m);
         }
         return list;
     }

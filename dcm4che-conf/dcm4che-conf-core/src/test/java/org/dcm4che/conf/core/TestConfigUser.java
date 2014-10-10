@@ -20,7 +20,7 @@ public class TestConfigUser {
     @Produces
     TestConfigurableObject getAnObject() throws ConfigurationException {
 
-        BasicConfiguration conf = new BasicConfiguration();
+        BasicConfigurationStorage conf = new BasicConfigurationStorage();
 
         BeanVitalizer.newConfiguredInstance(TestConfigurableObject.class, conf.getConfigurationRoot());
 

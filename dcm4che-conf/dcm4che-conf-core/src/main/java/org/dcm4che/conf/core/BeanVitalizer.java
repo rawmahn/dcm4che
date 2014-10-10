@@ -10,6 +10,7 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che.conf.core.adapters.ConfigTypeAdapter;
 import org.dcm4che3.conf.api.generic.ConfigurableClass;
 
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,7 +51,10 @@ public class BeanVitalizer {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> ConfigTypeAdapter<T, ?> lookupTypeAdapter(Class<T> clazz) {
+    public <T> ConfigTypeAdapter<T, ?> lookupTypeAdapter(Type type) throws ConfigurationException {
+
+        // for now we don't expect any other cases
+        Class clazz = (Class) type;
 
         ConfigTypeAdapter<T, ?> adapter = null;
 
@@ -68,6 +72,9 @@ public class BeanVitalizer {
         else
             adapter = DefaultConfigTypeAdapters.get(clazz);
 
+        if (adapter == null)
+            throw new ConfigurationException("TypeAdapter not found for class " + clazz.getName());
+
         return adapter;
     }
 
@@ -75,8 +82,8 @@ public class BeanVitalizer {
      * Register any context data needed by custom ConfigTypeAdapters
      * @return
      */
-    public void registerContext(Object context) {
-        this.contextMap.put(context.getClass(), context);
+    public void registerContext(Class clazz, Object context) {
+        this.contextMap.put(clazz, context);
     }
 
     public <T> T getContext(Class<T> clazz) {

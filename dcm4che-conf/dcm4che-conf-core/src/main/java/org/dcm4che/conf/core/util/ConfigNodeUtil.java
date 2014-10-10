@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class ConfigPathUtil {
+public class ConfigNodeUtil {
 
 
     public static void replaceNode(Object rootConfigNode, String path, Object replacementConfigNode) {

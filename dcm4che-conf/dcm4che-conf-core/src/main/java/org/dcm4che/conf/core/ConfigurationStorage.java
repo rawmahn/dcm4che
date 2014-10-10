@@ -9,7 +9,7 @@ import java.util.Map;
  * Might support multiple backends, etc.
  * Implementation should take care of instantiating the proper ConfigurationBackend instances (i.e. fetch some global system properties and use them to initialize configuration)
  */
-public interface Configuration {
+public interface ConfigurationStorage {
 
     /**
      * Map of primitives and maps.

@@ -1,6 +1,6 @@
 package org.dcm4che.conf.core;
 
-import org.dcm4che.conf.core.impl.XStreamConfiguration;
+import org.dcm4che.conf.core.impl.XStreamConfigurationStorage;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,7 +17,7 @@ public class XStreamTest {
 
     @Test
     public void testSave() throws ConfigurationException {
-        XStreamConfiguration xCfg = new XStreamConfiguration("c:\\agfa\\tst.xml");
+        XStreamConfigurationStorage xCfg = new XStreamConfigurationStorage("c:\\agfa\\tst.xml");
 
         Map<String, Object> p1 = new HashMap<String, Object>();
         p1.put("prop1", 56);
@@ -33,7 +33,7 @@ public class XStreamTest {
 
         xCfg.persistNode("/", p3, null);
 
-        xCfg = new XStreamConfiguration("c:\\agfa\\tst.xml");
+        xCfg = new XStreamConfigurationStorage("c:\\agfa\\tst.xml");
 
         DeepEquals.deepEquals(p3, xCfg.getConfigurationNode("/"));
 

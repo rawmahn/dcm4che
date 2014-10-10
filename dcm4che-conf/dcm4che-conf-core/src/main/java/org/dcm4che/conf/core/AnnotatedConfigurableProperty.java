@@ -12,12 +12,15 @@ public class AnnotatedConfigurableProperty {
     private Type type;
     private String name;
 
+    public AnnotatedConfigurableProperty() {
+    }
+
     public AnnotatedConfigurableProperty(Class<?> componentType) {
         setType(componentType);
     }
 
-    public Map<Type, Annotation> getAnnotations() {
-        return annotations;
+    public <T> T getAnnotation(Class<T> annotationType) {
+        return (T) annotations.get(annotationType);
     }
 
     public void setAnnotations(Map<Type, Annotation> annotations) {

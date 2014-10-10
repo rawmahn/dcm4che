@@ -27,13 +27,14 @@ public interface ConfigTypeAdapter<T, ST> {
      * Throws ConfigurationUnserializableException when the object allows configuration
      * with setters in which case it is impossible to trace the parameters used in the setters back.</p>
      *
-     * <p>This method should not be used generally, and all the modifications to configuration should
+     * <p>This method should not be used generally, and the modifications to configuration should
      * be made through the Configuration access API that performs validation, defaults handling, etc. </p>
      * @param object
+     * @param vitalizer
      * @return
      * @throws ConfigurationUnserializableException
      */
-    ST toConfigNode(T object) throws ConfigurationUnserializableException;
+    ST toConfigNode(T object, BeanVitalizer vitalizer) throws ConfigurationUnserializableException;
 
     Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
 }
