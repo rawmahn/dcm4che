@@ -42,9 +42,9 @@ import org.dcm4che.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.ConfigurationUnserializableException;
 import org.dcm4che3.conf.api.generic.ConfigurableProperty;
+import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.*;
 
 /**
@@ -67,14 +67,19 @@ public class DefaultConfigTypeAdapters {
         Object node = configNode.get(nodeName);
 
         // lookup adapter and run it on the property
-        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter((Class) property.getType());
+        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property.getType());
         return adapter.fromConfigNode(node, property, vitalizer);
     }
 
-    static void delegateChildToConfigNode(Object object, Map<String, Object> parentNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
+    static void delegateChildToConfigNode(Object object, Map<String, Object> parentNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         String nodeName = property.getAnnotation(ConfigurableProperty.class).name();
-        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter((Class) property.getType());
+        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property.getType());
         parentNode.put(nodeName, adapter.toConfigNode(object, vitalizer));
+    }
+
+    static Type getTypeForGenericsParameter(AnnotatedConfigurableProperty property, int genericParameterIndex) throws ConfigurationException {
+        Type[] actualTypeArguments = ((ParameterizedType) property.getType()).getActualTypeArguments();
+        return actualTypeArguments[genericParameterIndex];
     }
 
     /**

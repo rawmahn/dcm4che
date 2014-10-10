@@ -32,9 +32,9 @@ public interface ConfigTypeAdapter<T, ST> {
      * @param object
      * @param vitalizer
      * @return
-     * @throws ConfigurationUnserializableException
+     * @throws ConfigurationException
      */
-    ST toConfigNode(T object, BeanVitalizer vitalizer) throws ConfigurationUnserializableException;
+    ST toConfigNode(T object, BeanVitalizer vitalizer) throws ConfigurationException;
 
     Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
 }

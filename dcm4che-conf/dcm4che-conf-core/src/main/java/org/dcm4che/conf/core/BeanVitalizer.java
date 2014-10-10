@@ -51,12 +51,12 @@ public class BeanVitalizer {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> ConfigTypeAdapter<T, ?> lookupTypeAdapter(Type type) throws ConfigurationException {
+    public ConfigTypeAdapter lookupTypeAdapter(Type type) throws ConfigurationException {
 
         // for now we don't expect any other cases
         Class clazz = (Class) type;
 
-        ConfigTypeAdapter<T, ?> adapter = null;
+        ConfigTypeAdapter adapter = null;
 
         // first check for a custom adapter
         adapter = customConfigTypeAdapters.get(clazz);
@@ -66,7 +66,7 @@ public class BeanVitalizer {
         if (clazz.getAnnotation(ConfigurableClass.class) != null)
             adapter = new ReflectiveAdapter(clazz);
         else if (clazz.isArray())
-            adapter = (ConfigTypeAdapter<T, ?>) new DefaultConfigTypeAdapters.ArrayTypeAdapter();
+            adapter = new DefaultConfigTypeAdapters.ArrayTypeAdapter();
         else if (clazz.isEnum())
             adapter = DefaultConfigTypeAdapters.get(Enum.class);
         else

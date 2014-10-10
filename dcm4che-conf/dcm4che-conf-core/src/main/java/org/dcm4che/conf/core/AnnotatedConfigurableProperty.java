@@ -15,10 +15,11 @@ public class AnnotatedConfigurableProperty {
     public AnnotatedConfigurableProperty() {
     }
 
-    public AnnotatedConfigurableProperty(Class<?> componentType) {
+    public AnnotatedConfigurableProperty(Type componentType) {
         setType(componentType);
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T getAnnotation(Class<T> annotationType) {
         return (T) annotations.get(annotationType);
     }

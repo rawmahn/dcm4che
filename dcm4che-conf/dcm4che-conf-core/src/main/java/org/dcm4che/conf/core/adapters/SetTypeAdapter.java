@@ -12,96 +12,59 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.dcm4che.conf.core.AnnotatedConfigurableProperty;
+import org.dcm4che.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.api.ConfigurationUnserializableException;
 import org.dcm4che3.conf.api.generic.ConfigField;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
 import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
 
 /**
- * For now only supports String[] serialized representation, so no ConfigClass'ed classes as elements
+ * For now only supports primitive serialized representation, so no ConfigClass'ed classes as elements
  * @author Roman K
  *
- * @param <T>
+ * @param <T,ST>
  */
-public class SetTypeAdapter<T> implements ConfigTypeAdapter<Set<T>, List<String>> {
+public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, List<ST>> {
 
     @Override
-    public void write(List<String> serialized, ReflectiveConfig config, ConfigWriter writer, Field field) throws ConfigurationException {
-        ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
-        writer.storeNotEmpty(fieldAnno.name(), serialized.toArray(new String[serialized.size()]));
-    }
-    
-    private ConfigTypeAdapter<T, String> getElementAdapter(Field field, ReflectiveConfig config) {
-        ParameterizedType pt = (ParameterizedType) field.getGenericType();
+    public Set<T> fromConfigNode(List<ST> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
-        Type[] ptypes = pt.getActualTypeArguments();
+        Type setElementType = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
+        ConfigTypeAdapter<T, ST> adapterForGenericsParameter = vitalizer.lookupTypeAdapter(setElementType);
+        AnnotatedConfigurableProperty setElementPseudoProperty = new AnnotatedConfigurableProperty(setElementType);
 
-        // there must be only 1 parameterized type
-        if (ptypes.length != 1)
-            throw new MalformedParameterizedTypeException();
-
-        // figure out the classes of declared generic parameter
-        return (ConfigTypeAdapter<T, String>) config.lookupTypeAdapter((Class<T>) ptypes[0]);
-
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public List<String> serialize(Set<T> obj, ReflectiveConfig config, Field field) throws ConfigurationException {
-        if (obj == null) return null;
-
-        ConfigTypeAdapter<T,String> ta = getElementAdapter(field,config);
-        
-        List<String> serialized = new ArrayList<String>(obj.size());
-        for (Object o : obj) 
-            serialized.add(ta.serialize((T) o, config, field));
-        return serialized;
-    }
-
-    @Override
-    public List<String> read(ReflectiveConfig config, ConfigReader reader, Field field) throws ConfigurationException {
-        ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
-        return Arrays.asList(reader.asStringArray(fieldAnno.name()));
-    }
-
-    @Override
-    public Set<T> deserialize(List<String> serialized, ReflectiveConfig config, Field field) throws ConfigurationException {
-        
-        ConfigTypeAdapter<T,String> ta = getElementAdapter(field,config);
-        
-        Set<T> set = new HashSet<T>(); 
-        for (String s: serialized) 
-            set.add(ta.deserialize(s, config, field));
+        Set<T> set = new HashSet<T>();
+        for (ST s : configNode)
+            set.add(adapterForGenericsParameter.fromConfigNode(s, setElementPseudoProperty, vitalizer));
         return set;
     }
 
     @Override
-    public void merge(Set<T> prev, Set<T> curr, ReflectiveConfig config, ConfigWriter diffwriter, Field field) throws ConfigurationException {
-        // regular merge
-        ConfigField fieldAnno = field.getAnnotation(ConfigField.class);
+    public List<ST> toConfigNode(Set<T> object, BeanVitalizer vitalizer) throws ConfigurationException {
 
-        String[] prevSerialized = serialize(prev, config, field).toArray(new String[0]);
-        String[] currSerialized = serialize(curr, config, field).toArray(new String[0]);
-
-        diffwriter.storeDiff(fieldAnno.name(), prevSerialized, currSerialized);
+        List<ST> node = new ArrayList<ST>(object.size());
+        for (T element : object) {
+            ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(element.getClass());
+            node.add((ST) adapter.toConfigNode(element, vitalizer));
+        }
+        return node;
     }
 
     @Override
-    public boolean isWritingChildren(Field field) {
-        return false;
-    }
+    public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
-    @Override
-    public Map<String, Object> getMetadata(ReflectiveConfig config, Field field) throws ConfigurationException {
         Map<String, Object> metadata =  new HashMap<String, Object>();
         Map<String, Object> elementMetadata =  new HashMap<String, Object>();
         
         metadata.put("type", "Set");
-        
-        ConfigTypeAdapter<T,String> ta = getElementAdapter(field,config);
-        
-        elementMetadata.putAll(ta.getMetadata(config, field));
+
+        Type typeForGenericsParameter = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
+        ConfigTypeAdapter<T,ST> adapter = vitalizer.lookupTypeAdapter(typeForGenericsParameter);
+
+        elementMetadata.putAll(adapter.getMetadata(new AnnotatedConfigurableProperty(typeForGenericsParameter), vitalizer));
         metadata.put("elementMetadata", elementMetadata);
         
         return metadata;

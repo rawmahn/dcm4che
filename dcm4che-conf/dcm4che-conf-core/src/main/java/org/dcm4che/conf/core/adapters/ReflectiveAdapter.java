@@ -23,6 +23,7 @@ import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
  * User has to use the special constructor and initialize providedConfObj when the
  * already created conf object should be used instead of instantiating one
  */
+@SuppressWarnings("unchecked")
 public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Object>> {
 
     private T providedConfObj;
@@ -132,7 +133,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
             childPropertyMetadata.put("default", propertyAnnotation.defaultValue());
 
             // also merge in the metadata from this child itself
-            ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter((Class) configurableChildProperty.getType());
+            ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(configurableChildProperty.getType());
             Map<String, Object> childMetaData = adapter.getMetadata(configurableChildProperty, vitalizer);
             if (childMetaData != null) childPropertyMetadata.putAll(childMetaData);
         }
