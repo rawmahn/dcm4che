@@ -34,6 +34,10 @@ public class BasicConfigurationStorage implements ConfigurationStorage {
         storageBackend.persistNode(path, configNode, configurableClass);
     }
 
+    @Override
+    public boolean nodeExists(String path) {
+        return storageBackend.nodeExists(path);
+    }
 
     @Override
     public void refreshNode(String path) throws ConfigurationException {

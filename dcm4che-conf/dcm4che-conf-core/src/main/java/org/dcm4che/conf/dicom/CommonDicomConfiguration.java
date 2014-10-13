@@ -2,16 +2,22 @@ package org.dcm4che.conf.dicom;
 
 import org.dcm4che.conf.core.BeanVitalizer;
 import org.dcm4che.conf.core.ConfigurationStorage;
+import org.dcm4che.conf.core.adapters.ReflectiveAdapter;
+import org.dcm4che.conf.core.util.ConfigNodeUtil;
 import org.dcm4che.conf.dicom.adapters.AttributeFormatTypeAdapter;
 import org.dcm4che.conf.dicom.adapters.DeviceTypeAdapter;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
+import org.dcm4che3.conf.api.generic.ConfigurableProperty;
+import org.dcm4che3.conf.ldap.generic.LDAP;
 import org.dcm4che3.net.ApplicationEntity;
 import org.dcm4che3.net.Device;
 import org.dcm4che3.net.DeviceInfo;
 import org.dcm4che3.util.AttributesFormat;
 
 import java.security.cert.X509Certificate;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Roman K
@@ -19,11 +25,19 @@ import java.security.cert.X509Certificate;
 public class CommonDicomConfiguration implements DicomConfiguration{
 
 
-    ConfigurationStorage configurationStorage;
+    ConfigurationStorage config;
     BeanVitalizer vitalizer;
 
+
+    /**
+     * Needed for avoiding infinite loops when dealing with extensions containing circular references
+     * e.g., one device extension references another device which has an extension that references the former device.
+     * Devices that have been created but not fully loaded are added to this threadlocal. See loadDevice.
+     */
+    private ThreadLocal<Map<String,Device>> currentlyLoadedDevicesLocal = new ThreadLocal<Map<String,Device>>();
+
     public CommonDicomConfiguration(ConfigurationStorage configurationStorage, BeanVitalizer vitalizer) {
-        this.configurationStorage = configurationStorage;
+        this.config = configurationStorage;
         this.vitalizer = vitalizer;
 
         // register type adapters and the DicomConfiguration context
@@ -34,32 +48,76 @@ public class CommonDicomConfiguration implements DicomConfiguration{
 
     @Override
     public boolean configurationExists() throws ConfigurationException {
-        return false;
+        return config.nodeExists("dicomConfigurationRoot");
     }
 
     @Override
     public boolean purgeConfiguration() throws ConfigurationException {
-        return false;
+        if (!configurationExists()) return false;
+        config.persistNode("dicomConfigurationRoot", new HashMap<String, Object>(), null);
+        return true;
+    }
+
+    @LDAP(objectClass = "dicomUniqueAETitle", distinguishingField = "dicomAETitle")
+    public static class AETitleItem {
+
+        public AETitleItem(String aeTitle) {
+            this.aeTitle = aeTitle;
+        }
+
+        @ConfigurableProperty(name = "dicomAETitle")
+        String aeTitle;
+
+
+        public String getAeTitle() {
+            return aeTitle;
+        }
+
+        public void setAeTitle(String aeTitle) {
+            this.aeTitle = aeTitle;
+        }
     }
 
     @Override
     public boolean registerAETitle(String aet) throws ConfigurationException {
-        return false;
+
+        final String path = getAETPath(aet);
+        if (config.nodeExists(path)) return false;
+
+        final HashMap<String, String> map = new HashMap<String, String>();
+        map.put("dicomAETitle", aet);
+
+        config.persistNode(path, map, AETitleItem.class);
+        return true;
+
+    }
+
+    private String getAETPath(String aet) {
+        return "dicomConfigurationRoot/dicomUniqueAETitlesRegistryRoot/" + ConfigNodeUtil.escape(aet);
     }
 
     @Override
     public void unregisterAETitle(String aet) throws ConfigurationException {
-
+        config.removeNode(getAETPath(aet));
     }
 
     @Override
     public ApplicationEntity findApplicationEntity(String aet) throws ConfigurationException {
+        //vitalizer.newConfiguredInstance(ApplicationEntity.class, config.getConfigurationNode(""))
         return null;
     }
 
     @Override
     public Device findDevice(String name) throws ConfigurationException {
-        return null;
+
+        // TODO: device cache threadlocal
+        try {
+            Object configurationNode = config.getConfigurationNode("dicomConfigurationRoot/Devices/" + ConfigNodeUtil.escape(name));
+            return vitalizer.newConfiguredInstance(Device.class, (Map<String, Object>) configurationNode);
+        } catch (ConfigurationException e) {
+            throw new ConfigurationException("Configuration for device "+name+" cannot be loaded");
+        }
+
     }
 
     @Override
@@ -119,7 +177,7 @@ public class CommonDicomConfiguration implements DicomConfiguration{
 
     @Override
     public void sync() throws ConfigurationException {
-
+        config.refreshNode("dicomConfigurationRoot");
     }
 
     @Override

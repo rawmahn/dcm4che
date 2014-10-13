@@ -2,10 +2,7 @@ package org.dcm4che.conf.core.util;
 
 import org.apache.commons.jxpath.JXPathContext;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ConfigNodeUtil {
 
@@ -16,6 +13,10 @@ public class ConfigNodeUtil {
 
     public static Object getNode(Object rootConfigNode, String path) {
         return JXPathContext.newContext(rootConfigNode).getValue(path);
+    }
+
+    public static boolean nodeExists(Objects rootConfigNode, String path) {
+        return getNode(rootConfigNode,path) != null;
     }
 
     public static void removeNode(Map<String, Object> configurationRoot, String path) {
@@ -35,4 +36,8 @@ public class ConfigNodeUtil {
         return path.split("/");
     }
 
+    public static String escape(String str) {
+        // TODO: implement escaping
+        return str;
+    }
 }

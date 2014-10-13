@@ -1,7 +1,5 @@
 package org.dcm4che.conf.core.adapters;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,10 +9,7 @@ import org.dcm4che.conf.core.BeanVitalizer;
 import org.dcm4che.conf.core.util.ConfigIterators;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.ConfigurationUnserializableException;
-import org.dcm4che3.conf.api.generic.ConfigField;
 import org.dcm4che3.conf.api.generic.ConfigurableProperty;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
 
 /**
  * Reflective adapter that handles classes with ConfigurableClass annotations.<br/>
@@ -40,8 +35,10 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
     public T fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         if (configNode == null) return null;
-
         Class<T> clazz = (Class<T>) property.getType();
+
+        if (!Map.class.isAssignableFrom(configNode.getClass())) throw new ConfigurationException("Provided configuration node is not a map (type "+clazz.getName()+")");
+
 
         T confObj;
 
@@ -86,7 +83,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
 
 
     @Override
-    public Map<String, Object> toConfigNode(T object, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
+    public Map<String, Object> toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
 
         if (object == null) return null;
 

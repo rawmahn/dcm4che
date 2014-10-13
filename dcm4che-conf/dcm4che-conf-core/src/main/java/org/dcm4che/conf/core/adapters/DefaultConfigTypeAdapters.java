@@ -42,7 +42,6 @@ import org.dcm4che.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.ConfigurationUnserializableException;
 import org.dcm4che3.conf.api.generic.ConfigurableProperty;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -74,7 +73,7 @@ public class DefaultConfigTypeAdapters {
     static void delegateChildToConfigNode(Object object, Map<String, Object> parentNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         String nodeName = property.getAnnotation(ConfigurableProperty.class).name();
         ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property.getType());
-        parentNode.put(nodeName, adapter.toConfigNode(object, vitalizer));
+        parentNode.put(nodeName, adapter.toConfigNode(object, property, vitalizer));
     }
 
     static Type getTypeForGenericsParameter(AnnotatedConfigurableProperty property, int genericParameterIndex) throws ConfigurationException {
@@ -108,7 +107,7 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public T toConfigNode(T object, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
+        public T toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
             return object;
         }
 
@@ -165,7 +164,7 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public Object toConfigNode(Object object, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
+        public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
             return Arrays.asList(object);
         }
 
@@ -206,7 +205,7 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public String toConfigNode(Enum<?> object, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
+        public String toConfigNode(Enum<?> object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
             return (object == null ? null : object.name());
         }
     }

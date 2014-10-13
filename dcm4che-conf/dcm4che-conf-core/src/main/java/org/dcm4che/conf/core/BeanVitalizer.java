@@ -24,7 +24,7 @@ public class BeanVitalizer {
     private Map<Class, Object> contextMap = new HashMap<Class, Object>();
     private HashMap<Class, ConfigTypeAdapter> customConfigTypeAdapters= new HashMap<Class, ConfigTypeAdapter>();
 
-    static <T> T newConfiguredInstance(Class<T> clazz, Map<String, Object> configNode) throws ConfigurationException {
+    public <T> T newConfiguredInstance(Class<T> clazz, Map<String, Object> configNode) throws ConfigurationException {
         try {
 
             return configureInstance(clazz.newInstance(), configNode);
@@ -43,11 +43,8 @@ public class BeanVitalizer {
      * @param <T>
      * @return
      */
-    static <T> T configureInstance(T object, Map<String, Object> configNode) {
-
-
-
-        return null;
+    public <T> T configureInstance(T object, Map<String, Object> configNode) throws ConfigurationException {
+        return (T) lookupTypeAdapter(object.getClass()).fromConfigNode(configNode, null, this);
     }
 
     @SuppressWarnings("unchecked")

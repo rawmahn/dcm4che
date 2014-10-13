@@ -22,7 +22,7 @@ public class AttributeFormatTypeAdapter extends DefaultConfigTypeAdapters.Common
     }
 
     @Override
-    public String toConfigNode(AttributesFormat object, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
+    public String toConfigNode(AttributesFormat object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
         return (object == null ? null : object.toString());
     }
 }

@@ -22,6 +22,8 @@ public interface ConfigurationStorage {
 
     Object getConfigurationNode(String path) throws ConfigurationException;
 
+    boolean nodeExists(String path);
+
     /**
      * Persists the configuration node to the specified path. The path specifies the container (must exist). The property is overwritten/created.
      * Any cached configuration is updated accordingly.
@@ -61,7 +63,7 @@ public interface ConfigurationStorage {
 
     /**
      * Returns configNodes
-     * @param liteXPathExpression Must be absolute path, no double slashes, no attributes (only [attr=val] or [attr<>val])
+     * @param liteXPathExpression Must be absolute path, no double slashes, no @attributes (only [attr=val] or [attr<>val])
      */
     java.util.Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException;
 }

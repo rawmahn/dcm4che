@@ -1,11 +1,7 @@
 package org.dcm4che.conf.core.adapters;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.MalformedParameterizedTypeException;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,11 +11,6 @@ import java.util.Set;
 import org.dcm4che.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.api.ConfigurationException;
-import org.dcm4che3.conf.api.ConfigurationUnserializableException;
-import org.dcm4che3.conf.api.generic.ConfigField;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigReader;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
 
 /**
  * For now only supports primitive serialized representation, so no ConfigClass'ed classes as elements
@@ -43,12 +34,12 @@ public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, List<ST>
     }
 
     @Override
-    public List<ST> toConfigNode(Set<T> object, BeanVitalizer vitalizer) throws ConfigurationException {
+    public List<ST> toConfigNode(Set<T> object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         List<ST> node = new ArrayList<ST>(object.size());
         for (T element : object) {
             ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(element.getClass());
-            node.add((ST) adapter.toConfigNode(element, vitalizer));
+            node.add((ST) adapter.toConfigNode(element, property , vitalizer));
         }
         return node;
     }

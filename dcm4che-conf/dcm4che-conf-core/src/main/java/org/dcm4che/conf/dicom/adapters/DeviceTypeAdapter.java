@@ -27,7 +27,7 @@ public class DeviceTypeAdapter extends DefaultConfigTypeAdapters.CommonAbstractT
     }
 
     @Override
-    public String toConfigNode(Device object, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
+    public String toConfigNode(Device object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
         return object.getDeviceName();
     }
 

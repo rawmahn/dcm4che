@@ -30,11 +30,11 @@ public interface ConfigTypeAdapter<T, ST> {
      * <p>This method should not be used generally, and the modifications to configuration should
      * be made through the Configuration access API that performs validation, defaults handling, etc. </p>
      * @param object
-     * @param vitalizer
-     * @return
+     * @param property
+     *@param vitalizer  @return
      * @throws ConfigurationException
      */
-    ST toConfigNode(T object, BeanVitalizer vitalizer) throws ConfigurationException;
+    ST toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
 
     Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
 }

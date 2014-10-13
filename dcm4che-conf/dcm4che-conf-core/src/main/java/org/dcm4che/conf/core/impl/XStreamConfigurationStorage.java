@@ -23,6 +23,11 @@ public class XStreamConfigurationStorage implements ConfigurationStorage {
     }
 
     @Override
+    public boolean nodeExists(String path) {
+        return getConfigurationRoot();
+    }
+
+    @Override
     public Map<String, Object> getConfigurationRoot() throws ConfigurationException {
 
         try {
