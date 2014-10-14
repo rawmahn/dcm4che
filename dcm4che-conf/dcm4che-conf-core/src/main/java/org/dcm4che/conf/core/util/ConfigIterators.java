@@ -63,8 +63,12 @@ public class ConfigIterators {
             Annotation[][] parameterAnnotations = m.getParameterAnnotations();
             Type[] genericParameterTypes = m.getGenericParameterTypes();
 
-            boolean thisMethodIsNotASetter = false;
+            // if method is no-arg, then it is not a setter
+            boolean thisMethodIsNotASetter = true;
+
             for (int i = 0; i < parameterAnnotations.length; i++) {
+
+                thisMethodIsNotASetter = false;
 
                 AnnotatedConfigurableProperty property = new AnnotatedConfigurableProperty();
                 property.setAnnotations(annotationsArrayToMap(parameterAnnotations[i]));
@@ -111,7 +115,7 @@ public class ConfigIterators {
     public static Map<Type, Annotation> annotationsArrayToMap(Annotation[] annos) {
         HashMap<Type, Annotation> annotations = new HashMap<Type, Annotation>();
         for (Annotation anno : annos)
-            annotations.put(anno.getClass(), anno);
+            annotations.put(anno.annotationType(), anno);
         return annotations;
     }
 

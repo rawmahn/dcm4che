@@ -35,7 +35,7 @@ public class BasicConfigurationStorage implements ConfigurationStorage {
     }
 
     @Override
-    public boolean nodeExists(String path) {
+    public boolean nodeExists(String path) throws ConfigurationException {
         return storageBackend.nodeExists(path);
     }
 

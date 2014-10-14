@@ -26,8 +26,8 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
     public ReflectiveAdapter() {
     }
 
-    public ReflectiveAdapter(T providedConfObj) {
-        this.providedConfObj = providedConfObj;
+    public ReflectiveAdapter(T providedConfigurationObjectInstance) {
+        this.providedConfObj = providedConfigurationObjectInstance;
     }
 
 

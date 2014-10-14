@@ -77,5 +77,5 @@ public @interface ConfigurableProperty {
      * @return
      */
     String description() default "";
-    
+
 }

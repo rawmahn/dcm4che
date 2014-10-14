@@ -23,8 +23,8 @@ public class XStreamConfigurationStorage implements ConfigurationStorage {
     }
 
     @Override
-    public boolean nodeExists(String path) {
-        return getConfigurationRoot();
+    public boolean nodeExists(String path) throws ConfigurationException {
+        return ConfigNodeUtil.nodeExists(getConfigurationRoot(), path);
     }
 
     @Override

@@ -10,6 +10,7 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che.conf.core.adapters.ConfigTypeAdapter;
 import org.dcm4che3.conf.api.generic.ConfigurableClass;
 
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,8 +22,10 @@ import java.util.Map;
 public class BeanVitalizer {
 
 
+    //TODO: whats with references??? first take a look on persisting of certificates
+
     private Map<Class, Object> contextMap = new HashMap<Class, Object>();
-    private HashMap<Class, ConfigTypeAdapter> customConfigTypeAdapters= new HashMap<Class, ConfigTypeAdapter>();
+    private Map<Class, ConfigTypeAdapter> customConfigTypeAdapters= new HashMap<Class, ConfigTypeAdapter>();
 
     public <T> T newConfiguredInstance(Class<T> clazz, Map<String, Object> configNode) throws ConfigurationException {
         try {
@@ -44,24 +47,48 @@ public class BeanVitalizer {
      * @return
      */
     public <T> T configureInstance(T object, Map<String, Object> configNode) throws ConfigurationException {
-        return (T) lookupTypeAdapter(object.getClass()).fromConfigNode(configNode, null, this);
+
+        return (T) new ReflectiveAdapter<T>(object).fromConfigNode(configNode, new AnnotatedConfigurableProperty(object.getClass()), this);
     }
+
+    /**
+     * Will not work (throws an exception) if <b>object</b> has setters that use configurable properties!
+     * @param object
+     * @param <T>
+     * @return
+     */
+    public <T> Map<String, Object> createConfigNodeFromInstance(T object) throws ConfigurationException {
+        return (Map<String, Object>) lookupDefaultTypeAdapter(object.getClass()).toConfigNode(object, new AnnotatedConfigurableProperty(object.getClass()), this);
+    }
+
 
     @SuppressWarnings("unchecked")
     public ConfigTypeAdapter lookupTypeAdapter(Type type) throws ConfigurationException {
 
-        // for now we don't expect any other cases
-        Class clazz = (Class) type;
+        Class clazz;
+
+        if (ParameterizedType.class.isAssignableFrom(type.getClass()))
+            clazz = (Class) ((ParameterizedType) type).getRawType();
+        else
+            clazz = (Class) type;
+
+
+        // first check for a custom adapter
+        ConfigTypeAdapter typeAdapter = customConfigTypeAdapters.get(clazz);
+        if (typeAdapter != null) return typeAdapter;
+
+        // delegate to default otherwise
+        return lookupDefaultTypeAdapter(clazz);
+    }
+
+    @SuppressWarnings("unchecked")
+    public ConfigTypeAdapter lookupDefaultTypeAdapter(Class clazz) throws ConfigurationException {
 
         ConfigTypeAdapter adapter = null;
 
-        // first check for a custom adapter
-        adapter = customConfigTypeAdapters.get(clazz);
-        if (adapter != null) return adapter;
-
         // if it is a config class, use reflective adapter
         if (clazz.getAnnotation(ConfigurableClass.class) != null)
-            adapter = new ReflectiveAdapter(clazz);
+            adapter = new ReflectiveAdapter();
         else if (clazz.isArray())
             adapter = new DefaultConfigTypeAdapters.ArrayTypeAdapter();
         else if (clazz.isEnum())

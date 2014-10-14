@@ -1,6 +1,7 @@
 package org.dcm4che.conf.core.util;
 
 import org.apache.commons.jxpath.JXPathContext;
+import org.apache.commons.jxpath.JXPathNotFoundException;
 
 import java.util.*;
 
@@ -15,8 +16,12 @@ public class ConfigNodeUtil {
         return JXPathContext.newContext(rootConfigNode).getValue(path);
     }
 
-    public static boolean nodeExists(Objects rootConfigNode, String path) {
-        return getNode(rootConfigNode,path) != null;
+    public static boolean nodeExists(Map<String, Object> rootConfigNode, String path) {
+        try {
+            return getNode(rootConfigNode, path) != null;
+        } catch (JXPathNotFoundException e) {
+            return false;
+        }
     }
 
     public static void removeNode(Map<String, Object> configurationRoot, String path) {

@@ -22,7 +22,7 @@ public interface ConfigurationStorage {
 
     Object getConfigurationNode(String path) throws ConfigurationException;
 
-    boolean nodeExists(String path);
+    boolean nodeExists(String path) throws ConfigurationException;
 
     /**
      * Persists the configuration node to the specified path. The path specifies the container (must exist). The property is overwritten/created.

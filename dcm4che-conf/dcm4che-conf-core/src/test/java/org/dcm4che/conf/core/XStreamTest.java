@@ -1,5 +1,6 @@
 package org.dcm4che.conf.core;
 
+import org.junit.Assert;
 import org.dcm4che.conf.core.impl.XStreamConfigurationStorage;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.junit.Test;
@@ -10,14 +11,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by player on 07-Oct-14.
+ * @author Roman K
  */
 @RunWith(JUnit4.class)
 public class XStreamTest {
 
+    private ConfigurationStorage getConfigurationStorage() {
+        return new XStreamConfigurationStorage("c:\\agfa\\tst.xml");
+    }
+
     @Test
     public void testSave() throws ConfigurationException {
-        XStreamConfigurationStorage xCfg = new XStreamConfigurationStorage("c:\\agfa\\tst.xml");
+        ConfigurationStorage xCfg = getConfigurationStorage();
 
         Map<String, Object> p1 = new HashMap<String, Object>();
         p1.put("prop1", 56);
@@ -33,7 +38,7 @@ public class XStreamTest {
 
         xCfg.persistNode("/", p3, null);
 
-        xCfg = new XStreamConfigurationStorage("c:\\agfa\\tst.xml");
+        xCfg = getConfigurationStorage();
 
         DeepEquals.deepEquals(p3, xCfg.getConfigurationNode("/"));
 
@@ -44,4 +49,12 @@ public class XStreamTest {
     }
 
 
+
+    @Test
+    public void nodeExists() throws ConfigurationException {
+        ConfigurationStorage configurationStorage = getConfigurationStorage();
+        configurationStorage.persistNode("/", new HashMap<String, Object>(), null);
+        Assert.assertEquals(configurationStorage.nodeExists("asd/fdg/sdsf"), false);
+
+    }
 }
