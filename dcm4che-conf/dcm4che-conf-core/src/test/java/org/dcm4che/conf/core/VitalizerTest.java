@@ -1,9 +1,5 @@
 package org.dcm4che.conf.core;
 
-import de.danielbechler.diff.ObjectDifferBuilder;
-import de.danielbechler.diff.node.DiffNode;
-import de.danielbechler.diff.node.Visit;
-import de.danielbechler.diff.path.NodePath;
 import org.junit.Assert;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.generic.ConfigurableClass;
@@ -12,8 +8,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by aprvf on 14/10/2014.
@@ -93,6 +88,50 @@ public class VitalizerTest {
 
         @ConfigurableProperty(name="objSubMap")
         Map<String, TestConfigSubClass> objMapProp;
+
+        @ConfigurableProperty(name="setProp")
+        Set<String> aSet;
+
+        @ConfigurableProperty(name="strArrayProp")
+        String[] strArrayProp;
+
+        @ConfigurableProperty(name="boolArrayProp")
+        boolean[] boolArrayProp;
+
+        @ConfigurableProperty(name="intArrayProp")
+        int[] intArrayProp;
+
+        public Set<String> getaSet() {
+            return aSet;
+        }
+
+        public void setaSet(Set<String> aSet) {
+            this.aSet = aSet;
+        }
+
+        public String[] getStrArrayProp() {
+            return strArrayProp;
+        }
+
+        public void setStrArrayProp(String[] strArrayProp) {
+            this.strArrayProp = strArrayProp;
+        }
+
+        public boolean[] getBoolArrayProp() {
+            return boolArrayProp;
+        }
+
+        public void setBoolArrayProp(boolean[] boolArrayProp) {
+            this.boolArrayProp = boolArrayProp;
+        }
+
+        public int[] getIntArrayProp() {
+            return intArrayProp;
+        }
+
+        public void setIntArrayProp(int[] intArrayProp) {
+            this.intArrayProp = intArrayProp;
+        }
 
         public int getProp1() {
             return prop1;
@@ -214,7 +253,13 @@ public class VitalizerTest {
         subClassHashMap.put("elem1", subClassElem1);
         subClassHashMap.put("elem2", subClassElem2);
 
-        map.put("objMapProp", subClassHashMap);
+        map.put("objSubMap", subClassHashMap);
+
+        map.put("setProp", new HashSet<String>(Arrays.asList("abc", "cde", "efg")));
+
+        map.put("strArrayProp", Arrays.asList("abc", "cde", "efg"));
+        map.put("intArrayProp", Arrays.asList(1, 2, 3));
+        map.put("boolArrayProp", Arrays.asList(true, false, true));
 
         return map;
     }
@@ -226,10 +271,16 @@ public class VitalizerTest {
         BeanVitalizer beanVitalizer = new BeanVitalizer();
 
         TestConfigClass configuredInstance = beanVitalizer.newConfiguredInstance(TestConfigClass.class, testConfigClassNode);
-        Map<String, Object> generatedNode = beanVitalizer.createConfigNodeFromInstance(configuredInstance);
+        Object generatedNode = beanVitalizer.createConfigNodeFromInstance(configuredInstance);
 
-        Assert.assertTrue(DeepEquals.deepEquals(testConfigClassNode, generatedNode));
-        DiffNode root = ObjectDifferBuilder.buildDefault().compare(generatedNode, testConfigClassNode);
+        //boolean b = DeepEquals.deepEquals(testConfigClassNode, generatedNode);
+        //Assert.assertTrue("Objects should be equal.Last pair of unmatched properties:"+DeepEquals.getLastPair(), b);
+
+
+        //DeepEquals.assertDeepEquals("Config node before deserialization must be the same as after serializing back", testConfigClassNode, generatedNode);
+        boolean b = DeepEquals.deepEquals(testConfigClassNode, generatedNode);
+        Assert.assertTrue("Config node before deserialization must be the same as after serializing back. Last keys"+DeepEquals.lastDualKey,b);
 
     }
+
 }

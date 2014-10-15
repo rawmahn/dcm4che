@@ -1,12 +1,24 @@
 package org.dcm4che.conf.core;
 
-import org.apache.commons.lang3.ClassUtils;
-
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.commons.lang3.ClassUtils;
 
 /**
  * Test two objects for equivalence with a 'deep' comparison.  This will traverse 
@@ -99,17 +111,9 @@ public class DeepEquals
     	public boolean deepEquals(Object first, Object second);
     }
     
-    public static Map<Class<?>, CustomDeepEquals> customDeepEquals = new HashMap<Class<?>, CustomDeepEquals>();
+    public static Map<Class<?>, CustomDeepEquals> customDeepEquals;
     public static DualKey lastDualKey;
-    public static Object lastObject;
-    
-    public static String getLastPair() {
-        try {
-            return String.format("Object (class): %s (%s); \n %s", lastObject, lastObject.getClass().toString(), lastDualKey);
-        } catch (Exception x) {
-            return "lastObject:"+lastObject;
-        }
-    }
+    public static String lastClass;
     
     /**
      * Compare two objects with a 'deep' comparison.  This will traverse the
@@ -137,10 +141,12 @@ public class DeepEquals
      */
     public static boolean deepEquals(Object a, Object b)
     {
-    	
-    	Set visited = new HashSet<DualKey>();
+        Set visited = new HashSet<DualKey>();
         LinkedList<DualKey> stack = new LinkedList<DualKey>();
         stack.addFirst(new DualKey(a, b));
+
+        
+        
         
         while (!stack.isEmpty())
         {            
@@ -174,11 +180,7 @@ public class DeepEquals
             	// If either one is null, not equal (both can't be null, due to above comparison).
                 return false;
             }
-                         
-            
-            if (dualKey._key1 instanceof Map && dualKey._key2 instanceof Map) {
-                // if they are maps - forget about comparing exact classes 
-            } else
+                            
             if (!dualKey._key1.getClass().equals(dualKey._key2.getClass()))
             {   // Must be same class
                 return false;
@@ -233,7 +235,7 @@ public class DeepEquals
             // Maps can be compared in O(N) time due to their ordering.
             if (dualKey._key1 instanceof SortedMap)
             {
-                if (!compareSortedMap((Map) dualKey._key1, (Map) dualKey._key2, stack, visited))
+                if (!compareSortedMap((SortedMap) dualKey._key1, (SortedMap) dualKey._key2, stack, visited))
                 {
                     return false;
                 }
@@ -261,7 +263,7 @@ public class DeepEquals
                 continue;
             }        
             
-            lastObject = dualKey._key1;
+            lastClass = dualKey._key1.getClass().toString();
             
             // check if we have a custom deepequals method for this class
             CustomDeepEquals de = customDeepEquals.get(dualKey._key1.getClass());
@@ -456,7 +458,7 @@ public class DeepEquals
      * @return false if the Maps are for certain not equals.  'true' indicates that 'on the surface' the maps
      * are equal, however, it will place the contents of the Maps on the stack for further comparisons.
      */
-    private static boolean compareSortedMap(Map map1, Map map2, LinkedList stack, Set visited)
+    private static boolean compareSortedMap(SortedMap map1, SortedMap map2, LinkedList stack, Set visited)
     {
         // Same instance check already performed...
 

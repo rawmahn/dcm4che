@@ -1,17 +1,13 @@
 package org.dcm4che.conf.core.adapters;
 
-import java.lang.reflect.Field;
+import org.dcm4che.conf.core.AnnotatedConfigurableProperty;
+import org.dcm4che.conf.core.BeanVitalizer;
+import org.dcm4che3.conf.api.ConfigurationException;
+
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import org.dcm4che.conf.core.AnnotatedConfigurableProperty;
-import org.dcm4che.conf.core.BeanVitalizer;
-import org.dcm4che3.conf.api.ConfigurationException;
-import org.dcm4che3.conf.api.generic.ConfigField;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig.ConfigWriter;
 
 /**
  * Map<br>

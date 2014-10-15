@@ -1,12 +1,7 @@
 package org.dcm4che.conf.core.adapters;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.dcm4che.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che.conf.core.BeanVitalizer;
@@ -18,10 +13,10 @@ import org.dcm4che3.conf.api.ConfigurationException;
  *
  * @param <T,ST>
  */
-public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, List<ST>> {
+public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, Collection<ST>> {
 
     @Override
-    public Set<T> fromConfigNode(List<ST> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Set<T> fromConfigNode(Collection<ST> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         Type setElementType = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
         ConfigTypeAdapter<T, ST> adapterForGenericsParameter = vitalizer.lookupTypeAdapter(setElementType);
@@ -34,9 +29,9 @@ public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, List<ST>
     }
 
     @Override
-    public List<ST> toConfigNode(Set<T> object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Collection<ST> toConfigNode(Set<T> object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
-        List<ST> node = new ArrayList<ST>(object.size());
+        HashSet<ST> node = new HashSet<ST>(object.size());
         for (T element : object) {
             ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(element.getClass());
             node.add((ST) adapter.toConfigNode(element, property , vitalizer));

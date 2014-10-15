@@ -137,52 +137,6 @@ public class DefaultConfigTypeAdapters {
     }
 
     /**
-     * Array
-     */
-    public static class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
-
-        @Override
-        public Object fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
-
-            // if it is a collection, create an array with proper component type
-            if (Collection.class.isAssignableFrom(configNode.getClass())) {
-                Collection l = ((Collection) configNode);
-                Class<?> componentType = ((Class) property.getType()).getComponentType();
-                Object arr = Array.newInstance(componentType, l.size());
-                int i = 0;
-                for (Object el : l) {
-                    // deserialize element
-                    ConfigTypeAdapter elementTypeAdapter = vitalizer.lookupTypeAdapter(componentType);
-                    el = elementTypeAdapter.fromConfigNode(el, new AnnotatedConfigurableProperty(componentType), vitalizer);
-
-                    // push to array
-                    Array.set(arr, i++, el);
-                }
-                return arr;
-            } else
-                throw new IllegalArgumentException("Object of unexpected type (" + configNode.getClass().getName() + ") supplied for conversion into an array. Must be a collection.");
-        }
-
-        @Override
-        public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
-            return Arrays.asList(object);
-        }
-
-        @Override
-        public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
-
-            Map<String, Object> metadata = new HashMap<String, Object>();
-            metadata.put("type", "Array");
-
-            Class<?> componentType = ((Class) property.getType()).getComponentType();
-            metadata.put("elementMetadata", vitalizer.lookupTypeAdapter(componentType).getMetadata(new AnnotatedConfigurableProperty(componentType), vitalizer));
-
-            return metadata;
-        }
-
-    }
-
-    /**
      * AttributesFormat
      */
     public static class EnumTypeAdapter extends CommonAbstractTypeAdapter<Enum<?>> {

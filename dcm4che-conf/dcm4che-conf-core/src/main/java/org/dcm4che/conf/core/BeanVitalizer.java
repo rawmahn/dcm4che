@@ -4,6 +4,7 @@ package org.dcm4che.conf.core;
  * @author Roman K
  */
 
+import org.dcm4che.conf.core.adapters.ArrayTypeAdapter;
 import org.dcm4che.conf.core.adapters.DefaultConfigTypeAdapters;
 import org.dcm4che.conf.core.adapters.ReflectiveAdapter;
 import org.dcm4che3.conf.api.ConfigurationException;
@@ -90,7 +91,7 @@ public class BeanVitalizer {
         if (clazz.getAnnotation(ConfigurableClass.class) != null)
             adapter = new ReflectiveAdapter();
         else if (clazz.isArray())
-            adapter = new DefaultConfigTypeAdapters.ArrayTypeAdapter();
+            adapter = new ArrayTypeAdapter();
         else if (clazz.isEnum())
             adapter = DefaultConfigTypeAdapters.get(Enum.class);
         else
