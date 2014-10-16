@@ -287,11 +287,13 @@ public class VitalizerTest {
         HashMap<String, Object> testConfigClassNode = getTestConfigClassMap();
         BeanVitalizer beanVitalizer = new BeanVitalizer();
 
-        //for (int i=0;i<20000;i++)
+        for (int i=0;i<10000;i++)
         {
             TestConfigClass configuredInstance = beanVitalizer.newConfiguredInstance(TestConfigClass.class, testConfigClassNode);
-           // Object generatedNode = beanVitalizer.createConfigNodeFromInstance(configuredInstance);
+            Object generatedNode = beanVitalizer.createConfigNodeFromInstance(configuredInstance);
         }
 
     }
+
+
 }

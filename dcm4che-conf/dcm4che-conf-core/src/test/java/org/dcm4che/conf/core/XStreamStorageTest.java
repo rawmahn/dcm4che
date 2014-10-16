@@ -14,9 +14,9 @@ import java.util.Map;
  * @author Roman K
  */
 @RunWith(JUnit4.class)
-public class XStreamTest {
+public class XStreamStorageTest {
 
-    private ConfigurationStorage getConfigurationStorage() {
+    public static ConfigurationStorage getConfigurationStorage() {
         return new XStreamConfigurationStorage("c:\\agfa\\tst.xml");
     }
 

@@ -12,6 +12,9 @@ import java.util.*;
 
 public class ConfigIterators {
 
+    private static final Map<Class, List<AnnotatedConfigurableProperty>> configurableFieldsCache = Collections.synchronizedMap(new HashMap<Class, List<AnnotatedConfigurableProperty>>());
+    private static final Map<Class, List<AnnotatedSetter>> configurableSettersCache = Collections.synchronizedMap(new HashMap<Class, List<AnnotatedSetter>>());
+
     public static class AnnotatedSetter {
         private Map<Type, Annotation> annotations;
         private List<AnnotatedConfigurableProperty> parameters;
@@ -46,6 +49,7 @@ public class ConfigIterators {
         }
     }
 
+
     public static List<AnnotatedConfigurableProperty> getAllConfigurableFieldsAndSetterParameters(Class clazz) {
         List<AnnotatedConfigurableProperty> fields = getAllConfigurableFields(clazz);
         for (AnnotatedSetter s : getAllConfigurableSetters(clazz)) fields.addAll(s.getParameters());
@@ -53,7 +57,10 @@ public class ConfigIterators {
     }
 
     public static List<AnnotatedSetter> getAllConfigurableSetters(Class clazz) {
-        List<AnnotatedSetter> list = new ArrayList<AnnotatedSetter>();
+        List<AnnotatedSetter> list = configurableSettersCache.get(clazz);
+        if (list != null) return list;
+
+        list = new ArrayList<AnnotatedSetter>();
 
         // scan all methods including superclasses, assume each is a config-setter
         for (Method m : clazz.getMethods()) {
@@ -90,11 +97,20 @@ public class ConfigIterators {
             annotatedSetter.setAnnotations(annotationsArrayToMap(m.getAnnotations()));
             annotatedSetter.setMethod(m);
         }
+
+        configurableSettersCache.put(clazz,list);
         return list;
     }
 
+
+
     public static List<AnnotatedConfigurableProperty> getAllConfigurableFields(Class clazz) {
-        List<AnnotatedConfigurableProperty> l = new ArrayList<AnnotatedConfigurableProperty>();
+
+        //check cache
+        List<AnnotatedConfigurableProperty> l = configurableFieldsCache.get(clazz);
+        if (l!=null) return l;
+
+        l = new ArrayList<AnnotatedConfigurableProperty>();
 
         // scan all fields from this class and superclasses
         for (Field field : getFieldsUpTo(clazz, null)) {
@@ -109,6 +125,7 @@ public class ConfigIterators {
             }
         }
 
+        configurableFieldsCache.put(clazz, l);
         return l;
     }
 
