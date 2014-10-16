@@ -277,10 +277,21 @@ public class VitalizerTest {
         //Assert.assertTrue("Objects should be equal.Last pair of unmatched properties:"+DeepEquals.getLastPair(), b);
 
 
-        //DeepEquals.assertDeepEquals("Config node before deserialization must be the same as after serializing back", testConfigClassNode, generatedNode);
-        boolean b = DeepEquals.deepEquals(testConfigClassNode, generatedNode);
-        Assert.assertTrue("Config node before deserialization must be the same as after serializing back. Last keys"+DeepEquals.lastDualKey,b);
+        DeepEqualsDiffer.assertDeepEquals("Config node before deserialization must be the same as after serializing back", testConfigClassNode, generatedNode);
+        //boolean b = DeepEquals.deepEquals(testConfigClassNode, generatedNode);
+        //Assert.assertTrue("Config node before deserialization must be the same as after serializing back. Last keys"+DeepEquals.lastDualKey,b);
 
     }
+    @Test
+    public void testPerformance() throws ConfigurationException {
+        HashMap<String, Object> testConfigClassNode = getTestConfigClassMap();
+        BeanVitalizer beanVitalizer = new BeanVitalizer();
 
+        //for (int i=0;i<20000;i++)
+        {
+            TestConfigClass configuredInstance = beanVitalizer.newConfiguredInstance(TestConfigClass.class, testConfigClassNode);
+           // Object generatedNode = beanVitalizer.createConfigNodeFromInstance(configuredInstance);
+        }
+
+    }
 }

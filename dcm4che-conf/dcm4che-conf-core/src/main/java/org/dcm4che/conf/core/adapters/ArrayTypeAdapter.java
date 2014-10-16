@@ -31,10 +31,14 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     @Override
     public Object fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
+        Class<?> componentType = ((Class) property.getType()).getComponentType();
+
+        // handle null
+        if (configNode == null) return Array.newInstance(componentType, 0);
+
         // if it is a collection, create an array with proper component type
         if (Collection.class.isAssignableFrom(configNode.getClass())) {
             Collection l = ((Collection) configNode);
-            Class<?> componentType = ((Class) property.getType()).getComponentType();
             Object arr = Array.newInstance(componentType, l.size());
             int i = 0;
             for (Object el : l) {
