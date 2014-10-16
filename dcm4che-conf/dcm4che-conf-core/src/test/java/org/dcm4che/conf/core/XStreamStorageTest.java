@@ -7,7 +7,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -29,8 +31,8 @@ public class XStreamStorageTest {
         p1.put("prop2", "I am cool");
 
         Map<String, Object> p2 = new HashMap<String, Object>();
-        p2.put("prop11", true);
-        p2.put("prop22", new int[]{1,2,3});
+        p2.put("prop1", true);
+        p2.put("prop2", Arrays.asList(1, 2, 3));
 
         Map<String, Object> p3 = new HashMap<String, Object>();
         p3.put("p1", p1);
@@ -45,6 +47,10 @@ public class XStreamStorageTest {
         xCfg.persistNode("/p2/newProp",p1,null);
 
         xCfg.removeNode("/p2/prop11");
+
+        Iterator search = xCfg.search("/*[contains(prop2,'I am ')]");
+         Object o = search.next();
+        DeepEqualsDiffer.assertDeepEquals("Search should work. ", o, p1);
 
     }
 
