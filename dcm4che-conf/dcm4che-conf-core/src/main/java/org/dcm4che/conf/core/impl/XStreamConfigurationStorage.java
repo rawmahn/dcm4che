@@ -1,7 +1,7 @@
 package org.dcm4che.conf.core.impl;
 
 import com.thoughtworks.xstream.XStream;
-import org.dcm4che.conf.core.ConfigurationStorage;
+import org.dcm4che.conf.core.Configuration;
 import org.dcm4che.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.conf.api.ConfigurationException;
 
@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * Created by player on 07-Oct-14.
  */
-public class XStreamConfigurationStorage implements ConfigurationStorage {
+public class XStreamConfigurationStorage implements Configuration {
 
     XStream xstream;
     String fileName;
@@ -41,6 +41,14 @@ public class XStreamConfigurationStorage implements ConfigurationStorage {
     @Override
     public Object getConfigurationNode(String path) throws ConfigurationException {
         return ConfigNodeUtil.getNode(getConfigurationRoot(), path);
+    }
+
+    @Override
+    public Class getConfigurationNodeClass(String path) throws ConfigurationException, ClassNotFoundException {
+
+        String clazz = (String) ConfigNodeUtil.getNode(getConfigurationRoot(), ConfigNodeUtil.concat(path, "/#class"));
+        return (clazz == null ? null : Class.forName(clazz));
+
     }
 
     @Override

@@ -6,21 +6,33 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Might support multiple backends, etc.
- * Implementation should take care of instantiating the proper ConfigurationBackend instances (i.e. fetch some global system properties and use them to initialize configuration)
+ * Denotes a configuration source. Can be used by BeanVitalizer, Configuration Modification API.
+ * <br/> <br/>
+ * Configuration node is either a primitive or a map of objects where each object is a configuration node (single map can have values of multiple types, therefore Map&lt;String,Object&gt;).
+ * A node (map) may have an entry with key "#class", and value equals to a full Java class name.
+ *
+ * Clustering?
  */
-public interface ConfigurationStorage {
+public interface Configuration {
 
     /**
-     * Map of primitives and maps.
-     * Should not be modified directly (only through persistNode/removeNode).
+     * May not be modified directly (only through persistNode/removeNode).
      * Should be thread-safe.
-     * Clustering?
+     *
      * @return configuration tree
+     * @throws ConfigurationException
      */
     Map<String, Object> getConfigurationRoot() throws ConfigurationException;
 
     Object getConfigurationNode(String path) throws ConfigurationException;
+
+    /**
+     * Returns the class that was used to persist the node using persistNode
+     * @param path
+     * @return
+     * @throws ConfigurationException
+     */
+    Class getConfigurationNodeClass(String path) throws ConfigurationException, ClassNotFoundException;
 
     boolean nodeExists(String path) throws ConfigurationException;
 
@@ -45,6 +57,7 @@ public interface ConfigurationStorage {
      * @param configNode new configuration to persist as a value of this property
      * @param configurableClass class annotated with ConfigurableClass, ConfigurableProperty and ConfigurableField annotations that corresponds to this node.
  *                          This parameter is required e.g., by LDAP backend to provide additional metadata like ObjectClasses and LDAP node hierarchy relations.
+     *                          configurableClass is persisted and can be retrieved by getConfigurationNodeClass
      */
     void persistNode(String path, Object configNode, Class configurableClass) throws ConfigurationException;
 

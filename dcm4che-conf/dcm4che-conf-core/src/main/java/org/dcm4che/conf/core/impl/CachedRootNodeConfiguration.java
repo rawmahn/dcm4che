@@ -1,5 +1,7 @@
-package org.dcm4che.conf.core;
+package org.dcm4che.conf.core.impl;
 
+import org.dcm4che.conf.core.Configuration;
+import org.dcm4che.conf.core.impl.DelegatingConfiguration;
 import org.dcm4che.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.conf.api.ConfigurationException;
 
@@ -9,21 +11,30 @@ import java.util.Map;
  * Created by aprvf on 29/09/2014.
  */
 
-public class BasicConfigurationStorage implements ConfigurationStorage {
+public class CachedRootNodeConfiguration extends DelegatingConfiguration {
 
 
-    private ConfigurationStorage storageBackend;
 
     private Map<String, Object> configurationRoot = null;
+
+    public CachedRootNodeConfiguration(Configuration delegate) {
+        super(delegate);
+    }
 
 
     @Override
     public Map<String, Object> getConfigurationRoot() throws ConfigurationException {
         if (configurationRoot==null)
-            configurationRoot = storageBackend.getConfigurationRoot();
+            configurationRoot = delegate.getConfigurationRoot();
         return configurationRoot;
     }
 
+    /**
+     * Return cached node
+     * @param path
+     * @return
+     * @throws ConfigurationException
+     */
     @Override
     public Object getConfigurationNode(String path) throws ConfigurationException {
         return ConfigNodeUtil.getNode(getConfigurationRoot(), path);
@@ -31,30 +42,18 @@ public class BasicConfigurationStorage implements ConfigurationStorage {
 
     @Override
     public void persistNode(String path, Object configNode, Class configurableClass) throws ConfigurationException {
-        storageBackend.persistNode(path, configNode, configurableClass);
-    }
-
-    @Override
-    public boolean nodeExists(String path) throws ConfigurationException {
-        return storageBackend.nodeExists(path);
+        ConfigNodeUtil.replaceNode(getConfigurationRoot(), path, configNode);
+        delegate.persistNode(path, configNode, configurableClass);
     }
 
     @Override
     public void refreshNode(String path) throws ConfigurationException {
-        ConfigNodeUtil.replaceNode(getConfigurationRoot(), path, storageBackend.getConfigurationNode(path));
+        ConfigNodeUtil.replaceNode(getConfigurationRoot(), path, delegate.getConfigurationNode(path));
     }
 
     @Override
     public void removeNode(String path) throws ConfigurationException {
-        storageBackend.removeNode(path);
+        delegate.removeNode(path);
         ConfigNodeUtil.removeNode(getConfigurationRoot(), path);
     }
-
-
-    @Override
-    public java.util.Iterator search(String liteXPathExpression) throws ConfigurationException {
-        return ConfigNodeUtil.search(getConfigurationRoot(), liteXPathExpression);
-    }
-
-
 }

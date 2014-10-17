@@ -1,8 +1,7 @@
 package org.dcm4che.conf.dicom;
 
 import org.dcm4che.conf.core.BeanVitalizer;
-import org.dcm4che.conf.core.ConfigurationStorage;
-import org.dcm4che.conf.core.adapters.ReflectiveAdapter;
+import org.dcm4che.conf.core.Configuration;
 import org.dcm4che.conf.core.util.ConfigNodeUtil;
 import org.dcm4che.conf.dicom.adapters.AttributeFormatTypeAdapter;
 import org.dcm4che.conf.dicom.adapters.DeviceTypeAdapter;
@@ -25,7 +24,7 @@ import java.util.Map;
 public class CommonDicomConfiguration implements DicomConfiguration{
 
 
-    ConfigurationStorage config;
+    Configuration config;
     BeanVitalizer vitalizer;
 
 
@@ -36,7 +35,7 @@ public class CommonDicomConfiguration implements DicomConfiguration{
      */
     private ThreadLocal<Map<String,Device>> currentlyLoadedDevicesLocal = new ThreadLocal<Map<String,Device>>();
 
-    public CommonDicomConfiguration(ConfigurationStorage configurationStorage, BeanVitalizer vitalizer) {
+    public CommonDicomConfiguration(Configuration configurationStorage, BeanVitalizer vitalizer) {
         this.config = configurationStorage;
         this.vitalizer = vitalizer;
 
@@ -110,14 +109,30 @@ public class CommonDicomConfiguration implements DicomConfiguration{
     @Override
     public Device findDevice(String name) throws ConfigurationException {
 
-        // TODO: device cache threadlocal
+        // get the device cache for this loading phase
+        Map<String, Device> deviceCache = currentlyLoadedDevicesLocal.get();
+
+        // if there is none, create one for the current thread and remember that it should be cleaned up when the device is loaded
+        boolean doCleanUpCache = false;
+        if (deviceCache == null) {
+            doCleanUpCache = true;
+            deviceCache = new HashMap<String, Device>();
+            currentlyLoadedDevicesLocal.set(deviceCache);
+        }
+
+        // if a requested device is already being (was) loaded, do not load it again, just return existing Device object
+        if (deviceCache.containsKey(name))
+            return deviceCache.get(name);
+
         try {
             Object configurationNode = config.getConfigurationNode("dicomConfigurationRoot/Devices/" + ConfigNodeUtil.escape(name));
             return vitalizer.newConfiguredInstance(Device.class, (Map<String, Object>) configurationNode);
         } catch (ConfigurationException e) {
             throw new ConfigurationException("Configuration for device "+name+" cannot be loaded");
+        } finally {
+            // if this loadDevice call initialized the cache, then clean it up
+            if (doCleanUpCache) currentlyLoadedDevicesLocal.remove();
         }
-
     }
 
     @Override

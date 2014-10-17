@@ -18,13 +18,13 @@ import java.util.Map;
 @RunWith(JUnit4.class)
 public class XStreamStorageTest {
 
-    public static ConfigurationStorage getConfigurationStorage() {
+    public static Configuration getConfigurationStorage() {
         return new XStreamConfigurationStorage("c:\\agfa\\tst.xml");
     }
 
     @Test
     public void testSave() throws ConfigurationException {
-        ConfigurationStorage xCfg = getConfigurationStorage();
+        Configuration xCfg = getConfigurationStorage();
 
         Map<String, Object> p1 = new HashMap<String, Object>();
         p1.put("prop1", 56);
@@ -58,7 +58,7 @@ public class XStreamStorageTest {
 
     @Test
     public void nodeExists() throws ConfigurationException {
-        ConfigurationStorage configurationStorage = getConfigurationStorage();
+        Configuration configurationStorage = getConfigurationStorage();
         configurationStorage.persistNode("/", new HashMap<String, Object>(), null);
         Assert.assertEquals(configurationStorage.nodeExists("asd/fdg/sdsf"), false);
 
