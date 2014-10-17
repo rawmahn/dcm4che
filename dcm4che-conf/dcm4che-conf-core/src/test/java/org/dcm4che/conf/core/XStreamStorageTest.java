@@ -63,4 +63,28 @@ public class XStreamStorageTest {
         Assert.assertEquals(configurationStorage.nodeExists("asd/fdg/sdsf"), false);
 
     }
+
+    @Test
+    public void testSpecialSymbols() throws ConfigurationException {
+        Configuration xCfg = getConfigurationStorage();
+        Map<String, Object> pd = new HashMap<String, Object>();
+        pd.put("_prop", "hey");
+        pd.put("prop1", Arrays.asList(1, 2, 3));
+
+        Map<String, Object> p2 = new HashMap<String, Object>();
+        p2.put("device1", pd);
+        p2.put("device2", Arrays.asList(1, 2, 3));
+
+        Map<String, Object> p1 = new HashMap<String, Object>();
+        p1.put("dicomDevicesRoot", p2);
+        p1.put("Unique AE Titles Registry", "I am cool");
+
+        Map<String, Object> p3 = new HashMap<String, Object>();
+        p3.put("dicomConfigurationRoot", p1);
+
+        xCfg.persistNode("/", p3, null);
+
+        Assert.assertEquals(xCfg.search("/dicomConfigurationRoot/dicomDevicesRoot/device1/_prop").next().toString(),"hey");
+
+    }
 }

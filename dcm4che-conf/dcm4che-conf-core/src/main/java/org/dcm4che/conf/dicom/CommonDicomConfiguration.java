@@ -124,8 +124,9 @@ public class CommonDicomConfiguration implements DicomConfiguration{
         if (deviceCache.containsKey(name))
             return deviceCache.get(name);
 
+
         try {
-            Object configurationNode = config.getConfigurationNode("dicomConfigurationRoot/Devices/" + ConfigNodeUtil.escape(name));
+            Object configurationNode = config.getConfigurationNode("dicomConfigurationRoot/dicomDevicesRoot/" + ConfigNodeUtil.escape(name));
             return vitalizer.newConfiguredInstance(Device.class, (Map<String, Object>) configurationNode);
         } catch (ConfigurationException e) {
             throw new ConfigurationException("Configuration for device "+name+" cannot be loaded");

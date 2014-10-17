@@ -59,7 +59,7 @@ public interface Configuration {
  *                          This parameter is required e.g., by LDAP backend to provide additional metadata like ObjectClasses and LDAP node hierarchy relations.
      *                          configurableClass is persisted and can be retrieved by getConfigurationNodeClass
      */
-    void persistNode(String path, Object configNode, Class configurableClass) throws ConfigurationException;
+    void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException;
 
     /**
      * Invalidates any state, so next time the corresponding part of configuration is accessed with getConfigurationNode, it is be re-loaded from the backend.

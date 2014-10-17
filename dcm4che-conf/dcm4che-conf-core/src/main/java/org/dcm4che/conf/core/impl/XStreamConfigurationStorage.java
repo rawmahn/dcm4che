@@ -29,13 +29,11 @@ public class XStreamConfigurationStorage implements Configuration {
 
     @Override
     public Map<String, Object> getConfigurationRoot() throws ConfigurationException {
-
         try {
             return (Map<String, Object>) xstream.fromXML(new BufferedReader(new FileReader(fileName)));
         } catch (FileNotFoundException e) {
             return new HashMap<String, Object>();
         }
-
     }
 
     @Override
@@ -45,17 +43,23 @@ public class XStreamConfigurationStorage implements Configuration {
 
     @Override
     public Class getConfigurationNodeClass(String path) throws ConfigurationException, ClassNotFoundException {
-
-        String clazz = (String) ConfigNodeUtil.getNode(getConfigurationRoot(), ConfigNodeUtil.concat(path, "/#class"));
-        return (clazz == null ? null : Class.forName(clazz));
-
+        try {
+            String clazz = (String) ((Map<String, Object>) ConfigNodeUtil.getNode(getConfigurationRoot(), path)).get("#class");
+            return (clazz == null ? null : Class.forName(clazz));
+        } catch (RuntimeException e) {
+            throw new ConfigurationException("Cannot retrieve class for node "+path,e);
+        }
     }
 
+
     @Override
-    public void persistNode(String path, Object configNode, Class configurableClass) throws ConfigurationException {
+    public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
         try {
             Map<String, Object> configurationRoot = getConfigurationRoot();
             Map<String, Object> node = (Map<String, Object>) ConfigNodeUtil.getNode(configurationRoot, path);
+
+            if (configurableClass != null)
+                configNode.put("#class", configurableClass.getName());
 
             if (!path.equals("/"))
                 ConfigNodeUtil.replaceNode(configurationRoot, path, configNode); else

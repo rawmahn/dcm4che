@@ -264,7 +264,6 @@ public class VitalizerTest {
         return map;
     }
 
-
     @Test
     public void testBackAndForthTestConfigClass() throws ConfigurationException {
         HashMap<String, Object> testConfigClassNode = getTestConfigClassMap();
@@ -294,6 +293,5 @@ public class VitalizerTest {
         }
 
     }
-
 
 }
