@@ -83,7 +83,7 @@ public class CommonDicomConfiguration implements DicomConfiguration{
         final String path = getAETPath(aet);
         if (config.nodeExists(path)) return false;
 
-        final HashMap<String, String> map = new HashMap<String, String>();
+        final HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("dicomAETitle", aet);
 
         config.persistNode(path, map, AETitleItem.class);
