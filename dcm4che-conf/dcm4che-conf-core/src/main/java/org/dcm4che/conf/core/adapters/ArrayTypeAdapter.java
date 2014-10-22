@@ -80,13 +80,13 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     }
 
     @Override
-    public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         Map<String, Object> metadata = new HashMap<String, Object>();
-        metadata.put("type", "Array");
+        metadata.put("type", "array");
 
         Class<?> componentType = ((Class) property.getType()).getComponentType();
-        metadata.put("elementMetadata", vitalizer.lookupTypeAdapter(componentType).getMetadata(new AnnotatedConfigurableProperty(componentType), vitalizer));
+        metadata.put("items", vitalizer.lookupTypeAdapter(componentType).getSchema(new AnnotatedConfigurableProperty(componentType), vitalizer));
 
         return metadata;
     }

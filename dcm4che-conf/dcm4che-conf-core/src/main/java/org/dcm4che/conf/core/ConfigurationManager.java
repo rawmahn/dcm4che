@@ -3,7 +3,7 @@ package org.dcm4che.conf.core;
 /**
  * in progress...
  */
-public class ConfigurationFactory {
+public class ConfigurationManager {
 
     public void setConstantNodeForBeanClass(Class clazz, String path) {
 
@@ -21,5 +21,20 @@ public class ConfigurationFactory {
 
     }
 
+    /**
+     * dicomConfigurationRoot/dicomDeviceRoot/* ~ Device.class
+     */
+
+    // pojofrombackend
+    // - apply defaults
+    // - normalize
+
+    // jsonfrombackend
+    // normalize
+    // apply defaults
+
+    // persistfromjson
+    // normalize
+    // defaults filter
 
 }

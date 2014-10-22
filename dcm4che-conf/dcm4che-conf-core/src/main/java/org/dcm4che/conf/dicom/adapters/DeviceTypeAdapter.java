@@ -14,7 +14,8 @@ import org.dcm4che3.net.Device;
 public class DeviceTypeAdapter extends DefaultConfigTypeAdapters.CommonAbstractTypeAdapter<Device> {
 
     public DeviceTypeAdapter() {
-        super("Device");
+        super("string");
+        metadata.put("class","Device");
     }
 
     @Override

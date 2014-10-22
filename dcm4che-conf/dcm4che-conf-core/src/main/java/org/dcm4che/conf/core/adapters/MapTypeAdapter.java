@@ -61,14 +61,16 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
     }
 
     @Override
-    public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         Map<String, Object> metadata =  new HashMap<String, Object>();
         Map<String, Object> keyMetadata =  new HashMap<String, Object>();
         Map<String, Object> valueMetadata =  new HashMap<String, Object>();
-        
-        metadata.put("type", "Map");
-        
+        Map<String, Object> valueMetadataWrapper =  new HashMap<String, Object>();
+
+        metadata.put("type", "object");
+        metadata.put("class", "Map");
+
         // get adapters
         Type valueType = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 1);
         Type keyType = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
@@ -76,11 +78,12 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
         ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) vitalizer.lookupTypeAdapter(keyType);
 
         // fill in key and value metadata
-        keyMetadata.putAll(keyAdapter.getMetadata(new AnnotatedConfigurableProperty(keyType), vitalizer));
-        metadata.put("keyMetadata", keyMetadata);
+        keyMetadata.putAll(keyAdapter.getSchema(new AnnotatedConfigurableProperty(keyType), vitalizer));
+        metadata.put("mapkey", keyMetadata);
         
-        valueMetadata.putAll(valueAdapter.getMetadata(new AnnotatedConfigurableProperty(valueType), vitalizer));
-        metadata.put("elementMetadata", valueMetadata);
+        valueMetadata.putAll(valueAdapter.getSchema(new AnnotatedConfigurableProperty(valueType), vitalizer));
+        valueMetadataWrapper.put("*", valueMetadata);
+        metadata.put("properties", valueMetadataWrapper);
 
         return metadata;
     }

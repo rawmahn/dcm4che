@@ -4,7 +4,6 @@ import org.dcm4che.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.ConfigurationUnserializableException;
-import org.dcm4che3.conf.api.generic.ReflectiveConfig;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -14,6 +13,7 @@ public interface ConfigTypeAdapter<T, ST> {
 
     /**
      * Converts serialized configuration representation to the type provided by this adaptor.
+     * Handles default values
      * @param configNode
      * @param property the property which is going to be assigned the returned value (Can be null)
      * @param vitalizer
@@ -36,5 +36,20 @@ public interface ConfigTypeAdapter<T, ST> {
      */
     ST toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
 
-    Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
+    /**
+     * Returns a metadata node in json-schema format (http://json-schema.org/)
+     * @param property
+     * @param vitalizer
+     * @return
+     * @throws ConfigurationException
+     */
+    Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
+
+    /**
+     * Converts allowed representations (e.g., "123" for Integer) to proper serialized representation
+     * @param configNode
+     * @return
+     */
+    ST normalize(Object configNode) throws ConfigurationException;
+
 }

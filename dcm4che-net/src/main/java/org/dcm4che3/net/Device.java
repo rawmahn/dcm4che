@@ -63,6 +63,7 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
+import org.dcm4che3.conf.api.generic.ConfigurableProperty;
 import org.dcm4che3.data.Code;
 import org.dcm4che3.data.Issuer;
 import org.dcm4che3.util.StringUtils;
@@ -81,8 +82,14 @@ public class Device implements Serializable {
 
     private static final long serialVersionUID = -5816872456184522866L;
 
+    @ConfigurableProperty(name = "dicomDeviceName")
     private String deviceName;
+
+    @ConfigurableProperty(name = "dicomDescription")
     private String description;
+
+
+    @ConfigurableProperty(name = "dicomDescription")
     private String manufacturer;
     private String manufacturerModelName;
     private String stationName;
@@ -114,7 +121,10 @@ public class Device implements Serializable {
     private String[] relatedDeviceRefs = {};
     private byte[][] vendorData = {};
     private int limitOpenAssociations;
+
+    @ConfigurableProperty(name = "dicomInstalled")
     private boolean installed = true;
+
     private TimeZone timeZoneOfDevice;
 
     private final LinkedHashMap<String, X509Certificate[]> authorizedNodeCertificates = 

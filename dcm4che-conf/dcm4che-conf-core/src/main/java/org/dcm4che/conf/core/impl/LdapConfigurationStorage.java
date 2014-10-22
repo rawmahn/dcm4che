@@ -7,53 +7,46 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * @author Roman K
+ * TODO: thread safety
  */
-public class DelegatingConfiguration implements Configuration {
-
-    protected Configuration delegate;
-
-    public DelegatingConfiguration(Configuration delegate) {
-        this.delegate = delegate;
-    }
-
+public class LdapConfigurationStorage implements Configuration {
     @Override
     public Map<String, Object> getConfigurationRoot() throws ConfigurationException {
-        return delegate.getConfigurationRoot();
+        return null;
     }
 
     @Override
     public Object getConfigurationNode(String path) throws ConfigurationException {
-        return delegate.getConfigurationNode(path);
+        return null;
     }
 
     @Override
     public Class getConfigurationNodeClass(String path) throws ConfigurationException, ClassNotFoundException {
-        return delegate.getConfigurationNodeClass(path);
+        return null;
     }
 
     @Override
     public boolean nodeExists(String path) throws ConfigurationException {
-        return delegate.nodeExists(path);
+        return false;
     }
 
     @Override
     public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
-        delegate.persistNode(path, configNode, configurableClass);
+
     }
 
     @Override
     public void refreshNode(String path) throws ConfigurationException {
-        delegate.refreshNode(path);
+
     }
 
     @Override
     public void removeNode(String path) throws ConfigurationException {
-        delegate.removeNode(path);
+
     }
 
     @Override
     public Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException {
-        return delegate.search(liteXPathExpression);
+        return null;
     }
 }

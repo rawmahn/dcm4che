@@ -40,18 +40,18 @@ public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, Collecti
     }
 
     @Override
-    public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         Map<String, Object> metadata =  new HashMap<String, Object>();
         Map<String, Object> elementMetadata =  new HashMap<String, Object>();
         
-        metadata.put("type", "Set");
+        metadata.put("type", "array");
 
         Type typeForGenericsParameter = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
         ConfigTypeAdapter<T,ST> adapter = vitalizer.lookupTypeAdapter(typeForGenericsParameter);
 
-        elementMetadata.putAll(adapter.getMetadata(new AnnotatedConfigurableProperty(typeForGenericsParameter), vitalizer));
-        metadata.put("elementMetadata", elementMetadata);
+        elementMetadata.putAll(adapter.getSchema(new AnnotatedConfigurableProperty(typeForGenericsParameter), vitalizer));
+        metadata.put("items", elementMetadata);
         
         return metadata;
     }

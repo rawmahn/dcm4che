@@ -13,7 +13,8 @@ import org.dcm4che3.util.AttributesFormat;
 public class AttributeFormatTypeAdapter extends DefaultConfigTypeAdapters.CommonAbstractTypeAdapter<AttributesFormat> {
 
     public AttributeFormatTypeAdapter() {
-        super("AttributesFormat");
+        super("string");
+        metadata.put("class","AttributesFormat");
     }
 
     @Override

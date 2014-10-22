@@ -110,31 +110,38 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
 
 
     @Override
-    public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         Class<T> clazz = (Class<T>) property.getType();
 
         Map<String,Object> classMetaDataWrapper = new HashMap<String,Object>();
         Map<String,Object> classMetaData = new HashMap<String,Object>();
-        classMetaDataWrapper.put("attributes", classMetaData);
-        classMetaDataWrapper.put("type", clazz.getSimpleName());
+        classMetaDataWrapper.put("properties", classMetaData);
+        classMetaDataWrapper.put("type", "object");
+        classMetaDataWrapper.put("class", clazz.getSimpleName());
 
         for (AnnotatedConfigurableProperty configurableChildProperty : ConfigIterators.getAllConfigurableFieldsAndSetterParameters(clazz)) {
 
             ConfigurableProperty propertyAnnotation = configurableChildProperty.getAnnotation(ConfigurableProperty.class);
 
             Map<String, Object> childPropertyMetadata = new HashMap<String, Object>();
-            classMetaData.put(propertyAnnotation.name(), childPropertyMetadata);
-            childPropertyMetadata.put("label", propertyAnnotation.label());
+            classMetaData.put(configurableChildProperty.getAnnotatedName(), childPropertyMetadata);
+            childPropertyMetadata.put("title", propertyAnnotation.label());
             childPropertyMetadata.put("description", propertyAnnotation.description());
+            // TODO: default value should be converted to proper type
             childPropertyMetadata.put("default", propertyAnnotation.defaultValue());
 
             // also merge in the metadata from this child itself
             ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(configurableChildProperty.getType());
-            Map<String, Object> childMetaData = adapter.getMetadata(configurableChildProperty, vitalizer);
+            Map<String, Object> childMetaData = adapter.getSchema(configurableChildProperty, vitalizer);
             if (childMetaData != null) childPropertyMetadata.putAll(childMetaData);
         }
 
         return classMetaDataWrapper;
+    }
+
+    @Override
+    public Map<String, Object> normalize(Object configNode) throws ConfigurationException {
+        return (Map<String, Object>) configNode;
     }
 }

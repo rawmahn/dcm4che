@@ -53,11 +53,11 @@ import java.lang.annotation.Target;
 public @interface ConfigurableProperty {
 
     /**
-     * Name of the node
+     * Name of the node. If not specified, the field/parameter name is used.
      * 
      * @return
      */
-    String name();
+    String name() default "";
 
     /**
      * Default for primitives (int, string, boolean). If default is not specified, the property is considered required.

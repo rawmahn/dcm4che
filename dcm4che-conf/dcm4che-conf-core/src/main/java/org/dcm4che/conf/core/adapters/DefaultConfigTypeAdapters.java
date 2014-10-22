@@ -39,12 +39,17 @@ package org.dcm4che.conf.core.adapters;
 
 import org.dcm4che.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che.conf.core.BeanVitalizer;
+import org.dcm4che.conf.core.validation.ValidationException;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.ConfigurationUnserializableException;
 import org.dcm4che3.conf.api.generic.ConfigurableProperty;
 
-import java.lang.reflect.*;
-import java.util.*;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Roman K
@@ -62,7 +67,7 @@ public class DefaultConfigTypeAdapters {
      */
     static Object delegateGetChildFromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         // determine node name and get the property
-        String nodeName = property.getAnnotation(ConfigurableProperty.class).name();
+        String nodeName = property.getAnnotatedName();
         Object node = configNode.get(nodeName);
 
         // lookup adapter and run it on the property
@@ -71,7 +76,7 @@ public class DefaultConfigTypeAdapters {
     }
 
     static void delegateChildToConfigNode(Object object, Map<String, Object> parentNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
-        String nodeName = property.getAnnotation(ConfigurableProperty.class).name();
+        String nodeName = property.getAnnotatedName();
         ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property.getType());
         parentNode.put(nodeName, adapter.toConfigNode(object, property, vitalizer));
     }
@@ -115,8 +120,43 @@ public class DefaultConfigTypeAdapters {
          * Constant metadata
          */
         @Override
-        public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+        public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
             return metadata;
+        }
+
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public T normalize(Object configNode) throws ConfigurationException {
+            try {
+                if (metadata.get("type").equals("integer")) {
+
+                    if (configNode.getClass().equals(String.class))
+                        return (T) Integer.valueOf((String) configNode);
+                    else if (configNode.getClass().equals(Integer.class))
+                        return (T) configNode;
+                    else
+                        throw new ClassCastException();
+                } else if (metadata.get("type").equals("boolean")) {
+                    if (configNode.getClass().equals(String.class))
+                        return (T) Boolean.valueOf((String) configNode);
+                    else if (configNode.getClass().equals(Boolean.class))
+                        return (T) configNode;
+                    else
+                        throw new ClassCastException();
+
+                } else if (metadata.get("type").equals("number")) {
+                    if (configNode.getClass().equals(String.class))
+                        return (T) Double.valueOf((String) configNode);
+                    else if (configNode.getClass().equals(Double.class) ||
+                            configNode.getClass().equals(Float.class))
+                        return (T) configNode;
+                    else
+                        throw new ClassCastException();
+                } else return (T) configNode;
+            } catch (Exception e) {
+                throw new ConfigurationException("Cannot parse node " + configNode, e);
+            }
         }
     }
 
@@ -124,25 +164,42 @@ public class DefaultConfigTypeAdapters {
      * Common Read/Write methods for String representation
      */
     public abstract static class CommonAbstractTypeAdapter<T> implements ConfigTypeAdapter<T, String> {
-        Map<String, Object> metadata = new HashMap<String, Object>();
+        protected Map<String, Object> metadata = new HashMap<String, Object>();
 
         public CommonAbstractTypeAdapter(String type) {
             metadata.put("type", type);
         }
 
         @Override
-        public Map<String, Object> getMetadata(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+        public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
             return metadata;
+        }
+
+        @Override
+        public String normalize(Object configNode) throws ConfigurationException {
+            return (String) configNode;
         }
     }
 
+    private static Object getDefaultIfNull(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        if (configNode == null) {
+            configNode = property.getAnnotation(ConfigurableProperty.class).defaultValue();
+            if (configNode.equals(""))
+                throw new ValidationException("Property " + property.getAnnotatedName() + " must have a value");
+        }
+        return configNode;
+    }
+
+
     /**
-     * AttributesFormat
+     * Enum - string
      */
     public static class EnumTypeAdapter extends CommonAbstractTypeAdapter<Enum<?>> {
 
+
+        //TODO: implement getSchema for Enums!
         public EnumTypeAdapter() {
-            super("Enum");
+            super("enum");
         }
 
 
@@ -169,17 +226,17 @@ public class DefaultConfigTypeAdapters {
     static {
         defaultTypeAdapters = new HashMap<Class, ConfigTypeAdapter>();
 
-        defaultTypeAdapters.put(String.class, new PrimitiveTypeAdapter("String"));
+        defaultTypeAdapters.put(String.class, new PrimitiveTypeAdapter("string"));
 
-        PrimitiveTypeAdapter integerAdapter = new PrimitiveTypeAdapter("Integer");
+        ConfigTypeAdapter integerAdapter = new PrimitiveTypeAdapter("integer");
         defaultTypeAdapters.put(int.class, integerAdapter);
         defaultTypeAdapters.put(Integer.class, integerAdapter);
 
-        PrimitiveTypeAdapter booleanAdapter = new PrimitiveTypeAdapter("Boolean");
+        ConfigTypeAdapter booleanAdapter = new PrimitiveTypeAdapter("boolean");
         defaultTypeAdapters.put(Boolean.class, booleanAdapter);
         defaultTypeAdapters.put(boolean.class, booleanAdapter);
 
-        PrimitiveTypeAdapter doubleAdapter = new PrimitiveTypeAdapter("Double");
+        ConfigTypeAdapter doubleAdapter =  new PrimitiveTypeAdapter("number");
         defaultTypeAdapters.put(double.class, doubleAdapter);
         defaultTypeAdapters.put(float.class, doubleAdapter);
         defaultTypeAdapters.put(Double.class, doubleAdapter);

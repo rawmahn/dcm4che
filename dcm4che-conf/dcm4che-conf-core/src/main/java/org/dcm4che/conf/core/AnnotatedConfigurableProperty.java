@@ -1,5 +1,8 @@
 package org.dcm4che.conf.core;
 
+import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.api.generic.ConfigurableProperty;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Map;
@@ -38,6 +41,16 @@ public class AnnotatedConfigurableProperty {
 
     public String getName() {
         return name;
+    }
+
+    public String getAnnotatedName() throws ConfigurationException {
+
+        String name = getAnnotation(ConfigurableProperty.class).name();
+        if (!name.equals("")) return name;
+        name = this.name;
+        if (name != null) return name;
+        throw new ConfigurationException("Property name not specified");
+
     }
 
     public void setName(String name) {
