@@ -87,4 +87,9 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
 
         return metadata;
     }
+
+    @Override
+    public Map<String, Object> normalize(Object configNode) throws ConfigurationException {
+        return (Map<String, Object>) configNode;
+    }
 }

@@ -91,4 +91,9 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         return metadata;
     }
 
+    @Override
+    public Object normalize(Object configNode) throws ConfigurationException {
+        return configNode;
+    }
+
 }

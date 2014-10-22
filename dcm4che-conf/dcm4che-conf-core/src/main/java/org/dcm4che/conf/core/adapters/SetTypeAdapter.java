@@ -56,4 +56,8 @@ public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, Collecti
         return metadata;
     }
 
+    @Override
+    public Collection<ST> normalize(Object configNode) throws ConfigurationException {
+        return (Collection<ST>) configNode;
+    }
 }
