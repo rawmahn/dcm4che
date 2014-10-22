@@ -10,6 +10,13 @@ import java.util.Map;
 /**
  * Created by aprvf on 22/10/2014.
  */
+
+/**
+ * 
+ * $$default as a reserved value that represents that the value from default item is used
+ *
+ * Switchable - for JSON and for POJOS - first will leave $$defaults untouched, second will .. but LDAP...??
+ */
 public class DefaultsFilterDecorator extends DelegatingConfiguration {
     public DefaultsFilterDecorator(Configuration delegate) {
         super(delegate);

@@ -5,6 +5,7 @@ import org.dcm4che.conf.core.Configuration;
 import org.dcm4che.conf.core.util.ConfigNodeUtil;
 import org.dcm4che.conf.dicom.adapters.AttributeFormatTypeAdapter;
 import org.dcm4che.conf.dicom.adapters.DeviceTypeAdapter;
+import org.dcm4che3.conf.api.ConfigurationAlreadyExistsException;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.conf.api.generic.ConfigurableProperty;
@@ -126,7 +127,7 @@ public class CommonDicomConfiguration implements DicomConfiguration{
 
 
         try {
-            Object configurationNode = config.getConfigurationNode("dicomConfigurationRoot/dicomDevicesRoot/" + ConfigNodeUtil.escape(name));
+            Object configurationNode = config.getConfigurationNode(deviceRef(name));
             return vitalizer.newConfiguredInstance(Device.class, (Map<String, Object>) configurationNode);
         } catch (ConfigurationException e) {
             throw new ConfigurationException("Configuration for device "+name+" cannot be loaded");
@@ -153,7 +154,11 @@ public class CommonDicomConfiguration implements DicomConfiguration{
 
     @Override
     public void persist(Device device) throws ConfigurationException {
-
+        String deviceName = device.getDeviceName();
+        String path = deviceRef(deviceName);
+        if (config.nodeExists(path))
+            throw new ConfigurationAlreadyExistsException("Device " + deviceName + " already exists");
+        config.persistNode(path, vitalizer.createConfigNodeFromInstance(device),Device.class);
     }
 
     @Override
@@ -163,12 +168,12 @@ public class CommonDicomConfiguration implements DicomConfiguration{
 
     @Override
     public void removeDevice(String name) throws ConfigurationException {
-
+        config.removeNode(deviceRef(name));
     }
 
     @Override
     public String deviceRef(String name) {
-        return null;
+        return "dicomConfigurationRoot/dicomDevicesRoot/" + ConfigNodeUtil.escape(name);
     }
 
     @Override
