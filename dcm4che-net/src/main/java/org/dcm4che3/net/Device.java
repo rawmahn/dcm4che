@@ -63,7 +63,7 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
-import org.dcm4che3.conf.api.generic.ConfigurableProperty;
+import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.data.Code;
 import org.dcm4che3.data.Issuer;
 import org.dcm4che3.util.StringUtils;
@@ -88,43 +88,77 @@ public class Device implements Serializable {
     @ConfigurableProperty(name = "dicomDescription")
     private String description;
 
-
     @ConfigurableProperty(name = "dicomDescription")
     private String manufacturer;
-    private String manufacturerModelName;
-    private String stationName;
-    private String deviceSerialNumber;
-    private String trustStoreURL;
-    private String trustStoreType;
-    private String trustStorePin;
-    private String trustStorePinProperty;
-    private String keyStoreURL;
-    private String keyStoreType;
-    private String keyStorePin;
-    private String keyStorePinProperty;
-    private String keyStoreKeyPin;
-    private String keyStoreKeyPinProperty;
-    private Issuer issuerOfPatientID;
-    private Issuer issuerOfAccessionNumber;
-    private Issuer orderPlacerIdentifier;
-    private Issuer orderFillerIdentifier;
-    private Issuer issuerOfAdmissionID;
-    private Issuer issuerOfServiceEpisodeID;
-    private Issuer issuerOfContainerIdentifier;
-    private Issuer issuerOfSpecimenIdentifier;
-    private String[] softwareVersions = {};
-    private String[] primaryDeviceTypes = {};
-    private String[] institutionNames = {};
-    private Code[] institutionCodes = {};
-    private String[] institutionAddresses = {};
-    private String[] institutionalDepartmentNames = {};
-    private String[] relatedDeviceRefs = {};
-    private byte[][] vendorData = {};
-    private int limitOpenAssociations;
+
+
+
+    @ConfigurableProperty(name = "dicomManufacturerModelName")
+ private String manufacturerModelName;
+    @ConfigurableProperty(name = "dicomStationName")
+ private String stationName;
+    @ConfigurableProperty(name = "dicomDeviceSerialNumber")
+ private String deviceSerialNumber;
+    @ConfigurableProperty(name = "dicomTrustStoreURL")
+ private String trustStoreURL;
+    @ConfigurableProperty(name = "dicomTrustStoreType")
+ private String trustStoreType;
+    @ConfigurableProperty(name = "dicomTrustStorePin")
+ private String trustStorePin;
+    @ConfigurableProperty(name = "dicomTrustStorePinProperty")
+ private String trustStorePinProperty;
+    @ConfigurableProperty(name = "dicomKeyStoreURL")
+ private String keyStoreURL;
+    @ConfigurableProperty(name = "dicomKeyStoreType")
+ private String keyStoreType;
+    @ConfigurableProperty(name = "dicomKeyStorePin")
+ private String keyStorePin;
+    @ConfigurableProperty(name = "dicomKeyStorePinProperty")
+ private String keyStorePinProperty;
+    @ConfigurableProperty(name = "dicomKeyStoreKeyPin")
+ private String keyStoreKeyPin;
+    @ConfigurableProperty(name = "dicomKeyStoreKeyPinProperty")
+ private String keyStoreKeyPinProperty;
+    @ConfigurableProperty(name = "dicomIssuerOfPatientID")
+ private Issuer issuerOfPatientID;
+    @ConfigurableProperty(name = "dicomIssuerOfAccessionNumber")
+ private Issuer issuerOfAccessionNumber;
+    @ConfigurableProperty(name = "dicomOrderPlacerIdentifier")
+ private Issuer orderPlacerIdentifier;
+    @ConfigurableProperty(name = "dicomOrderFillerIdentifier")
+ private Issuer orderFillerIdentifier;
+    @ConfigurableProperty(name = "dicomIssuerOfAdmissionID")
+ private Issuer issuerOfAdmissionID;
+    @ConfigurableProperty(name = "dicomIssuerOfServiceEpisodeID")
+ private Issuer issuerOfServiceEpisodeID;
+    @ConfigurableProperty(name = "dicomIssuerOfContainerIdentifier")
+ private Issuer issuerOfContainerIdentifier;
+    @ConfigurableProperty(name = "dicomIssuerOfSpecimenIdentifier")
+ private Issuer issuerOfSpecimenIdentifier;
+    @ConfigurableProperty(name = "dicomSoftwareVersions")
+ private String[] softwareVersions = {};
+    @ConfigurableProperty(name = "dicomPrimaryDeviceTypes")
+ private String[] primaryDeviceTypes = {};
+    @ConfigurableProperty(name = "dicomInstitutionNames")
+ private String[] institutionNames = {};
+    @ConfigurableProperty(name = "dicomInstitutionCodes")
+ private Code[] institutionCodes = {};
+    @ConfigurableProperty(name = "dicomInstitutionAddresses")
+ private String[] institutionAddresses = {};
+    @ConfigurableProperty(name = "dicomInstitutionalDepartmentNames")
+ private String[] institutionalDepartmentNames = {};
+    @ConfigurableProperty(name = "dicomRelatedDeviceRefs")
+ private String[] relatedDeviceRefs = {};
+    @ConfigurableProperty(name = "dicomVendorData")
+ private byte[][] vendorData = {};
+    @ConfigurableProperty(name = "dicomLimitOpenAssociations;")
+ private int limitOpenAssociations;
 
     @ConfigurableProperty(name = "dicomInstalled")
     private boolean installed = true;
 
+    @ConfigurableProperty(name = "dicomT" +
+            "imeZoneOfDevice")
     private TimeZone timeZoneOfDevice;
 
     private final LinkedHashMap<String, X509Certificate[]> authorizedNodeCertificates = 

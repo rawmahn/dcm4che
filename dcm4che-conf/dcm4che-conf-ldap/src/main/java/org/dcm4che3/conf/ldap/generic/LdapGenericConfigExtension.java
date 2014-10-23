@@ -37,9 +37,7 @@
  * ***** END LICENSE BLOCK ***** */
 package org.dcm4che3.conf.ldap.generic;
 
-import java.awt.dnd.DnDConstants;
 import java.util.ArrayList;
-import java.util.List;
 
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
@@ -52,7 +50,6 @@ import javax.naming.directory.ModificationItem;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.ldap.LdapDicomConfiguration;
 import org.dcm4che3.conf.ldap.LdapDicomConfigurationExtension;
-import org.dcm4che3.net.ApplicationEntity;
 import org.dcm4che3.net.Device;
 import org.dcm4che3.net.DeviceExtension;
 import org.dcm4che3.conf.api.generic.ConfigClass;
