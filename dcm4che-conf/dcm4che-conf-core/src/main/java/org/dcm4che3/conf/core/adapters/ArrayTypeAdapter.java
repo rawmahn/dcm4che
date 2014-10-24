@@ -4,12 +4,15 @@ import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.ConfigurationUnserializableException;
+import org.dcm4che3.util.Base64;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.*;
 
 /**
- * Array
+ * Arrays.
+ * Special case - byte arrays are encoded as base64 strings
  */
 public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
 
@@ -36,6 +39,15 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         // handle null
         if (configNode == null) return Array.newInstance(componentType, 0);
 
+        // handle byte[]. Expect a base64 String.
+        if (componentType.equals(byte.class))
+            try {
+                return Base64.fromBase64((String) configNode);
+            } catch (IOException e) {
+                throw new ConfigurationException("Cannot read Base64",e);
+            }
+
+
         // if it is a collection, create an array with proper component type
         if (Collection.class.isAssignableFrom(configNode.getClass())) {
             Collection l = ((Collection) configNode);
@@ -60,6 +72,11 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
 
     @Override
     public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
+
+        // handle byte[]. Convert to base64 String.
+        if (((Class) property.getType()).getComponentType().equals(byte.class))
+            return Base64.toBase64((byte[]) object);
+
         return arrayToList(object);
     }
 
@@ -83,6 +100,14 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         Map<String, Object> metadata = new HashMap<String, Object>();
+
+        // handle byte[]
+        if (((Class) property.getType()).getComponentType().equals(byte.class)) {
+            metadata.put("type", "string");
+            metadata.put("metatype", "base64");
+            return metadata;
+        }
+
         metadata.put("type", "array");
 
         Class<?> componentType = ((Class) property.getType()).getComponentType();

@@ -15,7 +15,7 @@ public class DeviceTypeAdapter extends DefaultConfigTypeAdapters.CommonAbstractT
 
     public DeviceTypeAdapter() {
         super("string");
-        metadata.put("class","Device");
+        metadata.put("metatype","device");
     }
 
     @Override

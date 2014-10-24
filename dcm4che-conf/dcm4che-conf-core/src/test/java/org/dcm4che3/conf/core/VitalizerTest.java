@@ -98,8 +98,20 @@ public class VitalizerTest {
         @ConfigurableProperty
         boolean[] boolArrayProp;
 
+        @ConfigurableProperty
+        byte[] byteArrayProp;
+
+
         @ConfigurableProperty(name="intArrayProp")
         int[] intArrayProp;
+
+        public byte[] getByteArrayProp() {
+            return byteArrayProp;
+        }
+
+        public void setByteArrayProp(byte[] byteArrayProp) {
+            this.byteArrayProp = byteArrayProp;
+        }
 
         public Set<String> getaSet() {
             return aSet;
@@ -219,6 +231,7 @@ public class VitalizerTest {
         map.put("boolProp1", false);
         map.put("boolProp2", true);
         map.put("strProp", "a cool str");
+        map.put("byteArrayProp","aGVsbG8=");
 
         HashMap<String, Object> subClassInst1 = new HashMap<String, Object>();
         subClassInst1.put("prop1", 123);

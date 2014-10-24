@@ -74,7 +74,7 @@ import org.dcm4che3.util.StringUtils;
  * its physical attributes (serial number, manufacturer, etc.), its context
  * (issuer of patient ids used by the device, etc.), as well as its capabilities
  * (TLS-enabled, AE titles used, etc.).
- * 
+ *
  * @author Gunter Zeilinger <gunterze@gmail.com>
  *
  */
@@ -88,85 +88,85 @@ public class Device implements Serializable {
     @ConfigurableProperty(name = "dicomDescription")
     private String description;
 
-    @ConfigurableProperty(name = "dicomDescription")
+    @ConfigurableProperty(name = "dicomManufacturer")
     private String manufacturer;
 
 
-
     @ConfigurableProperty(name = "dicomManufacturerModelName")
- private String manufacturerModelName;
+    private String manufacturerModelName;
     @ConfigurableProperty(name = "dicomStationName")
- private String stationName;
+    private String stationName;
     @ConfigurableProperty(name = "dicomDeviceSerialNumber")
- private String deviceSerialNumber;
+    private String deviceSerialNumber;
     @ConfigurableProperty(name = "dicomTrustStoreURL")
- private String trustStoreURL;
+    private String trustStoreURL;
     @ConfigurableProperty(name = "dicomTrustStoreType")
- private String trustStoreType;
+    private String trustStoreType;
     @ConfigurableProperty(name = "dicomTrustStorePin")
- private String trustStorePin;
+    private String trustStorePin;
     @ConfigurableProperty(name = "dicomTrustStorePinProperty")
- private String trustStorePinProperty;
+    private String trustStorePinProperty;
     @ConfigurableProperty(name = "dicomKeyStoreURL")
- private String keyStoreURL;
+    private String keyStoreURL;
     @ConfigurableProperty(name = "dicomKeyStoreType")
- private String keyStoreType;
+    private String keyStoreType;
     @ConfigurableProperty(name = "dicomKeyStorePin")
- private String keyStorePin;
+    private String keyStorePin;
     @ConfigurableProperty(name = "dicomKeyStorePinProperty")
- private String keyStorePinProperty;
+    private String keyStorePinProperty;
     @ConfigurableProperty(name = "dicomKeyStoreKeyPin")
- private String keyStoreKeyPin;
+    private String keyStoreKeyPin;
     @ConfigurableProperty(name = "dicomKeyStoreKeyPinProperty")
- private String keyStoreKeyPinProperty;
+    private String keyStoreKeyPinProperty;
     @ConfigurableProperty(name = "dicomIssuerOfPatientID")
- private Issuer issuerOfPatientID;
+    private Issuer issuerOfPatientID;
     @ConfigurableProperty(name = "dicomIssuerOfAccessionNumber")
- private Issuer issuerOfAccessionNumber;
+    private Issuer issuerOfAccessionNumber;
     @ConfigurableProperty(name = "dicomOrderPlacerIdentifier")
- private Issuer orderPlacerIdentifier;
+    private Issuer orderPlacerIdentifier;
     @ConfigurableProperty(name = "dicomOrderFillerIdentifier")
- private Issuer orderFillerIdentifier;
+    private Issuer orderFillerIdentifier;
     @ConfigurableProperty(name = "dicomIssuerOfAdmissionID")
- private Issuer issuerOfAdmissionID;
+    private Issuer issuerOfAdmissionID;
     @ConfigurableProperty(name = "dicomIssuerOfServiceEpisodeID")
- private Issuer issuerOfServiceEpisodeID;
+    private Issuer issuerOfServiceEpisodeID;
     @ConfigurableProperty(name = "dicomIssuerOfContainerIdentifier")
- private Issuer issuerOfContainerIdentifier;
+    private Issuer issuerOfContainerIdentifier;
     @ConfigurableProperty(name = "dicomIssuerOfSpecimenIdentifier")
- private Issuer issuerOfSpecimenIdentifier;
+    private Issuer issuerOfSpecimenIdentifier;
     @ConfigurableProperty(name = "dicomSoftwareVersions")
- private String[] softwareVersions = {};
+    private String[] softwareVersions = {};
     @ConfigurableProperty(name = "dicomPrimaryDeviceTypes")
- private String[] primaryDeviceTypes = {};
+    private String[] primaryDeviceTypes = {};
     @ConfigurableProperty(name = "dicomInstitutionNames")
- private String[] institutionNames = {};
+    private String[] institutionNames = {};
     @ConfigurableProperty(name = "dicomInstitutionCodes")
- private Code[] institutionCodes = {};
+    private Code[] institutionCodes = {};
     @ConfigurableProperty(name = "dicomInstitutionAddresses")
- private String[] institutionAddresses = {};
+    private String[] institutionAddresses = {};
     @ConfigurableProperty(name = "dicomInstitutionalDepartmentNames")
- private String[] institutionalDepartmentNames = {};
+    private String[] institutionalDepartmentNames = {};
     @ConfigurableProperty(name = "dicomRelatedDeviceRefs")
- private String[] relatedDeviceRefs = {};
+    private String[] relatedDeviceRefs = {};
     @ConfigurableProperty(name = "dicomVendorData")
- private byte[][] vendorData = {};
+    private byte[][] vendorData = {};
     @ConfigurableProperty(name = "dicomLimitOpenAssociations;")
- private int limitOpenAssociations;
+    private int limitOpenAssociations;
 
     @ConfigurableProperty(name = "dicomInstalled")
     private boolean installed = true;
 
-    @ConfigurableProperty(name = "dicomT" +
-            "imeZoneOfDevice")
+    @ConfigurableProperty(name = "dicomTimeZoneOfDevice")
     private TimeZone timeZoneOfDevice;
 
-    private final LinkedHashMap<String, X509Certificate[]> authorizedNodeCertificates = 
+    private final LinkedHashMap<String, X509Certificate[]> authorizedNodeCertificates =
             new LinkedHashMap<String, X509Certificate[]>();
-    private final LinkedHashMap<String, X509Certificate[]> thisNodeCertificates = 
+    private final LinkedHashMap<String, X509Certificate[]> thisNodeCertificates =
             new LinkedHashMap<String, X509Certificate[]>();
+
+
     private final List<Connection> conns = new ArrayList<Connection>();
-    private final LinkedHashMap<String, ApplicationEntity> aes = 
+    private final LinkedHashMap<String, ApplicationEntity> aes =
             new LinkedHashMap<String, ApplicationEntity>();
     private final Map<Class<? extends DeviceExtension>,DeviceExtension> extensions =
             new HashMap<Class<? extends DeviceExtension>,DeviceExtension>();
@@ -195,7 +195,7 @@ public class Device implements Serializable {
 
     /**
      * Get the name of this device.
-     * 
+     *
      * @return A String containing the device name.
      */
     public final String getDeviceName() {
@@ -204,7 +204,7 @@ public class Device implements Serializable {
 
     /**
      * Set the name of this device.
-     * 
+     *
      * @param name A String containing the device name.
      */
     public final void setDeviceName(String name) {
@@ -214,7 +214,7 @@ public class Device implements Serializable {
 
     /**
      * Get the description of this device.
-     * 
+     *
      * @return A String containing the device description.
      */
     public final String getDescription() {
@@ -223,7 +223,7 @@ public class Device implements Serializable {
 
     /**
      * Set the description of this device.
-     * 
+     *
      * @param description
      *                A String containing the device description.
      */
@@ -233,7 +233,7 @@ public class Device implements Serializable {
 
     /**
      * Get the manufacturer of this device.
-     * 
+     *
      * @return A String containing the device manufacturer.
      */
     public final String getManufacturer() {
@@ -245,7 +245,7 @@ public class Device implements Serializable {
      * <p>
      * This should be the same as the value of Manufacturer (0008,0070) in SOP
      * instances created by this device.
-     * 
+     *
      * @param manufacturer
      *                A String containing the device manufacturer.
      */
@@ -255,7 +255,7 @@ public class Device implements Serializable {
 
     /**
      * Get the manufacturer model name of this device.
-     * 
+     *
      * @return A String containing the device manufacturer model name.
      */
     public final String getManufacturerModelName() {
@@ -267,7 +267,7 @@ public class Device implements Serializable {
      * <p>
      * This should be the same as the value of Manufacturer Model Name
      * (0008,1090) in SOP instances created by this device.
-     * 
+     *
      * @param manufacturerModelName
      *                A String containing the device manufacturer model name.
      */
@@ -277,7 +277,7 @@ public class Device implements Serializable {
 
     /**
      * Get the software versions running on (or implemented by) this device.
-     * 
+     *
      * @return A String array containing the software versions.
      */
     public final String[] getSoftwareVersions() {
@@ -289,8 +289,8 @@ public class Device implements Serializable {
      * <p>
      * This should be the same as the values of Software Versions (0018,1020) in
      * SOP instances created by this device.
-     * 
-     * @param softwareVersion
+     *
+     * @param softwareVersions
      *                A String array containing the software versions.
      */
     public final void setSoftwareVersions(String... softwareVersions) {
@@ -299,7 +299,7 @@ public class Device implements Serializable {
 
     /**
      * Get the station name belonging to this device.
-     * 
+     *
      * @return A String containing the station name.
      */
     public final String getStationName() {
@@ -311,7 +311,7 @@ public class Device implements Serializable {
      * <p>
      * This should be the same as the value of Station Name (0008,1010) in SOP
      * instances created by this device.
-     * 
+     *
      * @param stationName
      *                A String containing the station name.
      */
@@ -321,7 +321,7 @@ public class Device implements Serializable {
 
     /**
      * Get the serial number belonging to this device.
-     * 
+     *
      * @return A String containing the serial number.
      */
     public final String getDeviceSerialNumber() {
@@ -333,7 +333,7 @@ public class Device implements Serializable {
      * <p>
      * This should be the same as the value of Device Serial Number (0018,1000)
      * in SOP instances created by this device.
-     * 
+     *
      * @param deviceSerialNumber
      *                A String containing the serial number.
      */
@@ -343,7 +343,7 @@ public class Device implements Serializable {
 
     /**
      * Get the type codes associated with this device.
-     * 
+     *
      * @return A String array containing the type codes of this device.
      */
     public final String[] getPrimaryDeviceTypes() {
@@ -356,7 +356,7 @@ public class Device implements Serializable {
      * Represents the kind of device and is most applicable for acquisition
      * modalities. Types should be selected from the list of code values
      * (0008,0100) for Context ID 30 in PS3.16 when applicable.
-     * 
+     *
      * @param primaryDeviceTypes
      */
     public void setPrimaryDeviceTypes(String... primaryDeviceTypes) {
@@ -366,7 +366,7 @@ public class Device implements Serializable {
     /**
      * Get the institution name associated with this device; may be the site
      * where it resides or is operating on behalf of.
-     * 
+     *
      * @return A String array containing the institution name values.
      */
     public final String[] getInstitutionNames() {
@@ -379,7 +379,7 @@ public class Device implements Serializable {
      * <p>
      * Should be the same as the value of Institution Name (0008,0080) in SOP
      * Instances created by this device.
-     * 
+     *
      * @param names
      *                A String array containing the institution name values.
      */
@@ -397,7 +397,7 @@ public class Device implements Serializable {
 
     /**
      * Set the address of the institution which operates this device.
-     * 
+     *
      * @return A String array containing the institution address values.
      */
     public final String[] getInstitutionAddresses() {
@@ -409,7 +409,7 @@ public class Device implements Serializable {
      * <p>
      * Should be the same as the value of Institution Address (0008,0081)
      * attribute in SOP Instances created by this device.
-     * 
+     *
      * @param addr
      *                A String array containing the institution address values.
      */
@@ -419,7 +419,7 @@ public class Device implements Serializable {
 
     /**
      * Get the department name associated with this device.
-     * 
+     *
      * @return A String array containing the dept. name values.
      */
     public final String[] getInstitutionalDepartmentNames() {
@@ -431,7 +431,7 @@ public class Device implements Serializable {
      * <p>
      * Should be the same as the value of Institutional Department Name
      * (0008,1040) in SOP Instances created by this device.
-     * 
+     *
      * @param name
      *                A String array containing the dept. name values.
      */
@@ -682,7 +682,7 @@ public class Device implements Serializable {
 
     /**
      * Get device specific vendor configuration information
-     * 
+     *
      * @return An Object of the device data.
      */
     public final byte[][] getVendorData() {
@@ -691,7 +691,7 @@ public class Device implements Serializable {
 
     /**
      * Set device specific vendor configuration information
-     * 
+     *
      * @param vendorData
      *                An Object of the device data.
      */
@@ -703,7 +703,7 @@ public class Device implements Serializable {
      * Get a boolean to indicate whether this device is presently installed on
      * the network. (This is useful for pre-configuration, mobile vans, and
      * similar situations.)
-     * 
+     *
      * @return A boolean which will be true if this device is installed.
      */
     public final boolean isInstalled() {
@@ -714,12 +714,12 @@ public class Device implements Serializable {
      * Get a boolean to indicate whether this device is presently installed on
      * the network. (This is useful for pre-configuration, mobile vans, and
      * similar situations.)
-     * 
+     *
      * @param installed
      *                A boolean which will be true if this device is installed.
-     * @throws IOException 
-     * @throws GeneralSecurityException 
-     * @throws KeyManagementException 
+     * @throws IOException
+     * @throws GeneralSecurityException
+     * @throws KeyManagementException
      */
     public final void setInstalled(boolean installed) {
         if (this.installed == installed)
@@ -728,7 +728,7 @@ public class Device implements Serializable {
         this.installed = installed;
         needRebindConnections();
     }
-    
+
     public void setTimeZoneOfDevice(TimeZone timeZoneOfDevice) {
         this.timeZoneOfDevice = timeZoneOfDevice;
     }
@@ -737,7 +737,7 @@ public class Device implements Serializable {
     {
 	return timeZoneOfDevice;
     }
-   
+
     public final void setDimseRQHandler(DimseRQHandler dimseRQHandler) {
         this.dimseRQHandler = dimseRQHandler;
     }
@@ -817,7 +817,7 @@ public class Device implements Serializable {
     public boolean removeConnection(Connection conn) {
         for (ApplicationEntity ae : aes.values())
             if (ae.getConnections().contains(conn))
-                throw new IllegalStateException(conn + " used by AE: " + 
+                throw new IllegalStateException(conn + " used by AE: " +
                         ae.getAETitle());
 
         for (DeviceExtension ext : extensions.values())
@@ -955,7 +955,7 @@ public class Device implements Serializable {
     private String keyStoreType() {
         if (keyStoreType == null)
             throw new IllegalStateException("keyStoreURL requires keyStoreType");
-            
+
         return keyStoreType;
     }
 
@@ -1017,7 +1017,7 @@ public class Device implements Serializable {
     private String trustStoreType() {
         if (trustStoreType == null)
             throw new IllegalStateException("trustStoreURL requires trustStoreType");
-            
+
         return trustStoreType;
     }
 
@@ -1049,7 +1049,7 @@ public class Device implements Serializable {
     private static SSLContext createSSLContext(KeyManager km, TrustManager tm)
             throws GeneralSecurityException {
         SSLContext ctx = SSLContext.getInstance("TLS");
-        ctx.init(km != null ? new KeyManager[]{ km } : null, 
+        ctx.init(km != null ? new KeyManager[]{ km } : null,
                 tm != null ? new TrustManager[]{ tm } : null, null);
         return ctx;
     }
