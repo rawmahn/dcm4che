@@ -4,7 +4,7 @@ import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.conf.dicom.adapters.AttributeFormatTypeAdapter;
-import org.dcm4che3.conf.dicom.adapters.DeviceTypeAdapter;
+import org.dcm4che3.conf.dicom.adapters.DeviceReferenceByNameTypeAdapter;
 import org.dcm4che3.conf.api.ConfigurationAlreadyExistsException;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
@@ -42,7 +42,7 @@ public class CommonDicomConfiguration implements DicomConfiguration{
 
         // register type adapters and the DicomConfiguration context
         this.vitalizer.registerCustomConfigTypeAdapter(AttributesFormat.class, new AttributeFormatTypeAdapter());
-        this.vitalizer.registerCustomConfigTypeAdapter(Device.class, new DeviceTypeAdapter());
+        this.vitalizer.registerCustomConfigTypeAdapter(Device.class, new DeviceReferenceByNameTypeAdapter());
         this.vitalizer.registerContext(DicomConfiguration.class, this);
     }
 

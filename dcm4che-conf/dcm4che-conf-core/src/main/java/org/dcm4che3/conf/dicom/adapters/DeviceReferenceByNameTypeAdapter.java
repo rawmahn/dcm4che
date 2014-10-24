@@ -8,14 +8,11 @@ import org.dcm4che3.conf.api.ConfigurationUnserializableException;
 import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.net.Device;
 
-/**
- * Device by name
- */
-public class DeviceTypeAdapter extends DefaultConfigTypeAdapters.CommonAbstractTypeAdapter<Device> {
+public class DeviceReferenceByNameTypeAdapter extends DefaultConfigTypeAdapters.CommonAbstractTypeAdapter<Device> {
 
-    public DeviceTypeAdapter() {
+    public DeviceReferenceByNameTypeAdapter() {
         super("string");
-        metadata.put("metatype","device");
+        metadata.put("class","Device");
     }
 
     @Override

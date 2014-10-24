@@ -40,9 +40,9 @@ public interface ConfigTypeAdapter<T, ST> {
      * Returns a metadata node in json-schema format (http://json-schema.org/)
      *
      * Additional proprietary optional schema parameters:<br/><ul>
-     * <li>metatype - e.g., "base64" for type string</li>
+     * <li>essentialType - e.g., "base64" for type string</li>
      * <li>class - simple name of the ConfigurableClass if this is a corresponding object</li>
-     * <li>mapkey - container that denotes schema for the key (type will always be string, but there could be metatype, etc)</li>
+     * <li>mapkey - container that denotes schema for the key (type will always be string, but there could be essentialType, etc)</li>
      *</ul>
      * @param property
      * @param vitalizer

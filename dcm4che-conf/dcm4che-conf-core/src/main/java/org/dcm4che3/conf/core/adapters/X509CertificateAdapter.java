@@ -50,7 +50,7 @@ public class X509CertificateAdapter implements ConfigTypeAdapter<X509Certificate
     public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         Map<String, Object> metadata =  new HashMap<String, Object>();
         metadata.put("type", "string");
-        metadata.put("metatype", "base64|x509");
+        metadata.put("class", "Base64,X509");
         return metadata;
     }
 

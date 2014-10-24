@@ -104,7 +104,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         // handle byte[]
         if (((Class) property.getType()).getComponentType().equals(byte.class)) {
             metadata.put("type", "string");
-            metadata.put("metatype", "base64");
+            metadata.put("class", "Base64");
             return metadata;
         }
 
