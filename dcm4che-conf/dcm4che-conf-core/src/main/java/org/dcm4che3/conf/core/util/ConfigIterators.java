@@ -98,17 +98,16 @@ public class ConfigIterators {
             annotatedSetter.setMethod(m);
         }
 
-        configurableSettersCache.put(clazz,list);
+        configurableSettersCache.put(clazz, list);
         return list;
     }
-
 
 
     public static List<AnnotatedConfigurableProperty> getAllConfigurableFields(Class clazz) {
 
         //check cache
         List<AnnotatedConfigurableProperty> l = configurableFieldsCache.get(clazz);
-        if (l!=null) return l;
+        if (l != null) return l;
 
         l = new ArrayList<AnnotatedConfigurableProperty>();
 
@@ -156,6 +155,11 @@ public class ConfigIterators {
         }
 
         return currentClassFields;
+    }
+
+    public static void reconfigure(Object source, Object target) {
+        // TODO
+        throw new RuntimeException("Not implemented!");
     }
 
 }
