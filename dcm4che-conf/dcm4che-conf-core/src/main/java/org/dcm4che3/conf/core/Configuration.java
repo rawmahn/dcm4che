@@ -38,7 +38,7 @@ public interface Configuration {
     /**
      * Persists the configuration node to the specified path.
      * The path must exist (or at least all nodes but the last one).
-     * The property is created/fully overwritten, i.e. if there were any child nodes in the old tree that are not present in the new node, they will be deleted.
+     * The property is created/partially overwritten, i.e. if there were any child nodes in the old root that are not present in the new node root, they will remain in the new tree.
      * <br/>
      * <p><h2>Defaults:</h2>
      * The property values that are equal to default values are be filtered, i.e. not persisted.
