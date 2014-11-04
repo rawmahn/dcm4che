@@ -49,7 +49,7 @@ public class XStreamStorageTest {
 
         xCfg.removeNode("/p2/prop11");
 
-        Iterator search = xCfg.search("/ *[contains(prop2,'I am ')]");
+        Iterator search = xCfg.search("/*[contains(prop2,'I am ')]");
          Object o = search.next();
         DeepEqualsDiffer.assertDeepEquals("Search should work. ", o, p1);
 

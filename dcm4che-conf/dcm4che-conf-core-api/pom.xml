@@ -8,8 +8,8 @@
         <groupId>org.dcm4che</groupId>
         <version>3.3.5-SNAPSHOT</version>
     </parent>
-    <artifactId>dcm4che-conf-api-core</artifactId>
-    <name>dcm4che-conf-api-core</name>
+    <artifactId>dcm4che-conf-core-api</artifactId>
+    <name>dcm4che-conf-core-api</name>
     <packaging>bundle</packaging>
     <build>
         <plugins>

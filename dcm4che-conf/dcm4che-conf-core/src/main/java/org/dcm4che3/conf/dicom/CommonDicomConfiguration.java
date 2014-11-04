@@ -3,13 +3,15 @@ package org.dcm4che3.conf.dicom;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
-import org.dcm4che3.conf.dicom.adapters.AttributeFormatTypeAdapter;
-import org.dcm4che3.conf.dicom.adapters.DeviceTypeAdapter;
+import org.dcm4che3.conf.dicom.adapters.*;
 import org.dcm4che3.conf.api.ConfigurationAlreadyExistsException;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
+import org.dcm4che3.data.Code;
+import org.dcm4che3.data.Issuer;
+import org.dcm4che3.data.ValueSelector;
 import org.dcm4che3.net.ApplicationEntity;
 import org.dcm4che3.net.Device;
 import org.dcm4che3.net.DeviceInfo;
@@ -41,8 +43,13 @@ public class CommonDicomConfiguration implements DicomConfiguration{
         this.vitalizer = vitalizer;
 
         // register type adapters and the DicomConfiguration context
+
         this.vitalizer.registerCustomConfigTypeAdapter(AttributesFormat.class, new AttributeFormatTypeAdapter());
-        this.vitalizer.registerCustomConfigTypeAdapter(Device.class, new DeviceTypeAdapter());
+        this.vitalizer.registerCustomConfigTypeAdapter(Code.class, new CodeTypeAdapter());
+        this.vitalizer.registerCustomConfigTypeAdapter(Device.class, new DeviceReferenceByNameTypeAdapter());
+        this.vitalizer.registerCustomConfigTypeAdapter(Issuer.class, new IssuerTypeAdapter());
+        this.vitalizer.registerCustomConfigTypeAdapter(ValueSelector.class, new ValueSelectorTypeAdapter());
+
         this.vitalizer.registerContext(DicomConfiguration.class, this);
     }
 
@@ -58,7 +65,7 @@ public class CommonDicomConfiguration implements DicomConfiguration{
         return true;
     }
 
-    @LDAP(objectClass = "dicomUniqueAETitle", distinguishingField = "dicomAETitle")
+    @LDAP(objectClasses = "dicomUniqueAETitle", distinguishingField = "dicomAETitle")
     public static class AETitleItem {
 
         public AETitleItem(String aeTitle) {

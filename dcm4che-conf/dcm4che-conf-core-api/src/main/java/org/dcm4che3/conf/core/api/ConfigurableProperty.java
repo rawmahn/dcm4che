@@ -53,6 +53,12 @@ import java.lang.annotation.Target;
 public @interface ConfigurableProperty {
 
     /**
+     * Only for Map&lt;String, *&gt;. Creates the case-agnosic map when initializing the object.
+     * @return
+     */
+    boolean ignoreCase() default false;
+
+    /**
      * Name of the node. If not specified, the field/parameter name is used.
      * 
      * @return

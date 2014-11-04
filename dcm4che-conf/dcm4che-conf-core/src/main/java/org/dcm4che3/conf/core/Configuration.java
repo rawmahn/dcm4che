@@ -8,7 +8,13 @@ import java.util.Map;
 /**
  * Denotes a configuration source. Can be used by BeanVitalizer that creates POJOs, or configuration administration app that provides UI to edit configuration.
  * <br/> <br/>
- * Configuration node is either a String or Map of objects where each object is a configuration node (single map can have values of multiple types, therefore Map&lt;String,Object&gt;).
+ * <ul>
+ * Configuration node is either
+ * <li> a primitive wrapper/string (Integer, Boolean, Float, String)</li>
+ * <li> null</li>
+ * <li> a collection of nodes </li>
+ * <li> Map&lt;String,Object&gt; where each object is a configuration node (single map can have values of multiple types.</li>
+ *</ul>
  *
  * Clustering?
  */
@@ -62,7 +68,7 @@ public interface Configuration {
     void refreshNode(String path) throws ConfigurationException;
 
     /**
-     * Removes a configuration node permanently
+     * Removes a configuration node with all its children permanently
      * @param path
      */
     void removeNode(String path) throws ConfigurationException;
