@@ -1,34 +1,35 @@
 package org.dcm4che3.conf.dicom;
 
-import org.dcm4che3.conf.core.BeanVitalizer;
-import org.dcm4che3.conf.core.Configuration;
-import org.dcm4che3.conf.core.util.ConfigNodeUtil;
-import org.dcm4che3.conf.dicom.adapters.*;
 import org.dcm4che3.conf.api.ConfigurationAlreadyExistsException;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
+import org.dcm4che3.conf.core.BeanVitalizer;
+import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
+import org.dcm4che3.conf.core.util.ConfigNodeUtil;
+import org.dcm4che3.conf.dicom.adapters.*;
 import org.dcm4che3.data.Code;
 import org.dcm4che3.data.Issuer;
 import org.dcm4che3.data.ValueSelector;
-import org.dcm4che3.net.ApplicationEntity;
-import org.dcm4che3.net.Device;
-import org.dcm4che3.net.DeviceInfo;
+import org.dcm4che3.net.*;
 import org.dcm4che3.util.AttributesFormat;
 
 import java.security.cert.X509Certificate;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * @author Roman K
  */
-public class CommonDicomConfiguration implements DicomConfiguration{
+public class CommonDicomConfiguration implements DicomConfiguration {
 
 
     Configuration config;
     BeanVitalizer vitalizer;
+    private final Collection<Class<? extends DeviceExtension>> deviceExtensions;
+    private final Collection<Class<? extends AEExtension>> aeExtensions;
 
 
     /**
@@ -36,11 +37,14 @@ public class CommonDicomConfiguration implements DicomConfiguration{
      * e.g., one device extension references another device which has an extension that references the former device.
      * Devices that have been created but not fully loaded are added to this threadlocal. See loadDevice.
      */
-    private ThreadLocal<Map<String,Device>> currentlyLoadedDevicesLocal = new ThreadLocal<Map<String,Device>>();
+    private ThreadLocal<Map<String, Device>> currentlyLoadedDevicesLocal = new ThreadLocal<Map<String, Device>>();
 
-    public CommonDicomConfiguration(Configuration configurationStorage, BeanVitalizer vitalizer) {
+    public CommonDicomConfiguration(Configuration configurationStorage, BeanVitalizer vitalizer, Collection<Class<? extends DeviceExtension>> deviceExtensions, Collection<Class<? extends AEExtension>> aeExtensions) {
         this.config = configurationStorage;
         this.vitalizer = vitalizer;
+        this.deviceExtensions = deviceExtensions;
+        this.aeExtensions = aeExtensions;
+
 
         // register type adapters and the DicomConfiguration context
 
@@ -137,7 +141,7 @@ public class CommonDicomConfiguration implements DicomConfiguration{
             Object configurationNode = config.getConfigurationNode(deviceRef(name));
             return vitalizer.newConfiguredInstance(Device.class, (Map<String, Object>) configurationNode);
         } catch (ConfigurationException e) {
-            throw new ConfigurationException("Configuration for device "+name+" cannot be loaded");
+            throw new ConfigurationException("Configuration for device " + name + " cannot be loaded");
         } finally {
             // if this loadDevice call initialized the cache, then clean it up
             if (doCleanUpCache) currentlyLoadedDevicesLocal.remove();
@@ -165,7 +169,29 @@ public class CommonDicomConfiguration implements DicomConfiguration{
         String path = deviceRef(deviceName);
         if (config.nodeExists(path))
             throw new ConfigurationAlreadyExistsException("Device " + deviceName + " already exists");
-        config.persistNode(path, vitalizer.createConfigNodeFromInstance(device),Device.class);
+
+        // persist device
+        final Map<String, Object> deviceConfigNode = vitalizer.createConfigNodeFromInstance(device);
+
+        // Set references of AEs to connections
+        //TODO: ?
+        config.persistNode(path, deviceConfigNode, Device.class);
+
+
+        // handle AEExtensions
+
+        // persist DeviceExtensions
+        for (Class<? extends DeviceExtension> deviceExtensionClass : deviceExtensions) {
+            final DeviceExtension deviceExtension = device.getDeviceExtension(deviceExtensionClass);
+            final String extensionPath = path + "/deviceExtensions/" + deviceExtensionClass.getSimpleName();
+
+            if (deviceExtension == null)
+                config.removeNode(extensionPath);
+            else
+                config.persistNode(extensionPath, vitalizer.createConfigNodeFromInstance(deviceExtension), deviceExtensionClass);
+        }
+
+
     }
 
     @Override

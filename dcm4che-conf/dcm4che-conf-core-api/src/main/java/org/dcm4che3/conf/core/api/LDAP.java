@@ -18,7 +18,7 @@ public @interface LDAP {
      * Can be used on classes and on fields
      * @return
      */
-    boolean doNotCreateChildNode() default false;
+    boolean noContainerNode() default false;
 
 
     String[] objectClasses() default {};
@@ -34,4 +34,18 @@ public @interface LDAP {
 
     // needed if map entry value is a primitive
     String mapEntryObjectClass() default "";
+
+    /**
+     * Applicable to EnumSet&lt;some enum&gt;. Triggers an alternative representation of EnumSets, instead of
+     *  enumField : ["OPT1", "OPT2"]
+     * recognizes
+     * enumfield:{
+     *  OPT1 : TRUE,
+     *  OPT2 : TRUE,
+     *  OPT3 : FALSE
+     * }
+     *
+     * The array must contain property names that correspond to enum values in the right order.
+     */
+    String[] booleanBasedEnumStorageOptions() default {};
 }

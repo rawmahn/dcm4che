@@ -37,12 +37,12 @@
  * ***** END LICENSE BLOCK ***** */
 package org.dcm4che3.conf.core.adapters;
 
-import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
-import org.dcm4che3.conf.core.BeanVitalizer;
-import org.dcm4che3.conf.core.validation.ValidationException;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.ConfigurationUnserializableException;
+import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
+import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
+import org.dcm4che3.conf.core.validation.ValidationException;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -127,7 +127,7 @@ public class DefaultConfigTypeAdapters {
 
         @SuppressWarnings("unchecked")
         @Override
-        public T normalize(Object configNode) throws ConfigurationException {
+        public T normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
             try {
                 if (metadata.get("type").equals("integer")) {
 
@@ -176,7 +176,7 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public String normalize(Object configNode) throws ConfigurationException {
+        public String normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
             return (String) configNode;
         }
     }
@@ -194,30 +194,70 @@ public class DefaultConfigTypeAdapters {
     /**
      * Enum - string
      */
-    public static class EnumTypeAdapter extends CommonAbstractTypeAdapter<Enum<?>> {
-
-
-        //TODO: implement getSchema for Enums!
-        public EnumTypeAdapter() {
-            super("enum");
-        }
-
+    public static class EnumTypeAdapter implements ConfigTypeAdapter<Enum<?>, Object> {
 
         @Override
-        public Enum<?> fromConfigNode(String configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+        public Enum<?> fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
             if (configNode == null)
                 return null;
             try {
-                Method method = ((Class) property.getType()).getMethod("valueOf", String.class);
-                return (Enum<?>) method.invoke(null, configNode);
+                switch (property.getAnnotation(ConfigurableProperty.class).enumRepresentation()) {
+                    case ORDINAL:
+                        Method valuesMethod = ((Class) property.getType()).getMethod("values");
+                        valuesMethod.invoke(null);
+                        return null;
+                    default:
+                    case STRING:
+                        Method valueOfMethod = ((Class) property.getType()).getMethod("valueOf", String.class);
+                        return (Enum<?>) valueOfMethod.invoke(null, configNode);
+
+                }
             } catch (Exception x) {
                 throw new ConfigurationException("Deserialization of Enum failed! field:" + property, x);
             }
         }
 
         @Override
-        public String toConfigNode(Enum<?> object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
-            return (object == null ? null : object.name());
+        public Object toConfigNode(Enum<?> object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
+            switch (property.getAnnotation(ConfigurableProperty.class).enumRepresentation()) {
+                case ORDINAL:
+                    return object.ordinal();
+                default:
+                case STRING:
+                    return object.name();
+            }
+        }
+
+        @Override
+        public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+            Map<String, Object> metadata = new HashMap<String, Object>();
+            metadata.put("type", "enum");
+            //TODO!!! options, ordinal/string
+            return metadata;
+        }
+
+        @Override
+        public Object normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+            //TODO: validate ?
+            if (configNode == null) throw new ConfigurationException("null not allowed for enum");
+            switch (property.getAnnotation(ConfigurableProperty.class).enumRepresentation()) {
+                case ORDINAL:
+                    try {
+                        if (configNode.getClass().equals(String.class))
+                            return Integer.valueOf((String) configNode);
+                        else if (configNode.getClass().equals(Integer.class))
+                            return configNode;
+                        else
+                            throw new ConfigurationException("Expected int ordinal value for enum, got " + configNode.getClass().getName());
+                    } catch (NumberFormatException e) {
+
+                    }
+                    default:
+                case STRING:
+
+                    return configNode;
+
+            }
         }
     }
 
@@ -236,7 +276,7 @@ public class DefaultConfigTypeAdapters {
         defaultTypeAdapters.put(Boolean.class, booleanAdapter);
         defaultTypeAdapters.put(boolean.class, booleanAdapter);
 
-        ConfigTypeAdapter doubleAdapter =  new PrimitiveTypeAdapter("number");
+        ConfigTypeAdapter doubleAdapter = new PrimitiveTypeAdapter("number");
         defaultTypeAdapters.put(double.class, doubleAdapter);
         defaultTypeAdapters.put(float.class, doubleAdapter);
         defaultTypeAdapters.put(Double.class, doubleAdapter);

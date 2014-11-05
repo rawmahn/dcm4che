@@ -13,6 +13,8 @@ import org.dcm4che3.conf.api.ConfigurationException;
  *
  * @param <T,ST>
  */
+//TODO: transform to collectiontypeadpater
+//TODO: handle 'reference' and pass it deeper
 public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, Collection<ST>> {
 
     @Override
@@ -57,7 +59,7 @@ public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, Collecti
     }
 
     @Override
-    public Collection<ST> normalize(Object configNode) throws ConfigurationException {
+    public Collection<ST> normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
         return (Collection<ST>) configNode;
     }
 }
