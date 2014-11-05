@@ -54,8 +54,9 @@ public interface ConfigTypeAdapter<T, ST> {
     /**
      * Converts allowed representations (e.g., "123" for Integer) to proper serialized representation
      * @param configNode
+     * @param property
      * @return
      */
-    ST normalize(Object configNode) throws ConfigurationException;
+    ST normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
 
 }

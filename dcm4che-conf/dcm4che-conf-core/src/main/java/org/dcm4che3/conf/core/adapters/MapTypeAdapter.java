@@ -6,6 +6,7 @@ import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 
 import java.lang.reflect.Type;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -30,12 +31,7 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) vitalizer.lookupTypeAdapter(valueType);
         ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) vitalizer.lookupTypeAdapter(keyType);
 
-        Map<K, V> map;
-        if (property.getAnnotation(ConfigurableProperty.class).ignoreCase() && String.class.isAssignableFrom((Class<?>) keyType))
-            map = (Map<K, V>) new TreeMap<String, V>(String.CASE_INSENSITIVE_ORDER);
-        else
-            map = new HashMap<K, V>();
-        // TODO: EnumMap
+        Map<K, V> map = new HashMap<K, V>();
 
         for (Entry<String, Object> e : configNode.entrySet()) {
             map.put(keyAdapter.fromConfigNode(e.getKey(), new AnnotatedConfigurableProperty(keyType), vitalizer),
@@ -95,7 +91,7 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
     }
 
     @Override
-    public Map<String, Object> normalize(Object configNode) throws ConfigurationException {
+    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
         return (Map<String, Object>) configNode;
     }
 }

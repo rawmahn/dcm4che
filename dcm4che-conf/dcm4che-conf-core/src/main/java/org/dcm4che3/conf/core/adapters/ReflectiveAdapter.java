@@ -83,7 +83,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
 
 
     @Override
-    public Map<String, Object> toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
+    public Map<String, Object> toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         if (object == null) return null;
 
@@ -97,7 +97,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
                 Object value = PropertyUtils.getSimpleProperty(object, fieldProperty.getName());
                 DefaultConfigTypeAdapters.delegateChildToConfigNode(value,configNode,fieldProperty, vitalizer);
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new ConfigurationException("Error while serializing configuration field " + fieldProperty.getName(), e);
             }
         }
 
@@ -141,7 +141,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
     }
 
     @Override
-    public Map<String, Object> normalize(Object configNode) throws ConfigurationException {
+    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
         return (Map<String, Object>) configNode;
     }
 }

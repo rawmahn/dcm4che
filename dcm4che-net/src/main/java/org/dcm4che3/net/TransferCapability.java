@@ -41,6 +41,9 @@ package org.dcm4che3.net;
 import java.io.Serializable;
 import java.util.EnumSet;
 
+import org.dcm4che3.conf.core.api.ConfigurableClass;
+import org.dcm4che3.conf.core.api.ConfigurableProperty;
+import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.data.UID;
 import org.dcm4che3.util.StringUtils;
 import org.dcm4che3.util.UIDUtils;
@@ -58,6 +61,8 @@ import org.dcm4che3.util.UIDUtils;
  * @author Gunter Zeilinger <gunterze@gmail.com>
  *
  */
+@LDAP(objectClasses = {"dicomTransferCapability", "dcmTransferCapability"})
+@ConfigurableClass
 public class TransferCapability implements Serializable {
 
     private static final long serialVersionUID = 6386251434418693778L;
@@ -65,11 +70,24 @@ public class TransferCapability implements Serializable {
     public enum Role { SCU, SCP }
 
     private ApplicationEntity ae;
+
+    @ConfigurableProperty(name="cn")
     private String commonName;
+
+    @ConfigurableProperty(name="dicomSOPClass")
     private String sopClass;
+
+    @ConfigurableProperty(name="dicomTransferRole")
     private Role role;
+
+    @ConfigurableProperty(name="dicomTransferSyntax")
     private String[] transferSyntaxes;
+
+    @LDAP(  booleanBasedEnumStorageOptions = {"dcmRelationalQueries","dcmCombinedDateTimeMatching","dcmFuzzySemanticMatching","dcmTimezoneQueryAdjustment"},
+            noContainerNode = true)
+    @ConfigurableProperty(name = "dcmQueryOptions")
     private EnumSet<QueryOption> queryOptions;
+
     private StorageOptions storageOptions;
 
     public TransferCapability() {

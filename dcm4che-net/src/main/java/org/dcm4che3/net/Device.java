@@ -79,7 +79,7 @@ import org.dcm4che3.util.StringUtils;
  * @author Gunter Zeilinger <gunterze@gmail.com>
  *
  */
-@LDAP(objectClasses = {"dcmDevice", "dicomDevice"})
+@LDAP(objectClasses = {"dcmDevice", "dicomDevice"}, distinguishingField = "dicomDeviceName")
 public class Device implements Serializable {
 
     private static final long serialVersionUID = -5816872456184522866L;
@@ -93,83 +93,119 @@ public class Device implements Serializable {
     @ConfigurableProperty(name = "dicomManufacturer")
     private String manufacturer;
 
-
     @ConfigurableProperty(name = "dicomManufacturerModelName")
     private String manufacturerModelName;
+
     @ConfigurableProperty(name = "dicomStationName")
     private String stationName;
+
     @ConfigurableProperty(name = "dicomDeviceSerialNumber")
     private String deviceSerialNumber;
-    @ConfigurableProperty(name = "dicomTrustStoreURL")
+
+    @ConfigurableProperty(name = "dcmTrustStoreURL")
     private String trustStoreURL;
-    @ConfigurableProperty(name = "dicomTrustStoreType")
+
+    @ConfigurableProperty(name = "dcmTrustStoreType")
     private String trustStoreType;
-    @ConfigurableProperty(name = "dicomTrustStorePin")
+
+    @ConfigurableProperty(name = "dcmTrustStorePin")
     private String trustStorePin;
-    @ConfigurableProperty(name = "dicomTrustStorePinProperty")
+
+    @ConfigurableProperty(name = "dcmTrustStorePinProperty")
     private String trustStorePinProperty;
-    @ConfigurableProperty(name = "dicomKeyStoreURL")
+
+    @ConfigurableProperty(name = "dcmKeyStoreURL")
     private String keyStoreURL;
-    @ConfigurableProperty(name = "dicomKeyStoreType")
+
+    @ConfigurableProperty(name = "dcmKeyStoreType")
     private String keyStoreType;
+
     @ConfigurableProperty(name = "dicomKeyStorePin")
     private String keyStorePin;
-    @ConfigurableProperty(name = "dicomKeyStorePinProperty")
+
+    @ConfigurableProperty(name = "dcmKeyStorePinProperty")
     private String keyStorePinProperty;
-    @ConfigurableProperty(name = "dicomKeyStoreKeyPin")
+
+    @ConfigurableProperty(name = "dcmKeyStoreKeyPin")
     private String keyStoreKeyPin;
-    @ConfigurableProperty(name = "dicomKeyStoreKeyPinProperty")
+
+    @ConfigurableProperty(name = "dcmKeyStoreKeyPinProperty")
     private String keyStoreKeyPinProperty;
+
     @ConfigurableProperty(name = "dicomIssuerOfPatientID")
     private Issuer issuerOfPatientID;
+
     @ConfigurableProperty(name = "dicomIssuerOfAccessionNumber")
     private Issuer issuerOfAccessionNumber;
+
     @ConfigurableProperty(name = "dicomOrderPlacerIdentifier")
     private Issuer orderPlacerIdentifier;
+
     @ConfigurableProperty(name = "dicomOrderFillerIdentifier")
     private Issuer orderFillerIdentifier;
+
     @ConfigurableProperty(name = "dicomIssuerOfAdmissionID")
     private Issuer issuerOfAdmissionID;
+
     @ConfigurableProperty(name = "dicomIssuerOfServiceEpisodeID")
     private Issuer issuerOfServiceEpisodeID;
+
     @ConfigurableProperty(name = "dicomIssuerOfContainerIdentifier")
     private Issuer issuerOfContainerIdentifier;
+
     @ConfigurableProperty(name = "dicomIssuerOfSpecimenIdentifier")
     private Issuer issuerOfSpecimenIdentifier;
+
     @ConfigurableProperty(name = "dicomSoftwareVersions")
     private String[] softwareVersions = {};
-    @ConfigurableProperty(name = "dicomPrimaryDeviceTypes")
+
+    @ConfigurableProperty(name = "dicomPrimaryDeviceType")
     private String[] primaryDeviceTypes = {};
-    @ConfigurableProperty(name = "dicomInstitutionNames")
+
+    @ConfigurableProperty(name = "dicomInstitutionName")
     private String[] institutionNames = {};
-    @ConfigurableProperty(name = "dicomInstitutionCodes")
+
+    @ConfigurableProperty(name = "dicomInstitutionCode")
     private Code[] institutionCodes = {};
-    @ConfigurableProperty(name = "dicomInstitutionAddresses")
+
+    @ConfigurableProperty(name = "dicomInstitutionAddress")
     private String[] institutionAddresses = {};
-    @ConfigurableProperty(name = "dicomInstitutionalDepartmentNames")
+
+    @ConfigurableProperty(name = "dicomInstitutionDepartmentName")
     private String[] institutionalDepartmentNames = {};
-    @ConfigurableProperty(name = "dicomRelatedDeviceRefs")
+
+    @ConfigurableProperty(name = "dicomRelatedDeviceReference")
     private String[] relatedDeviceRefs = {};
+
     @ConfigurableProperty(name = "dicomVendorData")
     private byte[][] vendorData = {};
-    @ConfigurableProperty(name = "dicomLimitOpenAssociations;")
+
+    @ConfigurableProperty(name = "dcmLimitOpenAssociations")
     private int limitOpenAssociations;
 
     @ConfigurableProperty(name = "dicomInstalled")
     private boolean installed = true;
 
-    @ConfigurableProperty(name = "dicomTimeZoneOfDevice")
+    @ConfigurableProperty(name = "dcmTimeZoneOfDevice")
     private TimeZone timeZoneOfDevice;
 
+
+    //TODO:x509!!
     private final LinkedHashMap<String, X509Certificate[]> authorizedNodeCertificates =
             new LinkedHashMap<String, X509Certificate[]>();
     private final LinkedHashMap<String, X509Certificate[]> thisNodeCertificates =
             new LinkedHashMap<String, X509Certificate[]>();
 
 
-    private final List<Connection> conns = new ArrayList<Connection>();
-    private final LinkedHashMap<String, ApplicationEntity> aes =
+    @LDAP(noContainerNode = true)
+    @ConfigurableProperty(name="dicomConnection", label = "Connections")
+    private final List<Connection> connections = new ArrayList<Connection>();
+
+    @LDAP(noContainerNode = true)
+    @ConfigurableProperty(name="dicomNetworkAE", label = "Application Entities")
+    private final Map<String, ApplicationEntity> applicationEntitiesMap =
             new LinkedHashMap<String, ApplicationEntity>();
+
     private final Map<Class<? extends DeviceExtension>,DeviceExtension> extensions =
             new HashMap<Class<? extends DeviceExtension>,DeviceExtension>();
 
@@ -189,6 +225,8 @@ public class Device implements Serializable {
     public Device(String name) {
         setDeviceName(name);
     }
+
+
 
     private void checkNotEmpty(String name, String val) {
         if (val != null && val.isEmpty())
@@ -412,7 +450,7 @@ public class Device implements Serializable {
      * Should be the same as the value of Institution Address (0008,0081)
      * attribute in SOP Instances created by this device.
      *
-     * @param addr
+     * @param addresses
      *                A String array containing the institution address values.
      */
     public void setInstitutionAddresses(String... addresses) {
@@ -434,7 +472,7 @@ public class Device implements Serializable {
      * Should be the same as the value of Institutional Department Name
      * (0008,1040) in SOP Instances created by this device.
      *
-     * @param name
+     * @param names
      *                A String array containing the dept. name values.
      */
     public void setInstitutionalDepartmentNames(String... names) {
@@ -767,30 +805,30 @@ public class Device implements Serializable {
     }
 
     public void bindConnections() throws IOException, GeneralSecurityException {
-        for (Connection con : conns)
+        for (Connection con : connections)
             con.bind();
     }
 
     public void rebindConnections() throws IOException, GeneralSecurityException {
-        for (Connection con : conns)
+        for (Connection con : connections)
             if (con.isRebindNeeded())
                 con.rebind();
     }
 
     private void needRebindConnections()  {
-        for (Connection con : conns)
+        for (Connection con : connections)
             con.needRebind();
      }
 
     private void needReconfigureTLS()  {
-        for (Connection con : conns)
+        for (Connection con : connections)
             if (con.isTls())
                 con.needRebind();
         sslContext = null;
     }
 
     public void unbindConnections() {
-        for (Connection con : conns)
+        for (Connection con : connections)
             con.unbind();
     }
 
@@ -812,12 +850,12 @@ public class Device implements Serializable {
 
     public void addConnection(Connection conn) {
         conn.setDevice(this);
-        conns.add(conn);
+        connections.add(conn);
         conn.needRebind();
     }
 
     public boolean removeConnection(Connection conn) {
-        for (ApplicationEntity ae : aes.values())
+        for (ApplicationEntity ae : applicationEntitiesMap.values())
             if (ae.getConnections().contains(conn))
                 throw new IllegalStateException(conn + " used by AE: " +
                         ae.getAETitle());
@@ -825,7 +863,7 @@ public class Device implements Serializable {
         for (DeviceExtension ext : extensions.values())
             ext.verifyNotUsed(conn);
 
-        if (!conns.remove(conn))
+        if (!connections.remove(conn))
             return false;
 
         conn.setDevice(null);
@@ -834,21 +872,40 @@ public class Device implements Serializable {
     }
 
     public List<Connection> listConnections() {
-        return Collections.unmodifiableList(conns);
+        return Collections.unmodifiableList(connections);
     }
 
     public Connection connectionWithEqualsRDN(Connection other) {
-        for (Connection conn : conns)
+        for (Connection conn : connections)
             if (conn.equalsRDN(other))
                 return conn;
 
         return null;
     }
 
+    public List<Connection> getConnections() {
+        return connections;
+    }
+
+    public void setConnections(List<Connection> connections) {
+        connections.clear();
+        for (Connection connection : connections) addConnection(connection);
+    }
+
+    public void setApplicationEntitiesMap(Map<String, ApplicationEntity> applicationEntitiesMap) {
+        this.applicationEntitiesMap.clear();
+        this.applicationEntitiesMap.putAll(applicationEntitiesMap);
+    }
+
+    public Map<String, ApplicationEntity> getApplicationEntitiesMap() {
+        return applicationEntitiesMap;
+    }
+
+
 
     public void addApplicationEntity(ApplicationEntity ae) {
         ae.setDevice(this);
-        aes.put(ae.getAETitle(), ae);
+        applicationEntitiesMap.put(ae.getAETitle(), ae);
     }
 
     public ApplicationEntity removeApplicationEntity(ApplicationEntity ae) {
@@ -856,7 +913,7 @@ public class Device implements Serializable {
     }
 
     public ApplicationEntity removeApplicationEntity(String aet) {
-        ApplicationEntity ae = aes.remove(aet);
+        ApplicationEntity ae = applicationEntitiesMap.remove(aet);
         if (ae != null)
             ae.setDevice(null);
         return ae;
@@ -920,18 +977,18 @@ public class Device implements Serializable {
     }
 
     public ApplicationEntity getApplicationEntity(String aet) {
-        ApplicationEntity ae = aes.get(aet);
+        ApplicationEntity ae = applicationEntitiesMap.get(aet);
         if (ae == null)
-            ae = aes.get("*");
+            ae = applicationEntitiesMap.get("*");
         return ae;
     }
 
     public Collection<String> getApplicationAETitles() {
-        return aes.keySet();
+        return applicationEntitiesMap.keySet();
     }
 
     public Collection<ApplicationEntity> getApplicationEntities() {
-        return aes.values();
+        return applicationEntitiesMap.values();
     }
 
     public final void setKeyManager(KeyManager km) {
@@ -1102,9 +1159,9 @@ public class Device implements Serializable {
         StringUtils.appendLine(sb, indent, "Device[name: ", deviceName);
         StringUtils.appendLine(sb, indent2,"desc: ", description);
         StringUtils.appendLine(sb, indent2,"installed: ", installed);
-        for (Connection conn : conns)
+        for (Connection conn : connections)
             conn.promptTo(sb, indent2).append(StringUtils.LINE_SEPARATOR);
-        for (ApplicationEntity ae : aes.values())
+        for (ApplicationEntity ae : applicationEntitiesMap.values())
             ae.promptTo(sb, indent2).append(StringUtils.LINE_SEPARATOR);
         return sb.append(indent).append(']');
     }
@@ -1177,7 +1234,7 @@ public class Device implements Serializable {
      }
 
      private void reconfigureConnections(Device from) {
-         Iterator<Connection> connIter = conns.iterator();
+         Iterator<Connection> connIter = connections.iterator();
          while (connIter.hasNext()) {
              Connection conn = connIter.next();
              if (from.connectionWithEqualsRDN(conn) == null) {
@@ -1186,7 +1243,7 @@ public class Device implements Serializable {
                  conn.unbind();
              }
          }
-         for (Connection src : from.conns) {
+         for (Connection src : from.connections) {
              Connection conn = connectionWithEqualsRDN(src);
              if (conn == null)
                  this.addConnection(conn = new Connection());
@@ -1195,9 +1252,9 @@ public class Device implements Serializable {
     }
 
      private void reconfigureApplicationEntities(Device from) {
-         aes.keySet().retainAll(from.aes.keySet());
-         for (ApplicationEntity src : from.aes.values()) {
-             ApplicationEntity ae = aes.get(src.getAETitle());
+         applicationEntitiesMap.keySet().retainAll(from.applicationEntitiesMap.keySet());
+         for (ApplicationEntity src : from.applicationEntitiesMap.values()) {
+             ApplicationEntity ae = applicationEntitiesMap.get(src.getAETitle());
              if (ae == null)
                  addApplicationEntity(ae = new ApplicationEntity(src.getAETitle()));
              ae.reconfigure(src);

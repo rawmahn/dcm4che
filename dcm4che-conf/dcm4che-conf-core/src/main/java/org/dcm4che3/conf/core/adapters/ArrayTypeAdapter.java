@@ -117,7 +117,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     }
 
     @Override
-    public Object normalize(Object configNode) throws ConfigurationException {
+    public Object normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
         return configNode;
     }
 

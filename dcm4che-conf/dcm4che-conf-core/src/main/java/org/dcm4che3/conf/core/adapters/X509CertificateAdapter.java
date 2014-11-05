@@ -55,7 +55,7 @@ public class X509CertificateAdapter implements ConfigTypeAdapter<X509Certificate
     }
 
     @Override
-    public String normalize(Object configNode) throws ConfigurationException {
+    public String normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
         return (String) configNode;
     }
 }

@@ -17,6 +17,8 @@ public class LdapConfigurationStorage implements Configuration {
 
     @Override
     public Object getConfigurationNode(String path) throws ConfigurationException {
+        // TODO: byte[],x509 to base64
+
         return null;
     }
 
@@ -32,7 +34,7 @@ public class LdapConfigurationStorage implements Configuration {
 
     @Override
     public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
-
+        // TODO: byte[], x509 from base64
     }
 
     @Override

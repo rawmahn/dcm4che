@@ -41,6 +41,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.LinkedHashSet;
+import java.util.Objects;
 
 /**
  * Marks a field, or a setter parameter of a configuration class to be a persistable configuration property of the bean
@@ -52,15 +54,17 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface ConfigurableProperty {
 
-    /**
-     * Only for Map&lt;String, *&gt;. Creates the case-agnosic map when initializing the object.
-     * @return
-     */
-    boolean ignoreCase() default false;
+
+    boolean reference() default false;
+
+    public enum EnumRepresentation {
+        ORDINAL,
+        STRING
+    }
 
     /**
      * Name of the node. If not specified, the field/parameter name is used.
-     * 
+     *
      * @return
      */
     String name() default "";
@@ -77,11 +81,12 @@ public @interface ConfigurableProperty {
      * @return
      */
     String label() default "";
-    
+
     /**
      * Description to show in configuration UIs.
      * @return
      */
     String description() default "";
 
+    EnumRepresentation enumRepresentation() default EnumRepresentation.STRING;
 }
