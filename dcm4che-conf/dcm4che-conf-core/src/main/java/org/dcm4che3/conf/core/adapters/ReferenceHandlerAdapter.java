@@ -6,21 +6,19 @@ import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.Configuration;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Default dereferencer.
  * @param <T>
- * @param <ST>
  */
-public class RerefenceHandlerAdapter<T, ST> implements ConfigTypeAdapter<T, String> {
-
+public class ReferenceHandlerAdapter<T> implements ConfigTypeAdapter<T,String> {
 
     private BeanVitalizer vitalizer;
     private Configuration config;
 
-    public RerefenceHandlerAdapter(BeanVitalizer vitalizer, Configuration config) {
+
+    public ReferenceHandlerAdapter(BeanVitalizer vitalizer, Configuration config) {
         this.vitalizer = vitalizer;
         this.config = config;
     }
@@ -28,7 +26,7 @@ public class RerefenceHandlerAdapter<T, ST> implements ConfigTypeAdapter<T, Stri
     @Override
     public T fromConfigNode(String configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         // treat configNode as path, load the node at that path, create an instance from it
-        return (T) vitalizer.newConfiguredInstance((Class)property.getType(), (Map<String, Object>) config.getConfigurationNode(configNode));
+        return (T) vitalizer.newConfiguredInstance((Class) property.getType(), (Map<String, Object>) config.getConfigurationNode(configNode));
     }
 
     @Override
@@ -41,7 +39,7 @@ public class RerefenceHandlerAdapter<T, ST> implements ConfigTypeAdapter<T, Stri
         Map<String, Object> metadata = new HashMap<String, Object>();
         metadata.put("type", "string");
         metadata.put("class", "Reference");
-        //TODO: add regex?
+        //TODO: add regex..
         return metadata;
     }
 

@@ -10,6 +10,7 @@ import org.dcm4che3.conf.core.adapters.ReflectiveAdapter;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.adapters.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.api.ConfigurableClass;
+import org.dcm4che3.conf.core.api.ConfigurableProperty;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -27,6 +28,15 @@ public class BeanVitalizer {
 
     private Map<Class, Object> contextMap = new HashMap<Class, Object>();
     private Map<Class, ConfigTypeAdapter> customConfigTypeAdapters= new HashMap<Class, ConfigTypeAdapter>();
+    private ConfigTypeAdapter referenceTypeAdapter;
+
+    public void setReferenceTypeAdapter(ConfigTypeAdapter referenceTypeAdapter) {
+        this.referenceTypeAdapter = referenceTypeAdapter;
+    }
+
+    public ConfigTypeAdapter getReferenceTypeAdapter() {
+        return referenceTypeAdapter;
+    }
 
     public <T> T newConfiguredInstance(Class<T> clazz, Map<String, Object> configNode) throws ConfigurationException {
         try {
@@ -66,13 +76,7 @@ public class BeanVitalizer {
     @SuppressWarnings("unchecked")
     public ConfigTypeAdapter lookupTypeAdapter(AnnotatedConfigurableProperty property) throws ConfigurationException {
 
-        Class clazz;
-
-        if (ParameterizedType.class.isAssignableFrom(property.getClass()))
-            clazz = (Class) ((ParameterizedType) property).getRawType();
-        else
-            clazz = (Class) property.getType();
-
+        Class clazz = getRawClass(property);
 
         // first check for a custom adapter
         ConfigTypeAdapter typeAdapter = customConfigTypeAdapters.get(clazz);
@@ -80,6 +84,18 @@ public class BeanVitalizer {
 
         // delegate to default otherwise
         return lookupDefaultTypeAdapter(clazz);
+    }
+
+    public static Class getRawClass(AnnotatedConfigurableProperty property) {
+        Type type = property.getType();
+        Class clazz;
+
+        if (ParameterizedType.class.isAssignableFrom((Class<?>) type))
+            clazz = (Class) ((ParameterizedType) type).getRawType();
+        else {
+            clazz = (Class) type;
+        }
+        return clazz;
     }
 
     @SuppressWarnings("unchecked")

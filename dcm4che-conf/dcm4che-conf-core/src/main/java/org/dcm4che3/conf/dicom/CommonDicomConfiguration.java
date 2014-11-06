@@ -5,6 +5,7 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.Configuration;
+import org.dcm4che3.conf.core.adapters.ReferenceHandlerAdapter;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
@@ -45,9 +46,10 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         this.deviceExtensions = deviceExtensions;
         this.aeExtensions = aeExtensions;
 
+        // register reference handler
+        vitalizer.setReferenceTypeAdapter(new ReferenceHandlerAdapter(vitalizer,configurationStorage));
 
         // register type adapters and the DicomConfiguration context
-
         this.vitalizer.registerCustomConfigTypeAdapter(AttributesFormat.class, new AttributeFormatTypeAdapter());
         this.vitalizer.registerCustomConfigTypeAdapter(Code.class, new CodeTypeAdapter());
         this.vitalizer.registerCustomConfigTypeAdapter(Device.class, new DeviceReferenceByNameTypeAdapter());
