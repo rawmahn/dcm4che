@@ -71,13 +71,13 @@ public class DefaultConfigTypeAdapters {
         Object node = configNode.get(nodeName);
 
         // lookup adapter and run it on the property
-        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property.getType());
+        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
         return adapter.fromConfigNode(node, property, vitalizer);
     }
 
     static void delegateChildToConfigNode(Object object, Map<String, Object> parentNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         String nodeName = property.getAnnotatedName();
-        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property.getType());
+        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
         parentNode.put(nodeName, adapter.toConfigNode(object, property, vitalizer));
     }
 

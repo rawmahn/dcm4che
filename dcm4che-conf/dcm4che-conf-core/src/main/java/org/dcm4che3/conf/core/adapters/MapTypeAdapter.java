@@ -26,16 +26,17 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
 
         if (configNode == null) return null;
 
-        Type valueType = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 1);
-        Type keyType = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
-        ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) vitalizer.lookupTypeAdapter(valueType);
-        ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) vitalizer.lookupTypeAdapter(keyType);
+        AnnotatedConfigurableProperty keyPseudoProperty = new AnnotatedConfigurableProperty(DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0));
+        ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) vitalizer.lookupTypeAdapter(keyPseudoProperty);
+
+        AnnotatedConfigurableProperty valuePseudoProperty = new AnnotatedConfigurableProperty(DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 1));
+        ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) vitalizer.lookupTypeAdapter(valuePseudoProperty);
 
         Map<K, V> map = new HashMap<K, V>();
 
         for (Entry<String, Object> e : configNode.entrySet()) {
-            map.put(keyAdapter.fromConfigNode(e.getKey(), new AnnotatedConfigurableProperty(keyType), vitalizer),
-                    valueAdapter.fromConfigNode(e.getValue(), new AnnotatedConfigurableProperty(valueType), vitalizer));
+            map.put(keyAdapter.fromConfigNode(e.getKey(), keyPseudoProperty, vitalizer),
+                    valueAdapter.fromConfigNode(e.getValue(), valuePseudoProperty, vitalizer));
 
         }
 
@@ -47,16 +48,17 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
 
         if (object == null) return null;
 
-        Type valueType = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 1);
-        Type keyType = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
-        ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) vitalizer.lookupTypeAdapter(valueType);
-        ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) vitalizer.lookupTypeAdapter(keyType);
+        AnnotatedConfigurableProperty keyPseudoProperty = new AnnotatedConfigurableProperty(DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0));
+        ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) vitalizer.lookupTypeAdapter(keyPseudoProperty);
+
+        AnnotatedConfigurableProperty valuePseudoProperty = new AnnotatedConfigurableProperty(DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 1));
+        ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) vitalizer.lookupTypeAdapter(valuePseudoProperty);
 
         Map<String, Object> configNode = new HashMap<String, Object>();
 
         for (Entry<K, V> e : object.entrySet()) {
-            configNode.put(keyAdapter.toConfigNode(e.getKey(), new AnnotatedConfigurableProperty(keyType), vitalizer),
-                    valueAdapter.toConfigNode(e.getValue(), new AnnotatedConfigurableProperty(valueType), vitalizer));
+            configNode.put(keyAdapter.toConfigNode(e.getKey(), keyPseudoProperty, vitalizer),
+                    valueAdapter.toConfigNode(e.getValue(), valuePseudoProperty, vitalizer));
         }
 
         return configNode;
@@ -74,16 +76,17 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
         metadata.put("class", "Map");
 
         // get adapters
-        Type valueType = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 1);
-        Type keyType = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
-        ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) vitalizer.lookupTypeAdapter(valueType);
-        ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) vitalizer.lookupTypeAdapter(keyType);
+        AnnotatedConfigurableProperty keyPseudoProperty = new AnnotatedConfigurableProperty(DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0));
+        ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) vitalizer.lookupTypeAdapter(keyPseudoProperty);
+
+        AnnotatedConfigurableProperty valuePseudoProperty = new AnnotatedConfigurableProperty(DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 1));
+        ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) vitalizer.lookupTypeAdapter(valuePseudoProperty);
 
         // fill in key and value metadata
-        keyMetadata.putAll(keyAdapter.getSchema(new AnnotatedConfigurableProperty(keyType), vitalizer));
+        keyMetadata.putAll(keyAdapter.getSchema(keyPseudoProperty, vitalizer));
         metadata.put("mapkey", keyMetadata);
 
-        valueMetadata.putAll(valueAdapter.getSchema(new AnnotatedConfigurableProperty(valueType), vitalizer));
+        valueMetadata.putAll(valueAdapter.getSchema(valuePseudoProperty, vitalizer));
         valueMetadataWrapper.put("*", valueMetadata);
         metadata.put("properties", valueMetadataWrapper);
 

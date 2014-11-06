@@ -64,14 +64,14 @@ public class BeanVitalizer {
 
 
     @SuppressWarnings("unchecked")
-    public ConfigTypeAdapter lookupTypeAdapter(Type type) throws ConfigurationException {
+    public ConfigTypeAdapter lookupTypeAdapter(AnnotatedConfigurableProperty property) throws ConfigurationException {
 
         Class clazz;
 
-        if (ParameterizedType.class.isAssignableFrom(type.getClass()))
-            clazz = (Class) ((ParameterizedType) type).getRawType();
+        if (ParameterizedType.class.isAssignableFrom(property.getClass()))
+            clazz = (Class) ((ParameterizedType) property).getRawType();
         else
-            clazz = (Class) type;
+            clazz = (Class) property.getType();
 
 
         // first check for a custom adapter

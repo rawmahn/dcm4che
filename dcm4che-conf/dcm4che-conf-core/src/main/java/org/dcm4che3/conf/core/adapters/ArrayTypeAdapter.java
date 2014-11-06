@@ -55,8 +55,9 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
             int i = 0;
             for (Object el : l) {
                 // deserialize element
-                ConfigTypeAdapter elementTypeAdapter = vitalizer.lookupTypeAdapter(componentType);
-                el = elementTypeAdapter.fromConfigNode(el, new AnnotatedConfigurableProperty(componentType), vitalizer);
+                AnnotatedConfigurableProperty componentPseudoProperty = new AnnotatedConfigurableProperty(componentType);
+                ConfigTypeAdapter elementTypeAdapter = vitalizer.lookupTypeAdapter(componentPseudoProperty);
+                el = elementTypeAdapter.fromConfigNode(el, componentPseudoProperty, vitalizer);
 
                 // push to array
                 try {
@@ -111,7 +112,8 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         metadata.put("type", "array");
 
         Class<?> componentType = ((Class) property.getType()).getComponentType();
-        metadata.put("items", vitalizer.lookupTypeAdapter(componentType).getSchema(new AnnotatedConfigurableProperty(componentType), vitalizer));
+        AnnotatedConfigurableProperty componentPseudoProperty = new AnnotatedConfigurableProperty(componentType);
+        metadata.put("items", vitalizer.lookupTypeAdapter(componentPseudoProperty).getSchema(componentPseudoProperty, vitalizer));
 
         return metadata;
     }

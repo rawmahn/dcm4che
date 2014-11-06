@@ -21,8 +21,8 @@ public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, Collecti
     public Set<T> fromConfigNode(Collection<ST> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         Type setElementType = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
-        ConfigTypeAdapter<T, ST> adapterForGenericsParameter = vitalizer.lookupTypeAdapter(setElementType);
         AnnotatedConfigurableProperty setElementPseudoProperty = new AnnotatedConfigurableProperty(setElementType);
+        ConfigTypeAdapter<T, ST> adapterForGenericsParameter = vitalizer.lookupTypeAdapter(setElementPseudoProperty);
 
         Set<T> set = new HashSet<T>();
         for (ST s : configNode)
@@ -35,8 +35,9 @@ public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, Collecti
 
         HashSet<ST> node = new HashSet<ST>(object.size());
         for (T element : object) {
-            ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(element.getClass());
-            node.add((ST) adapter.toConfigNode(element, property , vitalizer));
+            AnnotatedConfigurableProperty elemPseudoProperty = new AnnotatedConfigurableProperty(element.getClass());
+            ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(elemPseudoProperty);
+            node.add((ST) adapter.toConfigNode(element, elemPseudoProperty , vitalizer));
         }
         return node;
     }
@@ -50,9 +51,11 @@ public class SetTypeAdapter<T, ST> implements ConfigTypeAdapter<Set<T>, Collecti
         metadata.put("type", "array");
 
         Type typeForGenericsParameter = DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
-        ConfigTypeAdapter<T,ST> adapter = vitalizer.lookupTypeAdapter(typeForGenericsParameter);
+        AnnotatedConfigurableProperty elementPseudoProperty = new AnnotatedConfigurableProperty(typeForGenericsParameter);
 
-        elementMetadata.putAll(adapter.getSchema(new AnnotatedConfigurableProperty(typeForGenericsParameter), vitalizer));
+        ConfigTypeAdapter<T,ST> adapter = vitalizer.lookupTypeAdapter(elementPseudoProperty);
+
+        elementMetadata.putAll(adapter.getSchema(elementPseudoProperty, vitalizer));
         metadata.put("items", elementMetadata);
         
         return metadata;
