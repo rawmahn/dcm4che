@@ -6,6 +6,7 @@ import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.adapters.DefaultConfigTypeAdapters;
 import org.dcm4che3.conf.core.adapters.ReferenceHandlerAdapter;
+import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.net.Connection;
 
 import java.util.regex.Matcher;
@@ -23,20 +24,20 @@ public class DicomReferenceHandlerAdapter<T> extends ReferenceHandlerAdapter<T> 
         // Connection of a device. Get the device - it will grab the current one from threadLocal
         if (Connection.class.isAssignableFrom(BeanVitalizer.getRawClass(property))) {
 
+            ConfigNodeUtil.parseReference("dicomConfigurationRoot/dicomDevicesRoot/Impax/dicomConnection/*[dicomHostname='theHost']");
 
-            "dicomConfigurationRoot/dicomDevicesRoot/Impax/dicomConnection/*[dicomHostname='theHost']"
             String mydata = "some string with 'the data i want' inside";
             Pattern pattern = Pattern.compile("'(.*?)'");
             Matcher matcher = pattern.matcher(mydata);
-            if (matcher.find())
-            {
+            if (matcher.find()) {
                 System.out.println(matcher.group(1));
             }
 
 
-            configNode.re
-            configNode
         }
-        property.getType()
+        property.getType();
+
+        return null;
     }
+
 }

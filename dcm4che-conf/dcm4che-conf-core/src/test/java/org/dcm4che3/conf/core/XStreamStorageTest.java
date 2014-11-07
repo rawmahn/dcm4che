@@ -1,5 +1,6 @@
 package org.dcm4che3.conf.core;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.dcm4che3.conf.core.misc.DeepEqualsDiffer;
 import org.junit.Assert;
 import org.dcm4che3.conf.core.impl.XStreamConfigurationStorage;
@@ -8,10 +9,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Roman K
@@ -68,6 +66,12 @@ public class XStreamStorageTest {
     @Test
     public void testSpecialSymbols() throws ConfigurationException {
         Configuration xCfg = getConfigurationStorage();
+
+        ObjectMapper om = new ObjectMapper();
+        // serialize to confignode
+
+
+
         Map<String, Object> pd = new HashMap<String, Object>();
         pd.put("_prop", "hey");
         pd.put("prop1", Arrays.asList(1, 2, 3));
