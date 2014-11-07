@@ -1,22 +1,22 @@
-package org.dcm4che3.conf.core
-
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.dcm4che3.conf.core.XStreamStorageTest
 import org.dcm4che3.conf.core.util.ConfigNodeUtil
-import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+/**
+ * Created by aprvf on 07/11/2014.
+ */
 @RunWith(JUnit4.class)
-class ConfigNodeUtilTests {
+class ConfigNodePathTests {
+
 
     @Test
     void testSearch() {
         def storage = XStreamStorageTest.getConfigurationStorage()
         def mapper = new ObjectMapper()
 
-        @Language("JSON")
         def json = """{
           "dicomConfigurationRoot": {
             "dicomDeviceRoot": {

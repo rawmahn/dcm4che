@@ -54,14 +54,21 @@ public class ConfigNodeUtil {
         return str;
     }
 
-        private final static String IDENTIFIER = "([a-zA-Z\\d_]+)";
-        private final static String XPREDICATE = "("+IDENTIFIER+"=(('.+?')|(\\-?[\\d\\.]+)|true|false))";
-        private final static String XPATHNODE = "/("+IDENTIFIER+"|\\*)(\\["+XPREDICATE+"( and "+XPREDICATE+")*\\])?";
-        private final static String XPATH = "("+XPATHNODE+")*";
+    private final static String IDENTIFIER = "([a-zA-Z\\d_]+)";
+    private static final String VALUE = "(('.+?')|(\\-?[\\d\\.]+)|true|false)";
+    private final static String IDENTIFIER_NAMED = "(?<identifier>"+IDENTIFIER+")";
+    private static final String VALUE_NAMED = "(?<value>"+VALUE+")";
 
+    private final static String XPREDICATE = "("+IDENTIFIER+"="+VALUE+")";
+    private final static String XPREDICATENAMED = "("+IDENTIFIER_NAMED+"="+VALUE_NAMED+")";
 
-        private final static Pattern xPathPattern = Pattern.compile(XPATH);
-        private final static Pattern xPathNodePattern = Pattern.compile(XPATHNODE);
+    private final static String XPATHNODE = "/(?<nodename>"+IDENTIFIER+"|\\*)(\\[(?<firstPredicate>"+XPREDICATE+")(?<otherPredicates>( and "+XPREDICATE+")*)\\])?";
+    private final static String XPATH = "("+XPATHNODE+")*";
+
+    public final static Pattern xPathPattern = Pattern.compile(XPATH);
+    public final static Pattern xPathNodePattern = Pattern.compile(XPATHNODE);
+    private final static Pattern xPredicatePattern = Pattern.compile(XPREDICATE);
+    private final static Pattern xNamedPredicatePattern = Pattern.compile(XPREDICATENAMED);
 
     /**
      * Returns list of path elements.
@@ -72,7 +79,6 @@ public class ConfigNodeUtil {
      */
     public static List<Map<String, Object>> parseReference(String s) {
 
-
         String input = "/dicomConfigurationRoot/dicomDeviceRoot/*[deviceName='Qoute&apos;here']/dicomConnection[dicomPort=101 and dicomHostname='myhl7']";
         if (!xPathPattern.matcher(input).matches()) {
             throw new IllegalArgumentException("Failed to parse provided reference ("+input+")");
@@ -80,7 +86,16 @@ public class ConfigNodeUtil {
 
         Matcher nodeMatcher = xPathNodePattern.matcher(input);
         while (nodeMatcher.find()) {
-            System.out.println(nodeMatcher.group());
+            String node = nodeMatcher.group();
+            System.out.println(node);
+
+            // nodename $name
+            System.out.println(nodeMatcher.group("nodename"));
+
+            // now key-value
+            System.out.println(nodeMatcher.group("predicates"));
+
+
         };
 
         return null;
