@@ -12,13 +12,13 @@ import java.util.*;
  * Default dereferencer.
  * @param <T>
  */
-public class ReferenceHandlerAdapter<T> implements ConfigTypeAdapter<T,String> {
+public class DefaultReferenceAdapter<T> implements ConfigTypeAdapter<T,String> {
 
     private BeanVitalizer vitalizer;
     private Configuration config;
 
 
-    public ReferenceHandlerAdapter(BeanVitalizer vitalizer, Configuration config) {
+    public DefaultReferenceAdapter(BeanVitalizer vitalizer, Configuration config) {
         this.vitalizer = vitalizer;
         this.config = config;
     }

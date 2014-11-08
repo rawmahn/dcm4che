@@ -15,7 +15,6 @@ class ConfigNodePathTests {
     @Test
     void testSearch() {
         def storage = XStreamStorageTest.getConfigurationStorage()
-        def mapper = new ObjectMapper()
 
         def json = """{
           "dicomConfigurationRoot": {
@@ -74,7 +73,7 @@ class ConfigNodePathTests {
         }
         """
 
-        def configNode = mapper.readValue(json, Map.class)
+        Map configNode = jsonToMap(json)
 
         storage.persistNode("/", configNode, null)
 
@@ -98,9 +97,42 @@ class ConfigNodePathTests {
         assert ((Map<String, Object>) res.next()).get("dicomPort").equals(2222)*/
     }
 
+    private Map jsonToMap(String json) {
+        def mapper = new ObjectMapper()
+        def configNode = mapper.readValue(json, Map.class)
+        configNode
+    }
+
+    private List jsonToList(String json) {
+        def mapper = new ObjectMapper()
+        def configNode = mapper.readValue(json, List.class)
+        configNode
+    }
+
     @Test
     void testParseReference() {
-        ConfigNodeUtil.parseReference("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomConnection[dicomPort=101]")
+
+        def res = jsonToList("""            [
+                {
+                    "\$name":"dicomConfigurationRoot"
+                },
+                {
+                    "\$name":"dicomDeviceRoot"
+                },
+                {
+                    "\$name":"*",
+                    "deviceName":"Qoute'here"
+                },
+                {
+                    "\$name":"dicomConnection",
+                    "dicomPort" : 101,
+                    "dicomHostname": "myhl7",
+                    "dicomInstalled":true
+                }
+            ]""")
+
+        //ConfigNodeUtil.parseReference("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomConnection[dicomPort=101]")
+        assert res == ConfigNodeUtil.parseReference("/dicomConfigurationRoot/dicomDeviceRoot/*[deviceName='Qoute&apos;here']/dicomConnection[dicomPort=101 and dicomHostname='myhl7' and dicomInstalled=true]");
     }
 
 }
