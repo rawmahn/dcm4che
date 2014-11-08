@@ -5,6 +5,7 @@ import org.dcm4che3.conf.core.api.ConfigurableProperty;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -18,8 +19,8 @@ public class AnnotatedConfigurableProperty {
     public AnnotatedConfigurableProperty() {
     }
 
-    public AnnotatedConfigurableProperty(Type componentType) {
-        setType(componentType);
+    public AnnotatedConfigurableProperty(Type type) {
+        setType(type);
     }
 
     @SuppressWarnings("unchecked")

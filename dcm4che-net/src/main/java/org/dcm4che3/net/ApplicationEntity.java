@@ -112,7 +112,7 @@ public class ApplicationEntity implements Serializable {
             new LinkedHashSet<String>();
 
     // Connections are dereferenced by DicomConfiguration
-    @ConfigurableProperty(name = "dicomNetworkConnectionReference", reference = true)
+    @ConfigurableProperty(name = "dicomNetworkConnectionReference", collectionOfReferences = true)
     private List<Connection> connections = new ArrayList<Connection>(1);
 
     /**

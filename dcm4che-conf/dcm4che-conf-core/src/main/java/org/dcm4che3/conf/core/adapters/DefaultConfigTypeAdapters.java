@@ -44,12 +44,11 @@ import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.validation.ValidationException;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Roman K
@@ -71,19 +70,26 @@ public class DefaultConfigTypeAdapters {
         Object node = configNode.get(nodeName);
 
         // lookup adapter and run it on the property
-        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property.getType());
+        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
         return adapter.fromConfigNode(node, property, vitalizer);
     }
 
     static void delegateChildToConfigNode(Object object, Map<String, Object> parentNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         String nodeName = property.getAnnotatedName();
-        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property.getType());
+        ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
         parentNode.put(nodeName, adapter.toConfigNode(object, property, vitalizer));
     }
 
     static Type getTypeForGenericsParameter(AnnotatedConfigurableProperty property, int genericParameterIndex) throws ConfigurationException {
         Type[] actualTypeArguments = ((ParameterizedType) property.getType()).getActualTypeArguments();
         return actualTypeArguments[genericParameterIndex];
+    }
+
+    static AnnotatedConfigurableProperty getPseudoPropertyForGenericsParamater(AnnotatedConfigurableProperty property, int genericParameterIndex) throws ConfigurationException {
+
+        Type typeForGenericsParameter = getTypeForGenericsParameter(property, genericParameterIndex);
+        AnnotatedConfigurableProperty pseudoProperty = new AnnotatedConfigurableProperty(typeForGenericsParameter);
+        return pseudoProperty;
     }
 
     /**
@@ -283,7 +289,9 @@ public class DefaultConfigTypeAdapters {
         defaultTypeAdapters.put(Float.class, doubleAdapter);
 
         defaultTypeAdapters.put(Map.class, new MapTypeAdapter());
-        defaultTypeAdapters.put(Set.class, new SetTypeAdapter());
+        defaultTypeAdapters.put(Set.class, new CollectionTypeAdapter<Set>(HashSet.class));
+        defaultTypeAdapters.put(List.class, new CollectionTypeAdapter<List>(ArrayList.class));
+        defaultTypeAdapters.put(Collection.class, new CollectionTypeAdapter<List>(ArrayList.class));
         defaultTypeAdapters.put(Enum.class, new EnumTypeAdapter());
 
     }

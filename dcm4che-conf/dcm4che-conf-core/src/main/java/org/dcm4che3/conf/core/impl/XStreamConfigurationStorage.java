@@ -56,7 +56,6 @@ public class XStreamConfigurationStorage implements Configuration {
     public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
         try {
             Map<String, Object> configurationRoot = getConfigurationRoot();
-            Map<String, Object> node = (Map<String, Object>) ConfigNodeUtil.getNode(configurationRoot, path);
 
             if (configurableClass != null)
                 configNode.put("#class", configurableClass.getName());

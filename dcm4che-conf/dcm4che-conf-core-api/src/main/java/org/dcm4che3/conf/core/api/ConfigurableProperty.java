@@ -54,8 +54,12 @@ import java.util.Objects;
 @Target(ElementType.FIELD)
 public @interface ConfigurableProperty {
 
-
-    boolean reference() default false;
+    /**
+     * Specifies that the annotated field/property is a collection, elements of which are stored as references
+     * to actual values (like "dicomConfigurationRoot/dicomDevicesRoot/device1")
+     * @return
+     */
+    boolean collectionOfReferences() default false;
 
     public enum EnumRepresentation {
         ORDINAL,
