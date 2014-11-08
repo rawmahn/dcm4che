@@ -28,7 +28,6 @@ public class DicomReferenceHandlerAdapter<T> extends DefaultReferenceAdapter<T> 
         if (Connection.class.isAssignableFrom(BeanVitalizer.getRawClass(property))) {
 
             List<Map<String, Object>> props = ConfigNodeUtil.parseReference(configNode);
-            //"dicomConfigurationRoot/dicomDevicesRoot/Impax/dicomConnection/*[dicomHostname='theHost']");
 
             try {
 
@@ -40,21 +39,37 @@ public class DicomReferenceHandlerAdapter<T> extends DefaultReferenceAdapter<T> 
                         props.get(1).get("$name").equals("dicomDevicesRoot") &&
                         deviceName != null &&
                         props.get(3).get("$name").equals("dicomConnection");
-
                 if (!valid) throw new RuntimeException("Path is invalid");
 
                 Device device = vitalizer.getContext(DicomConfiguration.class).findDevice(deviceName);
+                Connection conn = (Connection) super.fromConfigNode(configNode, property, vitalizer);
 
-                //device.getCo
+                return (T) device.connectionWithEqualsRDN(conn);
 
             } catch (Exception e) {
-                throw new ConfigurationException("Cannot find referenced connection ("+configNode+")",e);
+                throw new ConfigurationException("Cannot find referenced connection (" + configNode + ")", e);
             }
-
         }
-        property.getType();
-
-        return null;
+        return super.fromConfigNode(configNode, property, vitalizer);
     }
 
+    @Override
+    public String toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+
+        // Reference connection of connection's device
+        if (Connection.class.isAssignableFrom(BeanVitalizer.getRawClass(property))) {
+            Connection conn = (Connection) object;
+
+            String predicate;
+            if (conn.getCommonName() != null)
+                predicate = "[cn='" + conn.getCommonName() + "']";
+            else if (conn.isServer())
+                predicate = "[dicomHostname='" + ConfigNodeUtil.escape(conn.getHostname()) + "' and dicomPort='" + conn.getPort() + "']";
+            else
+                predicate = "[dicomHostname='" + ConfigNodeUtil.escape(conn.getHostname()) + "']";
+
+            return "dicomConfigurationRoot/dicomDevicesRoot/*[dicomDeviceName='" + ConfigNodeUtil.escape(conn.getDevice().getDeviceName()) + "']/dicomConnection" + predicate;
+        }
+        return super.toConfigNode(object, property, vitalizer);
+    }
 }

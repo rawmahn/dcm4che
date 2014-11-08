@@ -47,7 +47,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         this.aeExtensions = aeExtensions;
 
         // register reference handler
-        vitalizer.setReferenceTypeAdapter(new DefaultReferenceAdapter(vitalizer,configurationStorage));
+        vitalizer.setReferenceTypeAdapter(new DicomReferenceHandlerAdapter(vitalizer,configurationStorage));
 
         // register type adapters and the DicomConfiguration context
         this.vitalizer.registerCustomConfigTypeAdapter(AttributesFormat.class, new AttributeFormatTypeAdapter());
