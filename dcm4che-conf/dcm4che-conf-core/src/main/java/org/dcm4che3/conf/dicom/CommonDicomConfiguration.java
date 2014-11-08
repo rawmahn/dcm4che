@@ -5,7 +5,6 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.Configuration;
-import org.dcm4che3.conf.core.adapters.DefaultReferenceAdapter;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
@@ -29,8 +28,8 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     Configuration config;
     BeanVitalizer vitalizer;
-    private final Collection<Class<? extends DeviceExtension>> deviceExtensions;
-    private final Collection<Class<? extends AEExtension>> aeExtensions;
+    private final Collection<Class<? extends DeviceExtension>> deviceExtensionClasses;
+    private final Collection<Class<? extends AEExtension>> aeExtensionClasses;
 
 
     /**
@@ -40,11 +39,11 @@ public class CommonDicomConfiguration implements DicomConfiguration {
      */
     private ThreadLocal<Map<String, Device>> currentlyLoadedDevicesLocal = new ThreadLocal<Map<String, Device>>();
 
-    public CommonDicomConfiguration(Configuration configurationStorage, BeanVitalizer vitalizer, Collection<Class<? extends DeviceExtension>> deviceExtensions, Collection<Class<? extends AEExtension>> aeExtensions) {
+    public CommonDicomConfiguration(Configuration configurationStorage, BeanVitalizer vitalizer, Collection<Class<? extends DeviceExtension>> deviceExtensionClasses, Collection<Class<? extends AEExtension>> aeExtensionClasses) {
         this.config = configurationStorage;
         this.vitalizer = vitalizer;
-        this.deviceExtensions = deviceExtensions;
-        this.aeExtensions = aeExtensions;
+        this.deviceExtensionClasses = deviceExtensionClasses;
+        this.aeExtensionClasses = aeExtensionClasses;
 
         // register reference handler
         vitalizer.setReferenceTypeAdapter(new DicomReferenceHandlerAdapter(vitalizer,configurationStorage));
@@ -116,6 +115,8 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public ApplicationEntity findApplicationEntity(String aet) throws ConfigurationException {
+        config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[dicomAETitle='"+aet+"']]");
+
         //vitalizer.newConfiguredInstance(ApplicationEntity.class, config.getConfigurationNode(""))
         return null;
     }
@@ -167,39 +168,46 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public void persist(Device device) throws ConfigurationException {
-        String deviceName = device.getDeviceName();
-        String path = deviceRef(deviceName);
-        if (config.nodeExists(path))
-            throw new ConfigurationAlreadyExistsException("Device " + deviceName + " already exists");
-
-        // persist device
-        final Map<String, Object> deviceConfigNode = vitalizer.createConfigNodeFromInstance(device);
-
-        // Set references of AEs to connections
-        //TODO: ?
-        config.persistNode(path, deviceConfigNode, Device.class);
-
-
-        // handle AEExtensions
-
-        // persist DeviceExtensions
-        for (Class<? extends DeviceExtension> deviceExtensionClass : deviceExtensions) {
-            final DeviceExtension deviceExtension = device.getDeviceExtension(deviceExtensionClass);
-            final String extensionPath = path + "/deviceExtensions/" + deviceExtensionClass.getSimpleName();
-
-            if (deviceExtension == null)
-                config.removeNode(extensionPath);
-            else
-                config.persistNode(extensionPath, vitalizer.createConfigNodeFromInstance(deviceExtension), deviceExtensionClass);
-        }
-
-
+        if (config.nodeExists(deviceRef(device.getDeviceName())))
+            throw new ConfigurationAlreadyExistsException("Device " + device.getDeviceName() + " already exists");
+        // otherwise it is the same as merge
+        merge(device);
     }
 
     @Override
     public void merge(Device device) throws ConfigurationException {
+        String devicePath = deviceRef(device.getDeviceName());
 
+        // persist device
+        final Map<String, Object> deviceConfigNode = vitalizer.createConfigNodeFromInstance(device, Device.class);
+
+        config.persistNode(devicePath, deviceConfigNode, Device.class);
+
+        // persist AEExtensions
+        for (Map.Entry<String, ApplicationEntity> entry : device.getApplicationEntitiesMap().entrySet()) {
+
+            ApplicationEntity ae = entry.getValue();
+
+            for (Class<? extends AEExtension> aeExtensionClass : aeExtensionClasses) {
+                AEExtension aeExtension = ae.getAEExtension(aeExtensionClass);
+                Map<String, Object> aeExtNode = vitalizer.createConfigNodeFromInstance(aeExtension, aeExtensionClass);
+                config.persistNode(devicePath+"/dicomNetworkAE[dicomAETitle='"+ae.getAETitle()+"']/aeExtensions/"+aeExtensionClass.getSimpleName(),aeExtNode, aeExtensionClass);
+            }
+        }
+
+        // persist DeviceExtensions
+        for (Class<? extends DeviceExtension> deviceExtensionClass : deviceExtensionClasses) {
+            final DeviceExtension deviceExtension = device.getDeviceExtension(deviceExtensionClass);
+            final String extensionPath = devicePath + "/deviceExtensions/" + deviceExtensionClass.getSimpleName();
+
+            if (deviceExtension == null)
+                config.removeNode(extensionPath);
+            else
+                config.persistNode(extensionPath, vitalizer.createConfigNodeFromInstance(deviceExtension, deviceExtensionClass), deviceExtensionClass);
+        }
     }
+
+
 
     @Override
     public void removeDevice(String name) throws ConfigurationException {
@@ -208,7 +216,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public String deviceRef(String name) {
-        return "dicomConfigurationRoot/dicomDevicesRoot/" + ConfigNodeUtil.escape(name);
+        return "dicomConfigurationRoot/dicomDevicesRoot/*[dicomDeviceName='" + ConfigNodeUtil.escapeApos(name) + "']";
     }
 
     @Override

@@ -49,6 +49,7 @@ public class ConfigNodeUtil {
     }
 
     public static String escape(String str) {
+        // TODO: implement validation, as we do not allow slashes, commas quotes etc
         // TODO: implement escaping
         return str;
     }
@@ -137,5 +138,9 @@ public class ConfigNodeUtil {
         } ;
 
         return list;
+    }
+
+    public static String escapeApos(String name) {
+        return name.replace("'", "&apos;");
     }
 }

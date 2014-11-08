@@ -92,6 +92,9 @@ class ConfigNodePathTests {
         res = storage.search("dicomConfigurationRoot/dicomDeviceRoot/*[dicomDeviceName='deviceWith&apos;Quote']/dicomConnection[cn='tls']")
         assert ((Map<String, Object>) res.next()).get("dicomPort").equals(2222)
 
+        res = storage.search("dicomConfigurationRoot/dicomDeviceRoot/*[dicomConnection[dcmBindAddress='123.26.123.1']]")
+        println res.next()
+//        assert ((Map<String, Object>) res.next()).get("dicomPort").equals(2222)
         // invalid
         /*res = storage.search("dicomConfigurationRoot/dicomDeviceRoot/deviceWith&apos;Quote/dicomConnection[cn='tls']")
         assert ((Map<String, Object>) res.next()).get("dicomPort").equals(2222)*/

@@ -69,7 +69,18 @@ public class BeanVitalizer {
      * @return
      */
     public <T> Map<String, Object> createConfigNodeFromInstance(T object) throws ConfigurationException {
-        return (Map<String, Object>) lookupDefaultTypeAdapter(object.getClass()).toConfigNode(object, new AnnotatedConfigurableProperty(object.getClass()), this);
+        return createConfigNodeFromInstance(object, object.getClass());
+    }
+
+    /**
+     * Will not work (throws an exception) if <b>object</b> has setters that use configurable properties!
+     * @param <T>
+     * @param object
+     * @param configurableClass
+     * @return
+     */
+    public <T> Map<String, Object> createConfigNodeFromInstance(T object, Class configurableClass) throws ConfigurationException {
+        return (Map<String, Object>) lookupDefaultTypeAdapter(configurableClass).toConfigNode(object, new AnnotatedConfigurableProperty(configurableClass), this);
     }
 
 

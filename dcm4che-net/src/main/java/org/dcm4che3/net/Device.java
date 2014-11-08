@@ -894,7 +894,9 @@ public class Device implements Serializable {
 
     public void setApplicationEntitiesMap(Map<String, ApplicationEntity> applicationEntitiesMap) {
         this.applicationEntitiesMap.clear();
-        this.applicationEntitiesMap.putAll(applicationEntitiesMap);
+        for (Entry<String, ApplicationEntity> entry : applicationEntitiesMap.entrySet()) {
+            addApplicationEntity(entry.getValue());
+        }
     }
 
     public Map<String, ApplicationEntity> getApplicationEntitiesMap() {

@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * @author Gunter Zeilinger <gunterze@gmail.com>
  *
  */
-@LDAP(objectClasses = {"dcmNetworkAE","dicomNetworkAE"})
+@LDAP(objectClasses = {"dcmNetworkAE","dicomNetworkAE"}, distinguishingField = "dicomAETitle")
 @ConfigurableClass
 public class ApplicationEntity implements Serializable {
 

@@ -88,6 +88,8 @@ public class TransferCapability implements Serializable {
     @ConfigurableProperty(name = "dcmQueryOptions")
     private EnumSet<QueryOption> queryOptions;
 
+    @LDAP(noContainerNode = true)
+    @ConfigurableProperty(name = "dcmStorageOptions")
     private StorageOptions storageOptions;
 
     public TransferCapability() {
