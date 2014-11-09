@@ -2,6 +2,7 @@ package org.dcm4che3.conf.core;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -77,5 +78,5 @@ public interface Configuration {
      * Returns configNodes
      * @param liteXPathExpression Must be absolute path, no double slashes, no @attributes (only [attr=val] or [attr<>val])
      */
-    java.util.Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException;
+    Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException;
 }

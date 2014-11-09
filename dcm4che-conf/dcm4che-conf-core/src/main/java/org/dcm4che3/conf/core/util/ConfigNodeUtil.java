@@ -37,6 +37,7 @@ public class ConfigNodeUtil {
 
     public static Iterator search(Map<String, Object> configurationRoot, String liteXPathExpression) throws IllegalArgumentException {
         return JXPathContext.newContext(configurationRoot).iterate(liteXPathExpression);
+
     }
 
     public static boolean validatePath(String path) {

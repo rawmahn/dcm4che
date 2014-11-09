@@ -7,6 +7,7 @@ import org.dcm4che3.conf.api.ConfigurationException;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -91,7 +92,7 @@ public class XStreamConfigurationStorage implements Configuration {
     }
 
     @Override
-    public java.util.Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException {
+    public Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException {
         return ConfigNodeUtil.search(getConfigurationRoot(), liteXPathExpression);
     }
 }

@@ -1,4 +1,5 @@
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.apache.commons.jxpath.Pointer
 import org.dcm4che3.conf.core.XStreamStorageTest
 import org.dcm4che3.conf.core.util.ConfigNodeUtil
 import org.junit.Test
@@ -11,16 +12,22 @@ import org.junit.runners.JUnit4
 @RunWith(JUnit4.class)
 class ConfigNodePathTests {
 
-
-    @Test
-    void testSearch() {
-        def storage = XStreamStorageTest.getConfigurationStorage()
-
-        def json = """{
+    def dicomConfJsonMock = """{
           "dicomConfigurationRoot": {
             "dicomDeviceRoot": {
               "device1":{
                 "dicomDeviceName":"device1",
+                "dicomNetworkAE":
+                [
+                  {
+                    "dicomAETitle":"aTitle",
+                    "connection":"conn1Ref"
+                  },
+                  {
+                    "dicomAETitle":"aTitle1",
+                    "connection":"conn1Ref"
+                  }
+                ],
                 "dicomConnection":[
                   {
                     "cn": "tls",
@@ -34,14 +41,21 @@ class ConfigNodePathTests {
                     "dcmBindAddress":"127.0.0.1",
                     "dicomPort":101,
                     "sneakyProp":"thebackslash\\\\",
-                    "secondSneakyProp":"the/slash"
+                    "secondSneakyProp":"the/slash",
+                    "arr":[
+                      {"n":1,
+                       "v":3
+                      },
+                      {"n":2
+                      }
+                    ]
 
                   },
                   {
                     "cn": "hl7-1",
                     "dicomHostname":"myhl7",
                     "dcmBindAddress":"123.26.123.1"
-                  }
+                    }
                 ]
               },
               "device2":{"dicomDevicename":"device2"},
@@ -65,6 +79,17 @@ class ConfigNodePathTests {
                     "dcmBindAddress":"127.0.0.1",
                     "dicomPort":2222
                   }
+                ],
+                "dicomNetworkAE":
+                [
+                  {
+                    "dicomAETitle":"aTitle3",
+                    "connection":"conn1Ref"
+                  },
+                  {
+                    "dicomAETitle":"aTitle5",
+                    "connection":"conn1Ref"
+                  }
                 ]
               }
 
@@ -72,13 +97,18 @@ class ConfigNodePathTests {
           }
         }
         """
+    @Test
+    void testSearch() {
+        def storage = XStreamStorageTest.getConfigurationStorage()
 
-        Map configNode = jsonToMap(json)
+
+
+        Map configNode = jsonToMap(dicomConfJsonMock)
 
         storage.persistNode("/", configNode, null)
 
-        def res = storage.search("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomConnection[dicomPort=101 and dicomHostname='myhl7']")
-        assert ((Map<String, Object>) res.next()).get("dicomPort").equals(101)
+        def res = storage.search("dicomConfigurationRoot/dicomDeviceRoot/*[dicomNetworkAE/dicomAETitle='aTitle1']")
+        assert ((Map<String, Object>) res.next()).get("dicomDeviceName").equals("device1")
 
         res = storage.search("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomConnection[sneakyProp='thebackslash\\']")
         assert ((Map<String, Object>) res.next()).get("dicomPort").equals(101)
@@ -134,8 +164,10 @@ class ConfigNodePathTests {
                 }
             ]""")
 
-        //ConfigNodeUtil.parseReference("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomConnection[dicomPort=101]")
         assert res == ConfigNodeUtil.parseReference("/dicomConfigurationRoot/dicomDeviceRoot/*[deviceName='Qoute&apos;here']/dicomConnection[dicomPort=101 and dicomHostname='myhl7' and dicomInstalled=true]");
+
+        // test parse
+        // "dicomConfigurationRoot/dicomDeviceRoot/*[dicomNetworkAE/dicomAETitle='aTitle1']"
     }
 
 }
