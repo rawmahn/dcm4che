@@ -16,7 +16,8 @@ public class ConfigNodeUtil {
     }
 
     public static void replaceNode(Object rootConfigNode, String path, Object replacementConfigNode) {
-        JXPathContext.newContext(rootConfigNode).getPointer(path).setValue(replacementConfigNode);
+
+        JXPathContext.newContext(rootConfigNode).createPathAndSetValue(path,replacementConfigNode);
     }
 
     public static Object getNode(Object rootConfigNode, String path) {

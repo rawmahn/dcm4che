@@ -2,6 +2,7 @@ package org.dcm4che3.conf.dicom;
 
 import org.dcm4che3.conf.api.ConfigurationAlreadyExistsException;
 import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.api.ConfigurationNotFoundException;
 import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.Configuration;
@@ -16,9 +17,7 @@ import org.dcm4che3.net.*;
 import org.dcm4che3.util.AttributesFormat;
 
 import java.security.cert.X509Certificate;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Roman K
@@ -115,10 +114,21 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public ApplicationEntity findApplicationEntity(String aet) throws ConfigurationException {
-        config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[dicomAETitle='"+aet+"']]");
 
-        //vitalizer.newConfiguredInstance(ApplicationEntity.class, config.getConfigurationNode(""))
-        return null;
+        // TODO: IMPLEMENT
+        // will be supported later
+        //config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[dicomAETitle='"+aet+"']]");
+
+        // temporary
+        Map<String,Object> configurationNode = (Map<String, Object>) config.getConfigurationNode("/dicomConfigurationRoot/dicomDevicesRoot/");
+        ApplicationEntity ae = null;
+        for (Map.Entry<String, Object> entry : configurationNode.entrySet()) {
+            Device device = vitalizer.newConfiguredInstance(Device.class, (Map<String, Object>) entry.getValue());
+            ae = device.getApplicationEntitiesMap().get(aet);
+            if (ae != null) break;
+        }
+        if (ae == null) throw new ConfigurationNotFoundException("AE '" + aet + "' not found");
+        return ae;
     }
 
     @Override
@@ -142,8 +152,30 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
         try {
             Object configurationNode = config.getConfigurationNode(deviceRef(name));
-            return vitalizer.newConfiguredInstance(Device.class, (Map<String, Object>) configurationNode);
-        } catch (ConfigurationException e) {
+            Device device = vitalizer.newConfiguredInstance(Device.class, (Map<String, Object>) configurationNode);
+
+            // add device extensions
+
+            for (Class<? extends DeviceExtension> deviceExtensionClass : deviceExtensionClasses) {
+                Map<String, Object> deviceExtensionNode = (Map<String, Object>) config.getConfigurationNode(deviceRef(name) + "/deviceExtensions/"+deviceExtensionClass.getSimpleName());
+                if (deviceExtensionNode!= null)
+                    device.addDeviceExtension(vitalizer.newConfiguredInstance(deviceExtensionClass, deviceExtensionNode));
+            }
+
+            // add ae extensions
+            for (Map.Entry<String, ApplicationEntity> entry : device.getApplicationEntitiesMap().entrySet()) {
+                String aeTitle = entry.getKey();
+                ApplicationEntity ae = entry.getValue();
+                for (Class<? extends AEExtension> aeExtensionClass : aeExtensionClasses) {
+                    Object aeExtNode = config.getConfigurationNode(deviceRef(name) + "dicomNetworkAE[dicomAETitle='" + aeTitle + "']/aeExtensions/" + aeExtensionClass.getSimpleName());
+                    if (aeExtNode != null) {
+                        ae.addAEExtension(vitalizer.newConfiguredInstance(aeExtensionClass, (Map<String, Object>) aeExtNode));
+                    }
+                }
+            }
+
+            return device;
+            } catch (ConfigurationException e) {
             throw new ConfigurationException("Configuration for device " + name + " cannot be loaded");
         } finally {
             // if this loadDevice call initialized the cache, then clean it up
@@ -153,17 +185,25 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public DeviceInfo[] listDeviceInfos(DeviceInfo keys) throws ConfigurationException {
-        return new DeviceInfo[0];
+        throw new RuntimeException("Not yet implemented");
     }
 
     @Override
     public String[] listDeviceNames() throws ConfigurationException {
-        return new String[0];
+        Iterator search = config.search("dicomConfigurationRoot/dicomDeviceRoot/*/dicomDeviceName");
+        List<String> deviceNames = new ArrayList<String>();
+        while (search.hasNext())
+            deviceNames.add((String) search.next());
+        return deviceNames.toArray(new String[deviceNames.size()]);
     }
 
     @Override
     public String[] listRegisteredAETitles() throws ConfigurationException {
-        return new String[0];
+        Iterator search = config.search("dicomConfigurationRoot/dicomDeviceRoot/*/dicomNetworkAE/dicomAETitle");
+        List<String> aeNames = new ArrayList<String>();
+        while (search.hasNext())
+            aeNames.add((String) search.next());
+        return aeNames.toArray(new String[aeNames.size()]);
     }
 
     @Override
@@ -221,17 +261,17 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public void persistCertificates(String ref, X509Certificate... certs) throws ConfigurationException {
-
+        throw new RuntimeException("Not implemented yet");
     }
 
     @Override
     public void removeCertificates(String ref) throws ConfigurationException {
-
+        throw new RuntimeException("Not implemented yet");
     }
 
     @Override
     public X509Certificate[] findCertificates(String dn) throws ConfigurationException {
-        return new X509Certificate[0];
+        throw new RuntimeException("Not implemented yet");
     }
 
     @Override
@@ -246,6 +286,6 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public <T> T getDicomConfigurationExtension(Class<T> clazz) {
-        return null;
+        throw new RuntimeException("Not implemented yet");
     }
 }

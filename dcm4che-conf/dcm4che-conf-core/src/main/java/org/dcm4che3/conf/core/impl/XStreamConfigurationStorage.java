@@ -1,9 +1,9 @@
 package org.dcm4che3.conf.core.impl;
 
 import com.thoughtworks.xstream.XStream;
+import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
-import org.dcm4che3.conf.api.ConfigurationException;
 
 import java.io.*;
 import java.util.HashMap;
@@ -61,8 +61,15 @@ public class XStreamConfigurationStorage implements Configuration {
             if (configurableClass != null)
                 configNode.put("#class", configurableClass.getName());
 
-            if (!path.equals("/"))
-                ConfigNodeUtil.replaceNode(configurationRoot, path, configNode); else
+            if (!path.equals("/")) {
+                if (ConfigNodeUtil.nodeExists(configurationRoot,path)) {
+                    for (String key : configNode.keySet())
+                        ConfigNodeUtil.replaceNode(configurationRoot, ConfigNodeUtil.concat(path, key), configNode.get(key));
+                } else
+                    ConfigNodeUtil.replaceNode(configurationRoot, path, configNode);
+
+
+            } else
                 configurationRoot = (Map<String, Object>) configNode;
 
 

@@ -30,6 +30,12 @@ public interface Configuration {
      */
     Map<String, Object> getConfigurationRoot() throws ConfigurationException;
 
+    /**
+     *
+     * @param path A reference to a node
+     * @return configuration node or null, if not found
+     * @throws ConfigurationException
+     */
     Object getConfigurationNode(String path) throws ConfigurationException;
 
     /**

@@ -21,7 +21,13 @@ class ConfigNodePathTests {
                 [
                   {
                     "dicomAETitle":"aTitle",
-                    "connection":"conn1Ref"
+                    "connection":"conn1Ref",
+                    "aeExtensions":{
+                        "hiExt": {"extensionName":"hiExt",
+                                "someProp":123},
+                        "SomeOtherExt": {"extensionName":"SomeOtherExt",
+                                "someProp":123}
+                    }
                   },
                   {
                     "dicomAETitle":"aTitle1",
@@ -123,7 +129,31 @@ class ConfigNodePathTests {
         assert ((Map<String, Object>) res.next()).get("dicomPort").equals(2222)
 
         res = storage.search("dicomConfigurationRoot/dicomDeviceRoot/*[dicomConnection[dcmBindAddress='123.26.123.1']]")
-        println res.next()
+
+        res = storage.search("dicomConfigurationRoot/dicomDeviceRoot/*/dicomDeviceName")
+        def dnames = ["device1","deviceWith'Quote","deviceWith/Slash"];
+        for (def i=0;i<3;i++)
+            assert res.next() == dnames[i]
+
+        res = storage.search("dicomConfigurationRoot/dicomDeviceRoot/*/dicomNetworkAE/dicomAETitle")
+        def atitles = [
+                "aTitle",
+                "aTitle1",
+                "aTitle3",
+                "aTitle5"
+        ]
+        for (def i=0;i<4;i++)
+            assert res.next() == atitles[i]
+
+        println storage.getConfigurationNode("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomNetworkAE[dicomAETitle='aTitle']")
+        storage.persistNode("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomNetworkAE[dicomAETitle='aTitle']/aeExtensions/thenewextension",
+                [name:"testExt", someProp:"someVal", id:1234], null);
+
+        println storage.getConfigurationNode("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomNetworkAE[dicomAETitle='aTitle']")
+        def node = storage.getConfigurationNode("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomNetworkAE[dicomAETitle='aTitle']")
+        assert node == [dicomAETitle:"aTitle", connection:"conn1Ref", aeExtensions:[hiExt:[extensionName:"hiExt", someProp:123], SomeOtherExt:[extensionName:"SomeOtherExt", someProp:123], thenewextension:[name:"testExt", someProp:"someVal", id:1234]]]
+
+
 //        assert ((Map<String, Object>) res.next()).get("dicomPort").equals(2222)
         // invalid
         /*res = storage.search("dicomConfigurationRoot/dicomDeviceRoot/deviceWith&apos;Quote/dicomConnection[cn='tls']")
