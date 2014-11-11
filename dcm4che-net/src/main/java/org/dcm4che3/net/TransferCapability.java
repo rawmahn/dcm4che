@@ -40,6 +40,7 @@ package org.dcm4che3.net;
 
 import java.io.Serializable;
 import java.util.EnumSet;
+import java.util.Set;
 
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
@@ -209,8 +210,10 @@ public class TransferCapability implements Serializable {
         return false;
     }
 
-    public void setQueryOptions(EnumSet<QueryOption> queryOptions) {
-        this.queryOptions = queryOptions;
+    public void setQueryOptions(Set<QueryOption> queryOptions) {
+        this.queryOptions = EnumSet.noneOf(QueryOption.class);
+        if (queryOptions != null)
+            this.queryOptions.addAll(queryOptions);
     }
 
     public EnumSet<QueryOption> getQueryOptions() {

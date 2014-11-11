@@ -59,7 +59,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
                 Object fieldValue = DefaultConfigTypeAdapters.delegateGetChildFromConfigNode(configNode, fieldProperty, vitalizer);
                 PropertyUtils.setSimpleProperty(confObj, fieldProperty.getName(), fieldValue);
             } catch (Exception e) {
-                throw new ConfigurationException("Error while reading configuration field " + fieldProperty.getName(), e);
+                throw new ConfigurationException("Error while reading configuration field " + fieldProperty.getName() + " in class "+clazz.getSimpleName(), e);
             }
 
         // iterate over setters
@@ -97,7 +97,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String,Obj
                 Object value = PropertyUtils.getSimpleProperty(object, fieldProperty.getName());
                 DefaultConfigTypeAdapters.delegateChildToConfigNode(value,configNode,fieldProperty, vitalizer);
             } catch (Exception e) {
-                throw new ConfigurationException("Error while serializing configuration field " + fieldProperty.getName(), e);
+                throw new ConfigurationException("Error while serializing configuration field " + fieldProperty.getName()+ " in class "+clazz.getSimpleName(), e);
             }
         }
 

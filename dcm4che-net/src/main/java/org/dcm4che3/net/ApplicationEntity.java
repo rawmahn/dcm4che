@@ -105,7 +105,7 @@ public class ApplicationEntity implements Serializable {
     private String[] supportedCharacterSets = {};
 
     @ConfigurableProperty(name="dicomInstalled")
-    private Boolean installed;
+    private Boolean aeInstalled;
 
     @ConfigurableProperty(name="dcmAcceptedCallingAETitle")
     private final Set<String> acceptedCallingAETitlesSet =
@@ -159,6 +159,10 @@ public class ApplicationEntity implements Serializable {
                     scuTCs.put(tcEntry.getKey(), tcEntry.getValue());
             }
         }
+    }
+
+
+    public ApplicationEntity() {
     }
 
     public ApplicationEntity(String aeTitle) {
@@ -386,31 +390,34 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Determine whether or not this network AE is installed on a network.
-     * 
+     *
      * @return A Boolean value. True if the AE is installed on a network. If not
      *         present, information about the installed status of the AE is
      *         inherited from the device
      */
     public boolean isInstalled() {
-        return device != null && device.isInstalled() 
-                && (installed == null || installed.booleanValue());
+        return device != null && device.isInstalled()
+                && (aeInstalled == null || aeInstalled.booleanValue());
     }
 
-    public final Boolean getInstalled() {
-        return installed;
+
+    public Boolean getAeInstalled() {
+        return aeInstalled;
     }
 
     /**
      * Set whether or not this network AE is installed on a network.
-     * 
-     * @param installed
+     *
+     * @param aeInstalled
      *                A Boolean value. True if the AE is installed on a network.
      *                If not present, information about the installed status of
      *                the AE is inherited from the device
      */
-    public void setInstalled(Boolean installed) {
-        this.installed = installed;
+    public void setAeInstalled(Boolean aeInstalled) {
+        this.aeInstalled = aeInstalled;
     }
+
+
 
     public DimseRQHandler getDimseRQHandler() {
         DimseRQHandler handler = dimseRQHandler;
@@ -650,7 +657,7 @@ public class ApplicationEntity implements Serializable {
         StringUtils.appendLine(sb, indent2,"desc: ", description);
         StringUtils.appendLine(sb, indent2,"acceptor: ", acceptor);
         StringUtils.appendLine(sb, indent2,"initiator: ", initiator);
-        StringUtils.appendLine(sb, indent2,"installed: ", getInstalled());
+        StringUtils.appendLine(sb, indent2,"installed: ", getAeInstalled());
         for (Connection conn : connections)
             conn.promptTo(sb, indent2).append(StringUtils.LINE_SEPARATOR);
         for (TransferCapability tc : getTransferCapabilities())
@@ -702,7 +709,7 @@ public class ApplicationEntity implements Serializable {
         setSupportedCharacterSets(from.supportedCharacterSets);
         setAssociationAcceptor(from.acceptor);
         setAssociationInitiator(from.initiator);
-        setInstalled(from.installed);
+        setAeInstalled(from.aeInstalled);
     }
 
     public Set<String> getAcceptedCallingAETitlesSet() {

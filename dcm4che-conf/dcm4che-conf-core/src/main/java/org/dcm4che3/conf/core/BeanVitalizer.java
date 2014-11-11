@@ -44,9 +44,9 @@ public class BeanVitalizer {
             return configureInstance(clazz.newInstance(), configNode);
 
         } catch (InstantiationException e) {
-            throw new ConfigurationException();
+            throw new ConfigurationException(e);
         } catch (IllegalAccessException e) {
-            throw new ConfigurationException();
+            throw new ConfigurationException(e);
         }
     }
 
@@ -101,7 +101,7 @@ public class BeanVitalizer {
         Type type = property.getType();
         Class clazz;
 
-        if (ParameterizedType.class.isAssignableFrom((Class<?>) type))
+        if (type instanceof ParameterizedType)
             clazz = (Class) ((ParameterizedType) type).getRawType();
         else {
             clazz = (Class) type;

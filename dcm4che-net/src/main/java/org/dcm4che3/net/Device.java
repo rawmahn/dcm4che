@@ -63,6 +63,7 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
+import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.data.Code;
@@ -80,6 +81,7 @@ import org.dcm4che3.util.StringUtils;
  *
  */
 @LDAP(objectClasses = {"dcmDevice", "dicomDevice"}, distinguishingField = "dicomDeviceName")
+@ConfigurableClass
 public class Device implements Serializable {
 
     private static final long serialVersionUID = -5816872456184522866L;
@@ -221,6 +223,9 @@ public class Device implements Serializable {
     private transient volatile SSLContext sslContext;
     private transient volatile KeyManager km;
     private transient volatile TrustManager tm;
+
+    public Device() {
+    }
 
     public Device(String name) {
         setDeviceName(name);
@@ -888,7 +893,7 @@ public class Device implements Serializable {
     }
 
     public void setConnections(List<Connection> connections) {
-        connections.clear();
+        this.connections.clear();
         for (Connection connection : connections) addConnection(connection);
     }
 

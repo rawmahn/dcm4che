@@ -52,11 +52,11 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         if (Collection.class.isAssignableFrom(configNode.getClass())) {
             Collection l = ((Collection) configNode);
             Object arr = Array.newInstance(componentType, l.size());
+            AnnotatedConfigurableProperty componentPseudoProperty = new AnnotatedConfigurableProperty(componentType);
+            ConfigTypeAdapter elementTypeAdapter = vitalizer.lookupTypeAdapter(componentPseudoProperty);
             int i = 0;
             for (Object el : l) {
                 // deserialize element
-                AnnotatedConfigurableProperty componentPseudoProperty = new AnnotatedConfigurableProperty(componentType);
-                ConfigTypeAdapter elementTypeAdapter = vitalizer.lookupTypeAdapter(componentPseudoProperty);
                 el = elementTypeAdapter.fromConfigNode(el, componentPseudoProperty, vitalizer);
 
                 // push to array
@@ -72,27 +72,22 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     }
 
     @Override
-    public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
+    public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+
+        Class<?> componentType = ((Class) property.getType()).getComponentType();
 
         // handle byte[]. Convert to base64 String.
-        if (((Class) property.getType()).getComponentType().equals(byte.class))
+        if (componentType.equals(byte.class))
             return Base64.toBase64((byte[]) object);
 
-        return arrayToList(object);
-    }
-
-    /**
-     * Converts an array to a List, casts primitives to wrappers
-     * @param object
-     * @return
-     */
-    private Object arrayToList(Object object) {
-        Class<?> componentType = object.getClass().getComponentType();
         Class wrapperClass = PRIMITIVE_TO_WRAPPER.get(componentType);
+        AnnotatedConfigurableProperty componentPseudoProperty = new AnnotatedConfigurableProperty(componentType);
+        ConfigTypeAdapter elementTypeAdapter = vitalizer.lookupTypeAdapter(componentPseudoProperty);
 
         ArrayList list = new ArrayList();
         for (int i = 0; i < Array.getLength(object); i++) {
-            list.add(wrapperClass != null ? wrapperClass.cast(Array.get(object,i)) : Array.get(object,i));
+            Object el = elementTypeAdapter.toConfigNode(Array.get(object, i),componentPseudoProperty,vitalizer);
+            list.add(wrapperClass != null ? wrapperClass.cast(el) : el);
         }
         return list;
     }

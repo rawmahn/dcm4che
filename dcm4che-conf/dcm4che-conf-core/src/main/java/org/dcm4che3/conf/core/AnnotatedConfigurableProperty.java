@@ -12,7 +12,7 @@ import java.util.Map;
  * @author Roman K
  */
 public class AnnotatedConfigurableProperty {
-    private Map<Type, Annotation> annotations;
+    private Map<Type, Annotation> annotations = new HashMap<Type, Annotation>();
     private Type type;
     private String name;
 

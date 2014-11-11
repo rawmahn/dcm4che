@@ -1,7 +1,6 @@
 package org.dcm4che3.conf.core.util;
 
-import org.apache.commons.jxpath.JXPathContext;
-import org.apache.commons.jxpath.JXPathNotFoundException;
+import org.apache.commons.jxpath.*;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -17,7 +16,23 @@ public class ConfigNodeUtil {
 
     public static void replaceNode(Object rootConfigNode, String path, Object replacementConfigNode) {
 
-        JXPathContext.newContext(rootConfigNode).createPathAndSetValue(path,replacementConfigNode);
+        JXPathContext jxPathContext = JXPathContext.newContext(rootConfigNode);
+        jxPathContext.setFactory(new AbstractFactory() {
+            @Override
+            public boolean createObject(JXPathContext context, Pointer pointer, Object parent, String name, int index) {
+                if (parent instanceof Map) {
+                    ((Map<String, Object>) parent).put(name, new HashMap<String, Object>());
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public boolean declareVariable(JXPathContext context, String name) {
+                return super.declareVariable(context, name);
+            }
+        });
+        jxPathContext.createPathAndSetValue(path, replacementConfigNode);
     }
 
     public static Object getNode(Object rootConfigNode, String path) {
@@ -33,7 +48,11 @@ public class ConfigNodeUtil {
     }
 
     public static void removeNode(Map<String, Object> configurationRoot, String path) {
-        JXPathContext.newContext(configurationRoot).removePath(path);
+        try {
+            JXPathContext.newContext(configurationRoot).removePath(path);
+        } catch (JXPathException e) {
+            // node didnt exist,.. noop
+        }
     }
 
     public static Iterator search(Map<String, Object> configurationRoot, String liteXPathExpression) throws IllegalArgumentException {

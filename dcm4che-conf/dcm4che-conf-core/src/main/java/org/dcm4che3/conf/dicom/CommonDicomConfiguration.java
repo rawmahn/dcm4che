@@ -55,6 +55,22 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         this.vitalizer.registerCustomConfigTypeAdapter(ValueSelector.class, new ValueSelectorTypeAdapter());
 
         this.vitalizer.registerContext(DicomConfiguration.class, this);
+
+
+        // quick init
+        try {
+            if (!configurationExists()) {
+                Map<String, Object> rootNode = new HashMap<String, Object>();
+                HashMap<String, Map<String, Object>> subroots = new HashMap<String, Map<String, Object>>();
+                subroots.put("dicomDevicesRoot", new HashMap<String, Object>());
+                subroots.put("dicomUniqueAETitlesRegistryRoot", new HashMap<String, Object>());
+                rootNode.put("dicomConfigurationRoot", subroots);
+                config.persistNode("/", rootNode, null);
+
+            }
+        } catch (ConfigurationException e) {
+            throw new RuntimeException("Dicom configuration cannot be initialized",e);
+        }
     }
 
     @Override
@@ -120,7 +136,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         //config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[dicomAETitle='"+aet+"']]");
 
         // temporary
-        Map<String,Object> configurationNode = (Map<String, Object>) config.getConfigurationNode("/dicomConfigurationRoot/dicomDevicesRoot/");
+        Map<String,Object> configurationNode = (Map<String, Object>) config.getConfigurationNode("/dicomConfigurationRoot/dicomDevicesRoot");
         ApplicationEntity ae = null;
         for (Map.Entry<String, Object> entry : configurationNode.entrySet()) {
             Device device = vitalizer.newConfiguredInstance(Device.class, (Map<String, Object>) entry.getValue());
@@ -230,8 +246,9 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
             for (Class<? extends AEExtension> aeExtensionClass : aeExtensionClasses) {
                 AEExtension aeExtension = ae.getAEExtension(aeExtensionClass);
+                if (aeExtension == null) continue;
                 Map<String, Object> aeExtNode = vitalizer.createConfigNodeFromInstance(aeExtension, aeExtensionClass);
-                config.persistNode(devicePath+"/dicomNetworkAE[dicomAETitle='"+ae.getAETitle()+"']/aeExtensions/"+aeExtensionClass.getSimpleName(),aeExtNode, aeExtensionClass);
+                config.persistNode(devicePath+"/dicomNetworkAE[@name='"+ae.getAETitle()+"']/aeExtensions/"+aeExtensionClass.getSimpleName(),aeExtNode, aeExtensionClass);
             }
         }
 
@@ -256,7 +273,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public String deviceRef(String name) {
-        return "dicomConfigurationRoot/dicomDevicesRoot/*[dicomDeviceName='" + ConfigNodeUtil.escapeApos(name) + "']";
+        return "dicomConfigurationRoot/dicomDevicesRoot[@name='" + ConfigNodeUtil.escapeApos(name) + "']";
     }
 
     @Override

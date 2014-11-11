@@ -225,7 +225,15 @@ public class DefaultConfigTypeAdapters {
 
         @Override
         public Object toConfigNode(Enum<?> object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
-            switch (property.getAnnotation(ConfigurableProperty.class).enumRepresentation()) {
+
+            if (object == null) return null;
+
+            ConfigurableProperty anno = property.getAnnotation(ConfigurableProperty.class);
+            ConfigurableProperty.EnumRepresentation howToRepresent;
+            if (anno != null) howToRepresent = anno.enumRepresentation(); else
+                howToRepresent = ConfigurableProperty.EnumRepresentation.STRING;
+
+            switch (howToRepresent) {
                 case ORDINAL:
                     return object.ordinal();
                 default:
@@ -290,9 +298,13 @@ public class DefaultConfigTypeAdapters {
 
         defaultTypeAdapters.put(Map.class, new MapTypeAdapter());
         defaultTypeAdapters.put(Set.class, new CollectionTypeAdapter<Set>(HashSet.class));
+        defaultTypeAdapters.put(EnumSet.class, new CollectionTypeAdapter<Set>(HashSet.class));
         defaultTypeAdapters.put(List.class, new CollectionTypeAdapter<List>(ArrayList.class));
         defaultTypeAdapters.put(Collection.class, new CollectionTypeAdapter<List>(ArrayList.class));
         defaultTypeAdapters.put(Enum.class, new EnumTypeAdapter());
+
+        defaultTypeAdapters.put(TimeZone.class, new TimeZoneTypeAdapter());
+        defaultTypeAdapters.put(TimeZone.class, new TimeUnitTypeAdapter());
 
     }
 

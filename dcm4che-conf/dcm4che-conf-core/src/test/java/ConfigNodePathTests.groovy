@@ -153,6 +153,8 @@ class ConfigNodePathTests {
         def node = storage.getConfigurationNode("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomNetworkAE[dicomAETitle='aTitle']")
         assert node == [dicomAETitle:"aTitle", connection:"conn1Ref", aeExtensions:[hiExt:[extensionName:"hiExt", someProp:123], SomeOtherExt:[extensionName:"SomeOtherExt", someProp:123], thenewextension:[name:"testExt", someProp:"someVal", id:1234]]]
 
+        storage.removeNode("dicomConfigurationRoot")
+
 
 //        assert ((Map<String, Object>) res.next()).get("dicomPort").equals(2222)
         // invalid
