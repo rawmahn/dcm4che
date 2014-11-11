@@ -56,8 +56,8 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
 
         T collection = (T) createCollectionDeserialized(property);
 
-        for (Object o : collection)
-            collection.add(elementAdapter.fromConfigNode((T) o, elementPseudoProperty, vitalizer));
+        for (Object o : configNode)
+            collection.add(elementAdapter.fromConfigNode( o, elementPseudoProperty, vitalizer));
 
         return collection;
     }
