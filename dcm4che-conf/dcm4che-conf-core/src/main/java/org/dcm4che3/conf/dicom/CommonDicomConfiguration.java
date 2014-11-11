@@ -15,6 +15,7 @@ import org.dcm4che3.data.Issuer;
 import org.dcm4che3.data.ValueSelector;
 import org.dcm4che3.net.*;
 import org.dcm4che3.util.AttributesFormat;
+import org.dcm4che3.util.Property;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +58,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         this.vitalizer.registerCustomConfigTypeAdapter(Device.class, new DeviceReferenceByNameTypeAdapter());
         this.vitalizer.registerCustomConfigTypeAdapter(Issuer.class, new IssuerTypeAdapter());
         this.vitalizer.registerCustomConfigTypeAdapter(ValueSelector.class, new ValueSelectorTypeAdapter());
+        this.vitalizer.registerCustomConfigTypeAdapter(Property.class, new PropertyTypeAdapter());
 
         this.vitalizer.registerContext(DicomConfiguration.class, this);
 
@@ -137,13 +139,13 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
         // TODO: IMPLEMENT
         // will be supported later
-        Iterator search = config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='"+ aet + "']]");
+        Iterator search = config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='"+ aet + "']]/dicomDeviceName");
 
         try {
-            Map<String, Object> deviceNode = (Map<String, Object>) search.next();
+            String deviceNameNode = (String) search.next();
             if (search.hasNext())
                 LOG.warn("Application entity title '{}' is not unique. Check the configuration!", aet);
-            Device device = findDevice((String) deviceNode.get("dicomDeviceName"));
+            Device device = findDevice(deviceNameNode);
 
             ApplicationEntity ae = device.getApplicationEntitiesMap().get(aet);
             if (ae == null) throw new NoSuchElementException("Unexpected error");

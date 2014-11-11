@@ -38,6 +38,8 @@
 
 package org.dcm4che3.net.imageio;
 
+import org.dcm4che3.conf.core.api.ConfigurableClass;
+import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.imageio.codec.ImageWriterFactory;
 import org.dcm4che3.net.DeviceExtension;
 
@@ -45,11 +47,16 @@ import org.dcm4che3.net.DeviceExtension;
  * @author Gunter Zeilinger <gunterze@gmail.com>
  *
  */
+@ConfigurableClass
 public class ImageWriterExtension extends DeviceExtension {
 
     private static final long serialVersionUID = -2216639006138378955L;
 
-    public final ImageWriterFactory factory;
+    @ConfigurableProperty(name = "Image Writer Factory")
+    public ImageWriterFactory factory;
+
+    public ImageWriterExtension() {
+    }
 
     public ImageWriterExtension(ImageWriterFactory factory) {
         if (factory == null)
