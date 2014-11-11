@@ -210,7 +210,7 @@ public class TransferCapability implements Serializable {
         return false;
     }
 
-    public void setQueryOptions(Set<QueryOption> queryOptions) {
+    public void setQueryOptions(EnumSet<QueryOption> queryOptions) {
         this.queryOptions = EnumSet.noneOf(QueryOption.class);
         if (queryOptions != null)
             this.queryOptions.addAll(queryOptions);

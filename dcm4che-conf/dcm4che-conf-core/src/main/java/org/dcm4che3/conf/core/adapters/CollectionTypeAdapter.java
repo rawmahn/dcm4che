@@ -5,7 +5,9 @@ import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 
+import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,12 +27,20 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
         this.clazz = clazz;
     }
 
-    private T createCollection() throws ConfigurationException {
+    private T createCollection(AnnotatedConfigurableProperty property) throws ConfigurationException {
         try {
             return (T) clazz.newInstance();
         } catch (Exception e) {
             throw new ConfigurationException(e);
         }
+    }
+
+    private Collection createCollectionDeserialized(AnnotatedConfigurableProperty property) throws ConfigurationException {
+        if (EnumSet.class.isAssignableFrom(BeanVitalizer.getRawClass(property))) {
+            Class enumClass = (Class) DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
+            return EnumSet.noneOf(enumClass);
+        } else
+            return createCollection(property);
     }
 
     @Override
@@ -44,7 +54,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
         else
             elementAdapter = vitalizer.lookupTypeAdapter(elementPseudoProperty);
 
-        T collection = createCollection();
+        T collection = (T) createCollectionDeserialized(property);
 
         for (Object o : collection)
             collection.add(elementAdapter.fromConfigNode((T) o, elementPseudoProperty, vitalizer));
@@ -63,7 +73,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
         else
             elementAdapter = vitalizer.lookupTypeAdapter(elementPseudoProperty);
 
-        T node = createCollection();
+        T node = createCollection(property);
         for (Object element : object)
             node.add(elementAdapter.toConfigNode(element, elementPseudoProperty, vitalizer));
 
