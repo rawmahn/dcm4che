@@ -129,7 +129,7 @@ public class ProbeTC {
         Connection conn = new Connection();
         conn.setHostname(host);
         conn.setPort(port);
-        conn.setInstalled(true);
+        conn.setConnectionInstalled(true);
         setDestination(conn);
 
         this.setProbedAE(new ApplicationEntity(aeTitle));
@@ -484,7 +484,7 @@ public class ProbeTC {
         probedAET = aeTitle;
         conn.setHostname(host);
         conn.setPort(port);
-        conn.setInstalled(true);
+        conn.setConnectionInstalled(true);
         ae = new ApplicationEntity(aeTitle);
         ae.addConnection(conn);
     }

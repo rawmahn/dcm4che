@@ -19,12 +19,9 @@ import java.util.Map;
 
 /**
  * Main class that is used to initialize annotated Java objects with settings fetched from a configuration backend.
- * These are mostly low-level access methods.
+ * These are mostly low-level access methods that should be used to build the API for configuration functionality of an end product
  */
 public class BeanVitalizer {
-
-
-    //TODO: whats with references??? first take a look on persisting of certificates
 
     private Map<Class, Object> contextMap = new HashMap<Class, Object>();
     private Map<Class, ConfigTypeAdapter> customConfigTypeAdapters= new HashMap<Class, ConfigTypeAdapter>();
@@ -41,7 +38,9 @@ public class BeanVitalizer {
     public <T> T newConfiguredInstance(Class<T> clazz, Map<String, Object> configNode) throws ConfigurationException {
         try {
 
-            return configureInstance(clazz.newInstance(), configNode);
+            T object = clazz.newInstance();
+            configureInstance(object, clazz, configNode);
+            return object;
 
         } catch (InstantiationException e) {
             throw new ConfigurationException(e);
@@ -57,9 +56,8 @@ public class BeanVitalizer {
      * @param <T>
      * @return
      */
-    public <T> T configureInstance(T object, Map<String, Object> configNode) throws ConfigurationException {
-
-        return (T) new ReflectiveAdapter<T>(object).fromConfigNode(configNode, new AnnotatedConfigurableProperty(object.getClass()), this);
+    public <T> void configureInstance(T object,  Class configurableClass, Map<String, Object> configNode) throws ConfigurationException {
+        new ReflectiveAdapter<T>(object).fromConfigNode(configNode, new AnnotatedConfigurableProperty(configurableClass), this);
     }
 
     /**

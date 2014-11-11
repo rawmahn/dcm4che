@@ -42,14 +42,10 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import org.dcm4che3.conf.core.api.ConfigurableClass;
+import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.hl7.HL7Exception;
 import org.dcm4che3.hl7.HL7Segment;
 import org.dcm4che3.hl7.MLLPConnection;
@@ -60,24 +56,37 @@ import org.dcm4che3.net.IncompatibleConnectionException;
 
 /**
  * @author Gunter Zeilinger <gunterze@gmail.com>
- *
  */
+@ConfigurableClass
 public class HL7Application implements Serializable {
 
     private static final long serialVersionUID = -1765110968524548056L;
 
     private Device device;
-    private String name;
-    private String hl7DefaultCharacterSet;
-    private Boolean installed;
 
-    private final LinkedHashSet<String> acceptedSendingApplications =
+    @ConfigurableProperty(name = "hl7ApplicationName")
+    private String name;
+
+    @ConfigurableProperty(name = "hl7DefaultCharacterSet")
+    private String hl7DefaultCharacterSet;
+
+    @ConfigurableProperty(name = "dicomInstalled")
+    private Boolean hl7Installed;
+
+    @ConfigurableProperty(name = "hl7AcceptedSendingApplication")
+    private Set<String> acceptedSendingApplications =
             new LinkedHashSet<String>();
-    private final LinkedHashSet<String> acceptedMessageTypes =
+
+    @ConfigurableProperty(name = "hl7AcceptedMessageType")
+    private Set<String> acceptedMessageTypes =
             new LinkedHashSet<String>();
-    private final List<Connection> conns = new ArrayList<Connection>(1);
-    private final Map<Class<? extends HL7ApplicationExtension>,HL7ApplicationExtension> extensions =
-            new HashMap<Class<? extends HL7ApplicationExtension>,HL7ApplicationExtension>();
+
+    @ConfigurableProperty(name = "dicomNetworkConnectionReference", collectionOfReferences = true)
+    private List<Connection> conns = new ArrayList<Connection>(1);
+
+    private Map<Class<? extends HL7ApplicationExtension>, HL7ApplicationExtension> extensions =
+            new HashMap<Class<? extends HL7ApplicationExtension>, HL7ApplicationExtension>();
+
     private transient HL7MessageListener hl7MessageListener;
 
     public HL7Application(String name) {
@@ -91,12 +100,12 @@ public class HL7Application implements Serializable {
     void setDevice(Device device) {
         if (device != null) {
             if (this.device != null)
-                throw new IllegalStateException("already owned by " + 
+                throw new IllegalStateException("already owned by " +
                         this.device.getDeviceName());
-                for (Connection conn : conns)
-                    if (conn.getDevice() != device)
-                        throw new IllegalStateException(conn + " not owned by " + 
-                                device.getDeviceName());
+            for (Connection conn : conns)
+                if (conn.getDevice() != device)
+                    throw new IllegalStateException(conn + " not owned by " +
+                            device.getDeviceName());
         }
         this.device = device;
     }
@@ -149,19 +158,19 @@ public class HL7Application implements Serializable {
     }
 
     public boolean isInstalled() {
-        return device != null && device.isInstalled() 
-                && (installed == null || installed.booleanValue());
+        return device != null && device.isInstalled()
+                && (hl7Installed == null || hl7Installed.booleanValue());
     }
 
-    public final Boolean getInstalled() {
-        return installed;
+    public Boolean getHl7Installed() {
+        return hl7Installed;
     }
 
-    public void setInstalled(Boolean installed) {
-        if (installed != null && installed.booleanValue()
+    public void setHl7Installed(Boolean hl7Installed) {
+        if (hl7Installed != null && hl7Installed.booleanValue()
                 && device != null && !device.isInstalled())
             throw new IllegalStateException("owning device not installed");
-        this.installed = installed;
+        this.hl7Installed = hl7Installed;
     }
 
     public HL7MessageListener getHL7MessageListener() {
@@ -183,9 +192,9 @@ public class HL7Application implements Serializable {
         if (conn.getProtocol() != Connection.Protocol.HL7)
             throw new IllegalArgumentException(
                     "protocol != HL7 - " + conn.getProtocol());
-            
+
         if (device != null && device != conn.getDevice())
-            throw new IllegalStateException(conn + " not contained by " + 
+            throw new IllegalStateException(conn + " not contained by " +
                     device.getDeviceName());
         conns.add(conn);
     }
@@ -199,7 +208,7 @@ public class HL7Application implements Serializable {
     }
 
     byte[] onMessage(Connection conn, Socket s, HL7Segment msh, byte[] msg, int off,
-            int len, int mshlen) throws HL7Exception {
+                     int len, int mshlen) throws HL7Exception {
         if (!(isInstalled() && conns.contains(conn)))
             throw new HL7Exception(HL7Exception.AR, "Receiving Application not recognized");
         if (!(acceptedSendingApplications.isEmpty()
@@ -273,7 +282,7 @@ public class HL7Application implements Serializable {
 
     private void reconfigureHL7ApplicationExtensions(HL7Application from) {
         for (Iterator<Class<? extends HL7ApplicationExtension>> it =
-                extensions.keySet().iterator(); it.hasNext();) {
+                     extensions.keySet().iterator(); it.hasNext(); ) {
             if (!from.extensions.containsKey(it.next()))
                 it.remove();
         }
@@ -295,7 +304,7 @@ public class HL7Application implements Serializable {
         setHL7DefaultCharacterSet(src.hl7DefaultCharacterSet);
         setAcceptedSendingApplications(src.getAcceptedSendingApplications());
         setAcceptedMessageTypes(src.getAcceptedMessageTypes());
-        setInstalled(src.installed);
+        setHl7Installed(src.hl7Installed);
     }
 
     public void addHL7ApplicationExtension(HL7ApplicationExtension ext) {

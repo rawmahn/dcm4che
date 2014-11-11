@@ -201,7 +201,7 @@ public class Connection implements Serializable {
     private String[] blacklist = {};
 
     @ConfigurableProperty(name = "dicomInstalled")
-    private Boolean installed;
+    private Boolean connectionInstalled;
 
 
     @ConfigurableProperty(name = "dcmProtocol", defaultValue = "DICOM")
@@ -736,11 +736,11 @@ public class Connection implements Serializable {
      */
     public boolean isInstalled() {
         return device != null && device.isInstalled()
-                && (installed == null || installed.booleanValue());
+                && (connectionInstalled == null || connectionInstalled.booleanValue());
     }
 
-    public Boolean getInstalled() {
-        return installed;
+    public Boolean getConnectionInstalled() {
+        return connectionInstalled;
     }
 
     /**
@@ -751,12 +751,12 @@ public class Connection implements Serializable {
      * @param installed True if the NetworkConnection is installed on the network.
      * @throws GeneralSecurityException
      */
-    public void setInstalled(Boolean installed) {
-        if (this.installed == installed)
+    public void setConnectionInstalled(Boolean installed) {
+        if (this.connectionInstalled == installed)
             return;
 
         boolean prev = isInstalled();
-        this.installed = installed;
+        this.connectionInstalled = installed;
         if (isInstalled() != prev)
             needRebind();
     }
@@ -802,7 +802,7 @@ public class Connection implements Serializable {
         StringUtils.appendLine(sb, indent2, "host: ", hostname);
         StringUtils.appendLine(sb, indent2, "port: ", port);
         StringUtils.appendLine(sb, indent2, "ciphers: ", Arrays.toString(tlsCipherSuites));
-        StringUtils.appendLine(sb, indent2, "installed: ", getInstalled());
+        StringUtils.appendLine(sb, indent2, "installed: ", getConnectionInstalled());
         return sb.append(indent).append(']');
     }
 
@@ -1198,7 +1198,7 @@ public class Connection implements Serializable {
         setTlsCipherSuites(from.tlsCipherSuites);
         setTlsProtocols(from.tlsProtocols);
         setBlacklist(from.blacklist);
-        setInstalled(from.installed);
+        setConnectionInstalled(from.connectionInstalled);
     }
 
 }

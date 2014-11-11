@@ -41,7 +41,10 @@ package org.dcm4che3.net.hl7;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
+import org.dcm4che3.conf.core.api.ConfigurableProperty;
+import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.hl7.HL7Exception;
 import org.dcm4che3.hl7.HL7Segment;
 import org.dcm4che3.net.Connection;
@@ -60,8 +63,9 @@ public class HL7DeviceExtension extends DeviceExtension {
                 Connection.Protocol.HL7, HL7ProtocolHandler.INSTANCE);
     }
 
-    private final LinkedHashMap<String, HL7Application> hl7apps =
-            new LinkedHashMap<String, HL7Application>();
+    @LDAP(noContainerNode = true, mapKeyAttribute = "hl7ApplicationName")
+    @ConfigurableProperty(name="hl7Apps", label = "HL7 Applications")
+    private Map<String, HL7Application> hl7apps = new LinkedHashMap<String, HL7Application>();
 
     private transient HL7MessageListener hl7MessageListener;
 

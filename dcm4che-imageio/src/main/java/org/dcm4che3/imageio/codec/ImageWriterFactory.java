@@ -71,8 +71,8 @@ import org.dcm4che3.util.StringUtils;
  * @author Gunter Zeilinger <gunterze@gmail.com>
  * 
  */
-@LDAP(objectClasses = "dcmImageWriterFactory", distinguishingField = "cn")
-@ConfigurableClass()
+@LDAP(objectClasses = "dcmImageWriterFactory")
+@ConfigurableClass
 public class ImageWriterFactory implements Serializable {
 
     private static final long serialVersionUID = 6328126996969794374L;

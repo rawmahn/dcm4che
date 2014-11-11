@@ -39,7 +39,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     /**
      * Needed for avoiding infinite loops when dealing with extensions containing circular references
      * e.g., one device extension references another device which has an extension that references the former device.
-     * Devices that have been created but not fully loaded are added to this threadlocal. See loadDevice.
+     * Devices that have been created but not fully loaded are added to this threadlocal. See findDevice.
      */
     private ThreadLocal<Map<String, Device>> currentlyLoadedDevicesLocal = new ThreadLocal<Map<String, Device>>();
 
@@ -177,10 +177,15 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
         try {
             Object configurationNode = config.getConfigurationNode(deviceRef(name));
-            Device device = vitalizer.newConfiguredInstance(Device.class, (Map<String, Object>) configurationNode);
+
+            if (configurationNode == null) return null;
+
+            Device device = new Device();
+            deviceCache.put(name, device);
+
+            vitalizer.configureInstance(device, Device.class, (Map < String, Object >)configurationNode);
 
             // add device extensions
-
             for (Class<? extends DeviceExtension> deviceExtensionClass : deviceExtensionClasses) {
                 Map<String, Object> deviceExtensionNode = (Map<String, Object>) config.getConfigurationNode(deviceRef(name) + "/deviceExtensions/"+deviceExtensionClass.getSimpleName());
                 if (deviceExtensionNode!= null)

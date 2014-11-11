@@ -68,7 +68,7 @@ public class DicomReferenceHandlerAdapter<T> extends DefaultReferenceAdapter<T> 
             else
                 predicate = "[dicomHostname='" + ConfigNodeUtil.escape(conn.getHostname()) + "']";
 
-            return "dicomConfigurationRoot/dicomDevicesRoot/*[dicomDeviceName='" + ConfigNodeUtil.escape(conn.getDevice().getDeviceName()) + "']/dicomConnection" + predicate;
+            return "/dicomConfigurationRoot/dicomDevicesRoot/*[dicomDeviceName='" + ConfigNodeUtil.escape(conn.getDevice().getDeviceName()) + "']/dicomConnection" + predicate;
         }
         return super.toConfigNode(object, property, vitalizer);
     }
