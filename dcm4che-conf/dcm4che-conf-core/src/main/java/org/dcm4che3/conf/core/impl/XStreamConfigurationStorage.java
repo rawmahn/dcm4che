@@ -1,5 +1,8 @@
 package org.dcm4che3.conf.core.impl;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thoughtworks.xstream.XStream;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
@@ -17,8 +20,11 @@ public class XStreamConfigurationStorage implements Configuration {
 
     XStream xstream;
     String fileName;
+    private boolean storeAsJSON;
 
-    public XStreamConfigurationStorage(String fileName) {
+
+    public XStreamConfigurationStorage(String fileName, boolean storeAsJSON) {
+        this.storeAsJSON = storeAsJSON;
         this.xstream = new XStream();
         this.fileName = fileName;
     }
@@ -31,15 +37,23 @@ public class XStreamConfigurationStorage implements Configuration {
     @Override
     public Map<String, Object> getConfigurationRoot() throws ConfigurationException {
         try {
-            return (Map<String, Object>) xstream.fromXML(new BufferedReader(new FileReader(fileName)));
+            if (storeAsJSON) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                return objectMapper.readValue(new File(fileName), Map.class);
+            }
+            else
+                return (Map<String, Object>) xstream.fromXML(new BufferedReader(new FileReader(fileName)));
         } catch (FileNotFoundException e) {
             return new HashMap<String, Object>();
+        } catch (Exception  e) {
+            throw new ConfigurationException(e);
         }
     }
 
     @Override
     public Object getConfigurationNode(String path) throws ConfigurationException {
-        return ConfigNodeUtil.getNode(getConfigurationRoot(), path);
+        Object node = ConfigNodeUtil.getNode(getConfigurationRoot(), path);
+        return node;
     }
 
     @Override
@@ -72,11 +86,20 @@ public class XStreamConfigurationStorage implements Configuration {
             } else
                 configurationRoot = (Map<String, Object>) configNode;
 
-
-            PrintWriter out = new PrintWriter(fileName, "UTF-8");
-            xstream.toXML(configurationRoot, out);
-            out.close();
-
+            if (storeAsJSON)
+            {
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    File resultFile = new File(fileName);
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValue(resultFile, (Object) configurationRoot);
+                } catch (IOException e) {
+                    throw new ConfigurationException(e);
+                }
+            } else {
+                PrintWriter out = new PrintWriter(fileName, "UTF-8");
+                xstream.toXML(configurationRoot, out);
+                out.close();
+            }
 
         } catch (FileNotFoundException e) {
             throw new ConfigurationException(e);

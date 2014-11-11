@@ -1,0 +1,82 @@
+{
+  "dicomConfigurationRoot" : {
+    "dicomDeviceRoot" : {
+      "device1" : {
+        "dicomDeviceName" : "device1",
+        "dicomNetworkAE" : [ {
+          "dicomAETitle" : "aTitle",
+          "connection" : "conn1Ref",
+          "aeExtensions" : {
+            "hiExt" : {
+              "extensionName" : "hiExt",
+              "someProp" : 123
+            },
+            "SomeOtherExt" : {
+              "extensionName" : "SomeOtherExt",
+              "someProp" : 123
+            },
+            "thenewextension" : {
+              "name" : "testExt",
+              "someProp" : "someVal",
+              "id" : 1234
+            }
+          }
+        }, {
+          "dicomAETitle" : "aTitle1",
+          "connection" : "conn1Ref"
+        } ],
+        "dicomConnection" : [ {
+          "cn" : "tls",
+          "dicomHostname" : "localhost",
+          "dcmBindAddress" : "127.0.0.1",
+          "dicomPort" : 2222
+        }, {
+          "cn" : "hl7",
+          "dicomHostname" : "myhl7",
+          "dcmBindAddress" : "127.0.0.1",
+          "dicomPort" : 101,
+          "sneakyProp" : "thebackslash\\",
+          "secondSneakyProp" : "the/slash",
+          "arr" : [ {
+            "n" : 1,
+            "v" : 3
+          }, {
+            "n" : 2
+          } ]
+        }, {
+          "cn" : "hl7-1",
+          "dicomHostname" : "myhl7",
+          "dcmBindAddress" : "123.26.123.1"
+        } ]
+      },
+      "device2" : {
+        "dicomDevicename" : "device2"
+      },
+      "deviceWith/Slash" : {
+        "dicomDeviceName" : "deviceWith/Slash",
+        "dicomConnection" : [ {
+          "cn" : "tls",
+          "dicomHostname" : "localhost",
+          "dcmBindAddress" : "127.0.0.1",
+          "dicomPort" : 2222
+        } ]
+      },
+      "deviceWith'Quote" : {
+        "dicomDeviceName" : "deviceWith'Quote",
+        "dicomConnection" : [ {
+          "cn" : "tls",
+          "dicomHostname" : "localhost",
+          "dcmBindAddress" : "127.0.0.1",
+          "dicomPort" : 2222
+        } ],
+        "dicomNetworkAE" : [ {
+          "dicomAETitle" : "aTitle3",
+          "connection" : "conn1Ref"
+        }, {
+          "dicomAETitle" : "aTitle5",
+          "connection" : "conn1Ref"
+        } ]
+      }
+    }
+  }
+}

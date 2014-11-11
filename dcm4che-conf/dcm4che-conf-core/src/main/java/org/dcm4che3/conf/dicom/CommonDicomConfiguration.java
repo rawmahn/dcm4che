@@ -15,6 +15,8 @@ import org.dcm4che3.data.Issuer;
 import org.dcm4che3.data.ValueSelector;
 import org.dcm4che3.net.*;
 import org.dcm4che3.util.AttributesFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.cert.X509Certificate;
 import java.util.*;
@@ -24,6 +26,8 @@ import java.util.*;
  */
 public class CommonDicomConfiguration implements DicomConfiguration {
 
+    private static final Logger LOG =
+            LoggerFactory.getLogger(CommonDicomConfiguration.class);
 
     Configuration config;
     BeanVitalizer vitalizer;
@@ -133,18 +137,21 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
         // TODO: IMPLEMENT
         // will be supported later
-        //config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[dicomAETitle='"+aet+"']]");
+        Iterator search = config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='"+ aet + "']]");
 
-        // temporary
-        Map<String,Object> configurationNode = (Map<String, Object>) config.getConfigurationNode("/dicomConfigurationRoot/dicomDevicesRoot");
-        ApplicationEntity ae = null;
-        for (Map.Entry<String, Object> entry : configurationNode.entrySet()) {
-            Device device = vitalizer.newConfiguredInstance(Device.class, (Map<String, Object>) entry.getValue());
-            ae = device.getApplicationEntitiesMap().get(aet);
-            if (ae != null) break;
+        try {
+            Map<String, Object> deviceNode = (Map<String, Object>) search.next();
+            if (search.hasNext())
+                LOG.warn("Application entity title '{}' is not unique. Check the configuration!", aet);
+            Device device = findDevice((String) deviceNode.get("dicomDeviceName"));
+
+            ApplicationEntity ae = device.getApplicationEntitiesMap().get(aet);
+            if (ae == null) throw new NoSuchElementException("Unexpected error");
+            return ae;
+
+        } catch (NoSuchElementException e) {
+            throw new ConfigurationNotFoundException("AE '" + aet + "' not found",e);
         }
-        if (ae == null) throw new ConfigurationNotFoundException("AE '" + aet + "' not found");
-        return ae;
     }
 
     @Override
@@ -183,7 +190,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
                 String aeTitle = entry.getKey();
                 ApplicationEntity ae = entry.getValue();
                 for (Class<? extends AEExtension> aeExtensionClass : aeExtensionClasses) {
-                    Object aeExtNode = config.getConfigurationNode(deviceRef(name) + "dicomNetworkAE[dicomAETitle='" + aeTitle + "']/aeExtensions/" + aeExtensionClass.getSimpleName());
+                    Object aeExtNode = config.getConfigurationNode(deviceRef(name) + "/dicomNetworkAE[@name='" + ConfigNodeUtil.escapeApos(aeTitle) + "']/aeExtensions/" + aeExtensionClass.getSimpleName());
                     if (aeExtNode != null) {
                         ae.addAEExtension(vitalizer.newConfiguredInstance(aeExtensionClass, (Map<String, Object>) aeExtNode));
                     }
@@ -192,7 +199,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
             return device;
             } catch (ConfigurationException e) {
-            throw new ConfigurationException("Configuration for device " + name + " cannot be loaded");
+            throw new ConfigurationException("Configuration for device " + name + " cannot be loaded", e);
         } finally {
             // if this loadDevice call initialized the cache, then clean it up
             if (doCleanUpCache) currentlyLoadedDevicesLocal.remove();

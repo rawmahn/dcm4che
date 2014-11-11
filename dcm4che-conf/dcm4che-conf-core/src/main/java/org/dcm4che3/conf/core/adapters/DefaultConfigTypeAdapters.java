@@ -207,7 +207,9 @@ public class DefaultConfigTypeAdapters {
             if (configNode == null)
                 return null;
             try {
-                switch (property.getAnnotation(ConfigurableProperty.class).enumRepresentation()) {
+                ConfigurableProperty anno = property.getAnnotation(ConfigurableProperty.class);
+                ConfigurableProperty.EnumRepresentation howToRepresent = anno == null? ConfigurableProperty.EnumRepresentation.STRING : anno.enumRepresentation();
+                switch (howToRepresent) {
                     case ORDINAL:
                         Method valuesMethod = ((Class) property.getType()).getMethod("values");
                         valuesMethod.invoke(null);
@@ -219,7 +221,7 @@ public class DefaultConfigTypeAdapters {
 
                 }
             } catch (Exception x) {
-                throw new ConfigurationException("Deserialization of Enum failed! field:" + property, x);
+                throw new ConfigurationException("Deserialization of Enum failed! field:" + property.getName()+ " of type " + property.getType(), x);
             }
         }
 

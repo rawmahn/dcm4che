@@ -18,7 +18,7 @@ import java.util.*;
 public class XStreamStorageTest {
 
     public static Configuration getConfigurationStorage() {
-        return new XStreamConfigurationStorage("c:\\agfa\\tst.xml");
+        return new XStreamConfigurationStorage("target/tst.xml", true);
     }
 
     @Test

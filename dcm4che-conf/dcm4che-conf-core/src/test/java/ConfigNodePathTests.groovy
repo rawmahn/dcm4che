@@ -1,10 +1,13 @@
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.jxpath.Pointer
 import org.dcm4che3.conf.core.XStreamStorageTest
+import org.dcm4che3.conf.core.impl.XStreamConfigurationStorage
 import org.dcm4che3.conf.core.util.ConfigNodeUtil
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
+import java.nio.file.Paths
 
 /**
  * Created by aprvf on 07/11/2014.
@@ -145,21 +148,11 @@ class ConfigNodePathTests {
         for (def i=0;i<4;i++)
             assert res.next() == atitles[i]
 
-        println storage.getConfigurationNode("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomNetworkAE[dicomAETitle='aTitle']")
         storage.persistNode("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomNetworkAE[dicomAETitle='aTitle']/aeExtensions/thenewextension",
                 [name:"testExt", someProp:"someVal", id:1234], null);
 
-        println storage.getConfigurationNode("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomNetworkAE[dicomAETitle='aTitle']")
         def node = storage.getConfigurationNode("dicomConfigurationRoot/dicomDeviceRoot/device1/dicomNetworkAE[dicomAETitle='aTitle']")
         assert node == [dicomAETitle:"aTitle", connection:"conn1Ref", aeExtensions:[hiExt:[extensionName:"hiExt", someProp:123], SomeOtherExt:[extensionName:"SomeOtherExt", someProp:123], thenewextension:[name:"testExt", someProp:"someVal", id:1234]]]
-
-        storage.removeNode("dicomConfigurationRoot")
-
-
-//        assert ((Map<String, Object>) res.next()).get("dicomPort").equals(2222)
-        // invalid
-        /*res = storage.search("dicomConfigurationRoot/dicomDeviceRoot/deviceWith&apos;Quote/dicomConnection[cn='tls']")
-        assert ((Map<String, Object>) res.next()).get("dicomPort").equals(2222)*/
     }
 
     private Map jsonToMap(String json) {
@@ -200,6 +193,15 @@ class ConfigNodePathTests {
 
         // test parse
         // "dicomConfigurationRoot/dicomDeviceRoot/*[dicomNetworkAE/dicomAETitle='aTitle1']"
+    }
+
+    @Test
+    public void dicomTest() {
+        URL resource = ConfigNodePathTests.class.getResource("mockConfig.json");
+        def config = new XStreamConfigurationStorage(resource.getPath(), true);
+
+        Iterator search = config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='DCM4CHEE']]");
+        assert search.next()['dicomDeviceName'] == "dcm4chee-arc"
     }
 
 }
