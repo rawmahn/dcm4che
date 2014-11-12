@@ -1,10 +1,51 @@
+/*
+ * **** BEGIN LICENSE BLOCK *****
+ *  Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ *  The contents of this file are subject to the Mozilla Public License Version
+ *  1.1 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  http://www.mozilla.org/MPL/
+ *
+ *  Software distributed under the License is distributed on an "AS IS" basis,
+ *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing rights and limitations under the
+ *  License.
+ *
+ *  The Original Code is part of dcm4che, an implementation of DICOM(TM) in
+ *  Java(TM), hosted at https://github.com/gunterze/dcm4che.
+ *
+ *  The Initial Developer of the Original Code is
+ *  Agfa Healthcare.
+ *  Portions created by the Initial Developer are Copyright (C) 2014
+ *  the Initial Developer. All Rights Reserved.
+ *
+ *  Contributor(s):
+ *  See @authors listed below
+ *
+ *  Alternatively, the contents of this file may be used under the terms of
+ *  either the GNU General Public License Version 2 or later (the "GPL"), or
+ *  the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ *  in which case the provisions of the GPL or the LGPL are applicable instead
+ *  of those above. If you wish to allow use of your version of this file only
+ *  under the terms of either the GPL or the LGPL, and not to allow others to
+ *  use your version of this file under the terms of the MPL, indicate your
+ *  decision by deleting the provisions above and replace them with the notice
+ *  and other provisions required by the GPL or the LGPL. If you do not delete
+ *  the provisions above, a recipient may use your version of this file under
+ *  the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ *  ***** END LICENSE BLOCK *****
+ */
 package org.dcm4che3.conf.dicom;
 
+import org.dcm4che3.audit.EventID;
+import org.dcm4che3.audit.EventTypeCode;
+import org.dcm4che3.audit.RoleIDCode;
 import org.dcm4che3.conf.api.ConfigurationAlreadyExistsException;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.ConfigurationNotFoundException;
 import org.dcm4che3.conf.api.DicomConfiguration;
-import org.dcm4che3.conf.api.hl7.HL7Configuration;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
@@ -15,7 +56,6 @@ import org.dcm4che3.data.Code;
 import org.dcm4che3.data.Issuer;
 import org.dcm4che3.data.ValueSelector;
 import org.dcm4che3.net.*;
-import org.dcm4che3.net.hl7.HL7Application;
 import org.dcm4che3.util.AttributesFormat;
 import org.dcm4che3.util.Property;
 import org.slf4j.Logger;
@@ -52,9 +92,9 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         this.aeExtensionClasses = aeExtensionClasses;
 
         // register reference handler
-        vitalizer.setReferenceTypeAdapter(new DicomReferenceHandlerAdapter(vitalizer,configurationStorage));
+        this.vitalizer.setReferenceTypeAdapter(new DicomReferenceHandlerAdapter(this.vitalizer, configurationStorage));
 
-        // register type adapters and the DicomConfiguration context
+        // register DICOM type adapters
         this.vitalizer.registerCustomConfigTypeAdapter(AttributesFormat.class, new AttributeFormatTypeAdapter());
         this.vitalizer.registerCustomConfigTypeAdapter(Code.class, new CodeTypeAdapter());
         this.vitalizer.registerCustomConfigTypeAdapter(Device.class, new DeviceReferenceByNameTypeAdapter());
@@ -62,6 +102,12 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         this.vitalizer.registerCustomConfigTypeAdapter(ValueSelector.class, new ValueSelectorTypeAdapter());
         this.vitalizer.registerCustomConfigTypeAdapter(Property.class, new PropertyTypeAdapter());
 
+        // register audit log type adapters
+        this.vitalizer.registerCustomConfigTypeAdapter(EventTypeCode.class, new AuditSimpleTypeAdapters.EventTypeCodeAdapter());
+        this.vitalizer.registerCustomConfigTypeAdapter(EventID.class, new AuditSimpleTypeAdapters.EventIDTypeAdapter());
+        this.vitalizer.registerCustomConfigTypeAdapter(RoleIDCode.class, new AuditSimpleTypeAdapters.RoleIDCodeTypeAdapter());
+
+        // register DicomConfiguration context
         this.vitalizer.registerContext(DicomConfiguration.class, this);
 
 
@@ -77,7 +123,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
             }
         } catch (ConfigurationException e) {
-            throw new RuntimeException("Dicom configuration cannot be initialized",e);
+            throw new RuntimeException("Dicom configuration cannot be initialized", e);
         }
     }
 
@@ -128,7 +174,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     }
 
     private String getAETPath(String aet) {
-        return "dicomConfigurationRoot/dicomUniqueAETitlesRegistryRoot[@name='" + ConfigNodeUtil.escapeApos(aet)+"']";
+        return "dicomConfigurationRoot/dicomUniqueAETitlesRegistryRoot[@name='" + ConfigNodeUtil.escapeApos(aet) + "']";
     }
 
     @Override
@@ -139,7 +185,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     @Override
     public ApplicationEntity findApplicationEntity(String aet) throws ConfigurationException {
 
-        Iterator search = config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='"+ aet + "']]/dicomDeviceName");
+        Iterator search = config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='" + aet + "']]/dicomDeviceName");
 
         try {
             String deviceNameNode = (String) search.next();
@@ -152,7 +198,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
             return ae;
 
         } catch (NoSuchElementException e) {
-            throw new ConfigurationNotFoundException("AE '" + aet + "' not found",e);
+            throw new ConfigurationNotFoundException("AE '" + aet + "' not found", e);
         }
     }
 
@@ -183,12 +229,12 @@ public class CommonDicomConfiguration implements DicomConfiguration {
             Device device = new Device();
             deviceCache.put(name, device);
 
-            vitalizer.configureInstance(device, Device.class, (Map < String, Object >)configurationNode);
+            vitalizer.configureInstance(device, Device.class, (Map<String, Object>) configurationNode);
 
             // add device extensions
             for (Class<? extends DeviceExtension> deviceExtensionClass : deviceExtensionClasses) {
-                Map<String, Object> deviceExtensionNode = (Map<String, Object>) config.getConfigurationNode(deviceRef(name) + "/deviceExtensions/"+deviceExtensionClass.getSimpleName());
-                if (deviceExtensionNode!= null)
+                Map<String, Object> deviceExtensionNode = (Map<String, Object>) config.getConfigurationNode(deviceRef(name) + "/deviceExtensions/" + deviceExtensionClass.getSimpleName());
+                if (deviceExtensionNode != null)
                     device.addDeviceExtension(vitalizer.newConfiguredInstance(deviceExtensionClass, deviceExtensionNode));
             }
 
@@ -205,7 +251,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
             }
 
             return device;
-            } catch (ConfigurationException e) {
+        } catch (ConfigurationException e) {
             throw new ConfigurationException("Configuration for device " + name + " cannot be loaded", e);
         } finally {
             // if this loadDevice call initialized the cache, then clean it up
@@ -271,7 +317,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
                 AEExtension aeExtension = ae.getAEExtension(aeExtensionClass);
                 if (aeExtension == null) continue;
                 Map<String, Object> aeExtNode = vitalizer.createConfigNodeFromInstance(aeExtension, aeExtensionClass);
-                config.persistNode(devicePath+"/dicomNetworkAE[@name='"+ae.getAETitle()+"']/aeExtensions/"+aeExtensionClass.getSimpleName(),aeExtNode, aeExtensionClass);
+                config.persistNode(devicePath + "/dicomNetworkAE[@name='" + ae.getAETitle() + "']/aeExtensions/" + aeExtensionClass.getSimpleName(), aeExtNode, aeExtensionClass);
             }
         }
 
@@ -286,7 +332,6 @@ public class CommonDicomConfiguration implements DicomConfiguration {
                 config.persistNode(extensionPath, vitalizer.createConfigNodeFromInstance(deviceExtension, deviceExtensionClass), deviceExtensionClass);
         }
     }
-
 
 
     @Override

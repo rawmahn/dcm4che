@@ -43,14 +43,13 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.adapters.DefaultConfigTypeAdapters;
-import org.dcm4che3.data.ValueSelector;
 import org.dcm4che3.util.Property;
 
 public class PropertyTypeAdapter extends DefaultConfigTypeAdapters.CommonAbstractTypeAdapter<Property> {
 
     public PropertyTypeAdapter() {
         super("string");
-        metadata.put("class","Property");
+        metadata.put("class", "Property");
     }
 
     @Override

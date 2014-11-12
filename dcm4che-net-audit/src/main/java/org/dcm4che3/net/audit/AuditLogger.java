@@ -223,24 +223,28 @@ public class AuditLogger extends DeviceExtension {
     @ConfigurableProperty(name = "dcmAuditMessageFormatXML", defaultValue = "false")
     private boolean formatXML;
     @ConfigurableProperty(name = "dicomInstalled")
-    private Boolean installed;//TODO
+    private Boolean auditLoggerInstalled;//TODO
     @ConfigurableProperty(name = "dcmAuditIncludeInstanceUID")
     private Boolean includeInstanceUID = false;
 
     @ConfigurableProperty(name = "dcmAuditLoggerSpoolDirectoryURI")
     private File spoolDirectory;
 
-    private final String spoolFileNamePrefix = "audit";
-    private final String spoolFileNameSuffix = ".log";
+    private String spoolFileNamePrefix = "audit";
+    private String spoolFileNameSuffix = ".log";
 
     @ConfigurableProperty(name = "dcmAuditLoggerRetryInterval", defaultValue = "0")
     private int retryInterval;
 
-    //TODO
+    @LDAP(
+            noContainerNode = true,
+            mapKeyAttribute = "cn"
+    )
+    @ConfigurableProperty(name = "dcmAuditSuppressCriteria")
     private final List<AuditSuppressCriteria> suppressAuditMessageFilters =
             new ArrayList<AuditSuppressCriteria>(0);
 
-    @ConfigurableProperty(name = "", collectionOfReferences = true)
+    @ConfigurableProperty(name = "dicomNetworkConnectionReference", collectionOfReferences = true)
     private List<Connection> conns = new ArrayList<Connection>(1);
 
     private transient MessageBuilder builder;
@@ -482,18 +486,18 @@ public class AuditLogger extends DeviceExtension {
 
     public boolean isInstalled() {
         return device != null && device.isInstalled()
-                && (installed == null || installed.booleanValue());
+                && (auditLoggerInstalled == null || auditLoggerInstalled.booleanValue());
     }
 
-    public final Boolean getInstalled() {
-        return installed;
+    public final Boolean getAuditLoggerInstalled() {
+        return auditLoggerInstalled;
     }
 
-    public void setInstalled(Boolean installed) {
+    public void setAuditLoggerInstalled(Boolean installed) {
         if (installed != null && installed.booleanValue()
                 && device != null && !device.isInstalled())
             throw new IllegalStateException("owning device not installed");
-        this.installed = installed;
+        this.auditLoggerInstalled = installed;
     }
 
     public Boolean isIncludeInstanceUID() {
@@ -670,7 +674,7 @@ public class AuditLogger extends DeviceExtension {
         setSpoolFileNamePrefix(from.spoolFileNamePrefix);
         setSpoolFileNameSuffix(from.spoolFileNameSuffix);
         setRetryInterval(from.retryInterval);
-        setInstalled(from.installed);
+        setAuditLoggerInstalled(from.auditLoggerInstalled);
         setAuditRecordRepositoryDevice(from.arrDevice);
         setAuditSuppressCriteriaList(from.suppressAuditMessageFilters);
         device.reconfigureConnections(conns, from.conns);

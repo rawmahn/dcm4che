@@ -1,14 +1,55 @@
+/*
+ * **** BEGIN LICENSE BLOCK *****
+ *  Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ *  The contents of this file are subject to the Mozilla Public License Version
+ *  1.1 (the "License"); you may not use this file except in compliance with
+ *  the License. You may obtain a copy of the License at
+ *  http://www.mozilla.org/MPL/
+ *
+ *  Software distributed under the License is distributed on an "AS IS" basis,
+ *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing rights and limitations under the
+ *  License.
+ *
+ *  The Original Code is part of dcm4che, an implementation of DICOM(TM) in
+ *  Java(TM), hosted at https://github.com/gunterze/dcm4che.
+ *
+ *  The Initial Developer of the Original Code is
+ *  Agfa Healthcare.
+ *  Portions created by the Initial Developer are Copyright (C) 2014
+ *  the Initial Developer. All Rights Reserved.
+ *
+ *  Contributor(s):
+ *  See @authors listed below
+ *
+ *  Alternatively, the contents of this file may be used under the terms of
+ *  either the GNU General Public License Version 2 or later (the "GPL"), or
+ *  the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ *  in which case the provisions of the GPL or the LGPL are applicable instead
+ *  of those above. If you wish to allow use of your version of this file only
+ *  under the terms of either the GPL or the LGPL, and not to allow others to
+ *  use your version of this file under the terms of the MPL, indicate your
+ *  decision by deleting the provisions above and replace them with the notice
+ *  and other provisions required by the GPL or the LGPL. If you do not delete
+ *  the provisions above, a recipient may use your version of this file under
+ *  the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ *  ***** END LICENSE BLOCK *****
+ */
 package org.dcm4che3.conf.core.adapters;
 
+import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.BeanVitalizer;
-import org.dcm4che3.conf.api.ConfigurationException;
-import org.dcm4che3.conf.api.ConfigurationUnserializableException;
 import org.dcm4che3.util.Base64;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Arrays.
@@ -16,7 +57,7 @@ import java.util.*;
  */
 public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
 
-    private static final Map<Class,Class> PRIMITIVE_TO_WRAPPER;
+    private static final Map<Class, Class> PRIMITIVE_TO_WRAPPER;
 
     static {
 
@@ -31,6 +72,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         PRIMITIVE_TO_WRAPPER.put(short.class, Short.class);
         PRIMITIVE_TO_WRAPPER.put(void.class, Void.class);
     }
+
     @Override
     public Object fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
@@ -44,7 +86,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
             try {
                 return Base64.fromBase64((String) configNode);
             } catch (IOException e) {
-                throw new ConfigurationException("Cannot read Base64",e);
+                throw new ConfigurationException("Cannot read Base64", e);
             }
 
 
@@ -62,8 +104,8 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
                 // push to array
                 try {
                     Array.set(arr, i++, el);
-                } catch (IllegalArgumentException e){
-                    throw new ConfigurationException("Element type in the supplied collection does not match the target array's component type ( "+el.getClass().getName()+" vs "+componentType.getName()+" )", e);
+                } catch (IllegalArgumentException e) {
+                    throw new ConfigurationException("Element type in the supplied collection does not match the target array's component type ( " + el.getClass().getName() + " vs " + componentType.getName() + " )", e);
                 }
             }
             return arr;
@@ -86,7 +128,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
 
         ArrayList list = new ArrayList();
         for (int i = 0; i < Array.getLength(object); i++) {
-            Object el = elementTypeAdapter.toConfigNode(Array.get(object, i),componentPseudoProperty,vitalizer);
+            Object el = elementTypeAdapter.toConfigNode(Array.get(object, i), componentPseudoProperty, vitalizer);
             list.add(wrapperClass != null ? wrapperClass.cast(el) : el);
         }
         return list;
