@@ -42,7 +42,6 @@ package org.dcm4che3.conf.core.normalization;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.Configuration;
-import org.dcm4che3.conf.core.adapters.DefaultConfigTypeAdapters;
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.impl.DelegatingConfiguration;
@@ -75,15 +74,11 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
 
 
     @Override
-    public Object getConfigurationNode(String path) throws ConfigurationException {
-        // TODO: fill in default values for properties that are null and have defaults
-        Map<String,Object> node = (Map<String, Object>) super.getConfigurationNode(path);
-        try {
-            Class nodeClass = super.getConfigurationNodeClass(path);
-            applyDefaults(node, nodeClass);
-        } catch (ClassNotFoundException e) {
-            throw new ConfigurationException("Cannot get class to apply defaults while getting configuration node",e);
-        }
+    public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
+        // fill in default values for properties that are null and have defaults
+        Map<String,Object> node = (Map<String, Object>) super.getConfigurationNode(path, configurableClass);
+        if (configurableClass != null && node != null)
+            applyDefaults(node, configurableClass);
         return node;
     }
 

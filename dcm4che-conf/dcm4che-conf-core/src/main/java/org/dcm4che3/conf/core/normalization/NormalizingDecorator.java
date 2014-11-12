@@ -63,9 +63,9 @@ public class NormalizingDecorator extends DelegatingConfiguration {
 
 
     @Override
-    public Object getConfigurationNode(String path) throws ConfigurationException {
+    public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
         // TODO: normalize
-        return super.getConfigurationNode(path);
+        return super.getConfigurationNode(path, configurableClass);
     }
 
     @Override

@@ -69,12 +69,14 @@ public class CachedRootNodeConfiguration extends DelegatingConfiguration {
     /**
      * Return cached node
      *
+     *
      * @param path
+     * @param configurableClass
      * @return
      * @throws ConfigurationException
      */
     @Override
-    public Object getConfigurationNode(String path) throws ConfigurationException {
+    public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
         return ConfigNodeUtil.getNode(getConfigurationRoot(), path);
     }
 
@@ -86,7 +88,7 @@ public class CachedRootNodeConfiguration extends DelegatingConfiguration {
 
     @Override
     public void refreshNode(String path) throws ConfigurationException {
-        ConfigNodeUtil.replaceNode(getConfigurationRoot(), path, delegate.getConfigurationNode(path));
+        ConfigNodeUtil.replaceNode(getConfigurationRoot(), path, delegate.getConfigurationNode(path, null));
     }
 
     @Override

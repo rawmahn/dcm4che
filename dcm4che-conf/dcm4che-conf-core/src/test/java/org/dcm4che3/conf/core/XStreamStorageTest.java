@@ -80,7 +80,7 @@ public class XStreamStorageTest {
 
         xCfg = getConfigurationStorage();
 
-        DeepEqualsDiffer.assertDeepEquals("Stored config node must be equal to the one loaded", p3, xCfg.getConfigurationNode("/"));
+        DeepEqualsDiffer.assertDeepEquals("Stored config node must be equal to the one loaded", p3, xCfg.getConfigurationNode("/", null ));
 
         xCfg.persistNode("/p2/newProp",p1,null);
 

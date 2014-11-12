@@ -67,7 +67,7 @@ public class DefaultReferenceAdapter<T> implements ConfigTypeAdapter<T, String> 
     @Override
     public T fromConfigNode(String configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         // treat configNode as path, load the node at that path, create an instance from it
-        return (T) vitalizer.newConfiguredInstance((Class) property.getType(), (Map<String, Object>) config.getConfigurationNode(configNode));
+        return (T) vitalizer.newConfiguredInstance(property.getRawClass(), (Map<String, Object>) config.getConfigurationNode(configNode, property.getRawClass()));
     }
 
     @Override

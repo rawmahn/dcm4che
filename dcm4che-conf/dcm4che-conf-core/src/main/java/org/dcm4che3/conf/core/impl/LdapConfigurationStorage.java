@@ -57,7 +57,7 @@ public class LdapConfigurationStorage implements Configuration {
     // special classes for root, app registrues,(or allow to register)
 
     @Override
-    public Object getConfigurationNode(String path) throws ConfigurationException {
+    public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
         // TODO: byte[],x509 to base64
         // transform references
         // special booleanBased EnumSet

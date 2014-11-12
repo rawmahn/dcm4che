@@ -87,7 +87,7 @@ public class XStreamConfigurationStorage implements Configuration {
     }
 
     @Override
-    public Object getConfigurationNode(String path) throws ConfigurationException {
+    public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
         Object node = ConfigNodeUtil.getNode(getConfigurationRoot(), path);
         return node;
     }

@@ -62,8 +62,8 @@ public class DelegatingConfiguration implements Configuration {
     }
 
     @Override
-    public Object getConfigurationNode(String path) throws ConfigurationException {
-        return delegate.getConfigurationNode(path);
+    public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
+        return delegate.getConfigurationNode(path, configurableClass);
     }
 
     @Override

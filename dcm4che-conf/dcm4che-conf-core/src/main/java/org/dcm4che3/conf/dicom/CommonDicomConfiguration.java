@@ -222,7 +222,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
 
         try {
-            Object configurationNode = config.getConfigurationNode(deviceRef(name));
+            Object configurationNode = config.getConfigurationNode(deviceRef(name), Device.class);
 
             if (configurationNode == null) return null;
 
@@ -233,7 +233,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
             // add device extensions
             for (Class<? extends DeviceExtension> deviceExtensionClass : deviceExtensionClasses) {
-                Map<String, Object> deviceExtensionNode = (Map<String, Object>) config.getConfigurationNode(deviceRef(name) + "/deviceExtensions/" + deviceExtensionClass.getSimpleName());
+                Map<String, Object> deviceExtensionNode = (Map<String, Object>) config.getConfigurationNode(deviceRef(name) + "/deviceExtensions/" + deviceExtensionClass.getSimpleName(), deviceExtensionClass);
                 if (deviceExtensionNode != null)
                     device.addDeviceExtension(vitalizer.newConfiguredInstance(deviceExtensionClass, deviceExtensionNode));
             }
@@ -243,7 +243,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
                 String aeTitle = entry.getKey();
                 ApplicationEntity ae = entry.getValue();
                 for (Class<? extends AEExtension> aeExtensionClass : aeExtensionClasses) {
-                    Object aeExtNode = config.getConfigurationNode(deviceRef(name) + "/dicomNetworkAE[@name='" + ConfigNodeUtil.escapeApos(aeTitle) + "']/aeExtensions/" + aeExtensionClass.getSimpleName());
+                    Object aeExtNode = config.getConfigurationNode(deviceRef(name) + "/dicomNetworkAE[@name='" + ConfigNodeUtil.escapeApos(aeTitle) + "']/aeExtensions/" + aeExtensionClass.getSimpleName(), aeExtensionClass);
                     if (aeExtNode != null) {
                         ae.addAEExtension(vitalizer.newConfiguredInstance(aeExtensionClass, (Map<String, Object>) aeExtNode));
                     }

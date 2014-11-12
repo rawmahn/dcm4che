@@ -69,11 +69,13 @@ public interface Configuration {
     Map<String, Object> getConfigurationRoot() throws ConfigurationException;
 
     /**
+     *
      * @param path A reference to a node
+     * @param configurableClass
      * @return configuration node or null, if not found
      * @throws ConfigurationException
      */
-    Object getConfigurationNode(String path) throws ConfigurationException;
+    Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException;
 
     /**
      * Returns the class that was used to persist the node using persistNode

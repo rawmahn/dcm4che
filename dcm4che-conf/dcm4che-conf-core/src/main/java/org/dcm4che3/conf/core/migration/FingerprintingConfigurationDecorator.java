@@ -57,10 +57,10 @@ public class FingerprintingConfigurationDecorator extends DelegatingConfiguratio
 
 
     @Override
-    public Object getConfigurationNode(String path) throws ConfigurationException {
+    public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
 
         // TODO: get class info using super.getConfigurationNodeClass(), get fingerprint, and compare with existing class
-        return super.getConfigurationNode(path);
+        return super.getConfigurationNode(path, configurableClass);
     }
 
     @Override

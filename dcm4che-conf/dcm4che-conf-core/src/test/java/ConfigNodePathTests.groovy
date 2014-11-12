@@ -38,15 +38,12 @@
  *  ***** END LICENSE BLOCK *****
  */
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.apache.commons.jxpath.Pointer
 import org.dcm4che3.conf.core.XStreamStorageTest
 import org.dcm4che3.conf.core.impl.XStreamConfigurationStorage
 import org.dcm4che3.conf.core.util.ConfigNodeUtil
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-
-import java.nio.file.Paths
 
 /**
  * Created by aprvf on 07/11/2014.
