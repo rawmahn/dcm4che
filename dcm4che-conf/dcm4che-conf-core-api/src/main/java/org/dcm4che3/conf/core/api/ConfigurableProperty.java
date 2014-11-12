@@ -54,6 +54,8 @@ import java.util.Objects;
 @Target(ElementType.FIELD)
 public @interface ConfigurableProperty {
 
+    public static final String NO_DEFAULT_VALUE = "N/A";
+
     /**
      * Specifies that the annotated field/property is a collection, elements of which are stored as references
      * to actual values (like "dicomConfigurationRoot/dicomDevicesRoot/device1")
@@ -78,7 +80,7 @@ public @interface ConfigurableProperty {
      * For specifying whether an Object-typed property is not allowed to be null, use @NotNull
      * @return
      */
-    String defaultValue() default "N/A";
+    String defaultValue() default NO_DEFAULT_VALUE;
 
     /**
      * Label to show in configuration UIs. If empty empty string (default), the name will be used.

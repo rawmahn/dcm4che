@@ -40,7 +40,6 @@ package org.dcm4che3.net.imageio;
 
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
-import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.imageio.codec.ImageReaderFactory;
 import org.dcm4che3.net.DeviceExtension;
 
@@ -53,16 +52,25 @@ public class ImageReaderExtension extends DeviceExtension {
 
     private static final long serialVersionUID = -1997698269051750796L;
 
-    @ConfigurableProperty(name = "Image Reader Factory")
-    public final ImageReaderFactory factory;
 
-    public ImageReaderExtension(ImageReaderFactory factory) {
-        if (factory == null)
+    @ConfigurableProperty(name = "Image Reader Factory")
+    public ImageReaderFactory imageReaderFactory;
+
+    public ImageReaderExtension() {
+    }
+
+    public ImageReaderExtension(ImageReaderFactory imageReaderFactory) {
+        if (imageReaderFactory == null)
             throw new NullPointerException();
-        this.factory = factory;
+        this.imageReaderFactory = imageReaderFactory;
+    }
+
+
+    public void setImageReaderFactory(ImageReaderFactory imageReaderFactory) {
+        this.imageReaderFactory = imageReaderFactory;
     }
 
     public final ImageReaderFactory getImageReaderFactory() {
-        return factory;
+        return imageReaderFactory;
     }
 }

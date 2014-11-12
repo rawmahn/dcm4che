@@ -98,6 +98,9 @@ public class ImageWriterFactory implements Serializable {
         @ConfigurableProperty(name = "dcmWriteIIOMetadata")
         public Property[] iioMetadata;
 
+        public ImageWriterParam() {
+        }
+
         public ImageWriterParam(String formatName, String className,
                 PatchJPEGLS patchJPEGLS, Property[] imageWriteParams, Property[] iioMetadata) {
             this.formatName = formatName;
@@ -177,17 +180,17 @@ public class ImageWriterFactory implements Serializable {
         label = "Image Writers",
         description = "Image writers by transfer syntaxes"
     )
-    private HashMap<String, ImageWriterParam> map = new HashMap<String, ImageWriterParam>();
+    private Map<String, ImageWriterParam> map = new HashMap<String, ImageWriterParam>();
 
     private static String nullify(String s) {
         return s == null || s.isEmpty() || s.equals("*") ? null : s;
     }
 
-    public HashMap<String, ImageWriterParam> getMap() {
+    public Map<String, ImageWriterParam> getMap() {
         return map;
     }
 
-    public void setMap(HashMap<String, ImageWriterParam> map) {
+    public void setMap(Map<String, ImageWriterParam> map) {
         this.map = map;
     }
 

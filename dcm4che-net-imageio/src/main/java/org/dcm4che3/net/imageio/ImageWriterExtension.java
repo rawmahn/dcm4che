@@ -53,18 +53,22 @@ public class ImageWriterExtension extends DeviceExtension {
     private static final long serialVersionUID = -2216639006138378955L;
 
     @ConfigurableProperty(name = "Image Writer Factory")
-    public ImageWriterFactory factory;
+    public ImageWriterFactory imageWriterFactory;
 
     public ImageWriterExtension() {
     }
 
-    public ImageWriterExtension(ImageWriterFactory factory) {
-        if (factory == null)
+    public ImageWriterExtension(ImageWriterFactory imageWriterFactory) {
+        if (imageWriterFactory == null)
             throw new NullPointerException();
-        this.factory = factory;
+        this.imageWriterFactory = imageWriterFactory;
+    }
+
+    public void setImageWriterFactory(ImageWriterFactory imageWriterFactory) {
+        this.imageWriterFactory = imageWriterFactory;
     }
 
     public final ImageWriterFactory getImageWriterFactory() {
-        return factory;
+        return imageWriterFactory;
     }
 }

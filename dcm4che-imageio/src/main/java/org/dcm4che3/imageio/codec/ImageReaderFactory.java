@@ -96,6 +96,9 @@ public class ImageReaderFactory implements Serializable {
         @ConfigurableProperty(name = "dcmPatchJPEGLS")
         public PatchJPEGLS patchJPEGLS;
 
+        public ImageReaderParam() {
+        }
+
         public ImageReaderParam(String formatName, String className,
                 String patchJPEGLS) {
             this.formatName = formatName;
@@ -141,13 +144,13 @@ public class ImageReaderFactory implements Serializable {
             label = "Image Readers",
             description = "Image readers by transfer syntaxes"
     )
-    private HashMap<String, ImageReaderParam> map = new HashMap<String, ImageReaderParam>();
+    private Map<String, ImageReaderParam> map = new HashMap<String, ImageReaderParam>();
 
-    public HashMap<String, ImageReaderParam> getMap() {
+    public Map<String, ImageReaderParam> getMap() {
         return map;
     }
 
-    public void setMap(HashMap<String, ImageReaderParam> map) {
+    public void setMap(Map<String, ImageReaderParam> map) {
         this.map = map;
     }
 

@@ -62,7 +62,7 @@ public class DicomReferenceHandlerAdapter<T> extends DefaultReferenceAdapter<T> 
     public T fromConfigNode(String configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         // Connection of a device. Get the device (it will grab the current one from threadLocal), and get the connection from there
-        if (Connection.class.isAssignableFrom(BeanVitalizer.getRawClass(property))) {
+        if (Connection.class.isAssignableFrom(property.getRawClass())) {
 
             List<Map<String, Object>> props = ConfigNodeUtil.parseReference(configNode);
 
@@ -94,7 +94,7 @@ public class DicomReferenceHandlerAdapter<T> extends DefaultReferenceAdapter<T> 
     public String toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
         // Reference connection of connection's device
-        if (Connection.class.isAssignableFrom(BeanVitalizer.getRawClass(property))) {
+        if (Connection.class.isAssignableFrom(property.getRawClass())) {
             Connection conn = (Connection) object;
 
             String predicate;

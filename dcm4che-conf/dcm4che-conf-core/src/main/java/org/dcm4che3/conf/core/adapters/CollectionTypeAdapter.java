@@ -74,8 +74,8 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
     }
 
     private Collection createCollectionDeserialized(AnnotatedConfigurableProperty property) throws ConfigurationException {
-        if (EnumSet.class.isAssignableFrom(BeanVitalizer.getRawClass(property))) {
-            Class enumClass = (Class) DefaultConfigTypeAdapters.getTypeForGenericsParameter(property, 0);
+        if (EnumSet.class.isAssignableFrom(property.getRawClass())) {
+            Class enumClass = (Class) property.getTypeForGenericsParameter(0);
             return EnumSet.noneOf(enumClass);
         } else
             return createCollection(property);
@@ -84,7 +84,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
     @Override
     public T fromConfigNode(T configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
-        AnnotatedConfigurableProperty elementPseudoProperty = DefaultConfigTypeAdapters.getPseudoPropertyForGenericsParamater(property, 0);
+        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
 
         ConfigTypeAdapter elementAdapter;
         if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())
@@ -103,7 +103,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
     @Override
     public T toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
-        AnnotatedConfigurableProperty elementPseudoProperty = DefaultConfigTypeAdapters.getPseudoPropertyForGenericsParamater(property, 0);
+        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
 
         ConfigTypeAdapter elementAdapter;
         if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())
@@ -126,7 +126,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
 
         metadata.put("type", "array");
 
-        AnnotatedConfigurableProperty elementPseudoProperty = DefaultConfigTypeAdapters.getPseudoPropertyForGenericsParamater(property, 0);
+        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
 
         ConfigTypeAdapter elementAdapter;
         if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())

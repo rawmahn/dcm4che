@@ -43,6 +43,7 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,9 +63,34 @@ public class AnnotatedConfigurableProperty {
         setType(type);
     }
 
+    public Type getTypeForGenericsParameter(int genericParameterIndex) {
+        Type[] actualTypeArguments = ((ParameterizedType) getType()).getActualTypeArguments();
+        return actualTypeArguments[genericParameterIndex];
+    }
+
+    public AnnotatedConfigurableProperty getPseudoPropertyForGenericsParamater(int genericParameterIndex) {
+
+        Type typeForGenericsParameter = getTypeForGenericsParameter(genericParameterIndex);
+        AnnotatedConfigurableProperty pseudoProperty = new AnnotatedConfigurableProperty(typeForGenericsParameter);
+        return pseudoProperty;
+    }
+
+
     @SuppressWarnings("unchecked")
     public <T> T getAnnotation(Class<T> annotationType) {
         return (T) annotations.get(annotationType);
+    }
+
+
+    public Class getRawClass() {
+        Class clazz;
+
+        if (type instanceof ParameterizedType)
+            clazz = (Class) ((ParameterizedType) type).getRawType();
+        else {
+            clazz = (Class) type;
+        }
+        return clazz;
     }
 
     public void setAnnotations(Map<Type, Annotation> annotations) {

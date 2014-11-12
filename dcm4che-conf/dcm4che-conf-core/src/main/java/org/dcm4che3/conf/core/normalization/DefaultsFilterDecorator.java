@@ -40,10 +40,17 @@
 package org.dcm4che3.conf.core.normalization;
 
 import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.Configuration;
+import org.dcm4che3.conf.core.adapters.DefaultConfigTypeAdapters;
+import org.dcm4che3.conf.core.api.ConfigurableClass;
+import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.impl.DelegatingConfiguration;
+import org.dcm4che3.conf.core.util.ConfigIterators;
 
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,7 +77,62 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
     @Override
     public Object getConfigurationNode(String path) throws ConfigurationException {
         // TODO: fill in default values for properties that are null and have defaults
-        return super.getConfigurationNode(path);
+        Map<String,Object> node = (Map<String, Object>) super.getConfigurationNode(path);
+        try {
+            Class nodeClass = super.getConfigurationNodeClass(path);
+            applyDefaults(node, nodeClass);
+        } catch (ClassNotFoundException e) {
+            throw new ConfigurationException("Cannot get class to apply defaults while getting configuration node",e);
+        }
+        return node;
+    }
+
+    private void applyDefaults(Map<String, Object> node, Class nodeClass) throws ConfigurationException {
+        List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(nodeClass);
+        for (AnnotatedConfigurableProperty property : properties) {
+
+            // if the property is a configclass
+            if (property.getRawClass().getAnnotation(ConfigurableClass.class) != null) {
+                applyDefaults((Map<String, Object>) node.get(property.getAnnotatedName()), property.getRawClass());
+                continue;
+            }
+
+            // collection, where a generics parameter is a configurable class
+            if (
+                    Collection.class.isAssignableFrom(property.getRawClass()) &&
+                    !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
+                    property.getPseudoPropertyForGenericsParamater(0).getRawClass().getAnnotation(ConfigurableClass.class) != null) {
+
+                Collection<Map<String, Object>> collection = (Collection<Map<String, Object>>) node.get(property.getAnnotatedName());
+
+                for (Map<String, Object> object : collection)
+                    applyDefaults(object, property.getPseudoPropertyForGenericsParamater(0).getRawClass());
+
+                continue;
+            }
+
+            // map, where a value generics parameter is a configurable class
+            if (
+                    Collection.class.isAssignableFrom(property.getRawClass()) &&
+                            !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
+                            property.getPseudoPropertyForGenericsParamater(1).getRawClass().getAnnotation(ConfigurableClass.class) != null) {
+
+                Map<String,Map<String, Object>> collection = (Map<String, Map<String, Object>>) node.get(property.getAnnotatedName());
+
+                for (Map.Entry<String, Map<String, Object>> object : collection.entrySet())
+                    applyDefaults(object.getValue(), property.getPseudoPropertyForGenericsParamater(1).getRawClass());
+
+                continue;
+            }
+
+            // if no value for this property, see if there is default and set it
+            if (!node.containsKey(property.getAnnotatedName())) {
+                String defaultValue = property.getAnnotation(ConfigurableProperty.class).defaultValue();
+                if (!defaultValue.equals(ConfigurableProperty.NO_DEFAULT_VALUE))
+                    node.put(property.getAnnotatedName(),defaultValue);
+
+            }
+        }
     }
 
     @Override

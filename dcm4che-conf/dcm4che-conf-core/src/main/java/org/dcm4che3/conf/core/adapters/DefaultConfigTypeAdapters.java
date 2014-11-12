@@ -47,7 +47,6 @@ import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.validation.ValidationException;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
 
@@ -79,18 +78,6 @@ public class DefaultConfigTypeAdapters {
         String nodeName = property.getAnnotatedName();
         ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
         parentNode.put(nodeName, adapter.toConfigNode(object, property, vitalizer));
-    }
-
-    static Type getTypeForGenericsParameter(AnnotatedConfigurableProperty property, int genericParameterIndex) throws ConfigurationException {
-        Type[] actualTypeArguments = ((ParameterizedType) property.getType()).getActualTypeArguments();
-        return actualTypeArguments[genericParameterIndex];
-    }
-
-    static AnnotatedConfigurableProperty getPseudoPropertyForGenericsParamater(AnnotatedConfigurableProperty property, int genericParameterIndex) throws ConfigurationException {
-
-        Type typeForGenericsParameter = getTypeForGenericsParameter(property, genericParameterIndex);
-        AnnotatedConfigurableProperty pseudoProperty = new AnnotatedConfigurableProperty(typeForGenericsParameter);
-        return pseudoProperty;
     }
 
     /**

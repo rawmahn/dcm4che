@@ -158,7 +158,7 @@ public class AuditLogger extends DeviceExtension {
     private static volatile AuditLogger defaultLogger;
 
     @ConfigurableProperty(name = "dcmAuditRecordRepositoryDeviceReference")
-    private Device arrDevice;
+    private Device auditRecordRepositoryDevice;
 
     @ConfigurableProperty(
             name = "dcmAuditFacility",
@@ -218,16 +218,22 @@ public class AuditLogger extends DeviceExtension {
 
     @ConfigurableProperty(name = "dcmAuditTimestampInUTC", defaultValue = "false")
     private boolean timestampInUTC = false;
+
     @ConfigurableProperty(name = "dcmAuditMessageBOM", defaultValue = "true")
     private boolean includeBOM = true;
+
     @ConfigurableProperty(name = "dcmAuditMessageFormatXML", defaultValue = "false")
     private boolean formatXML;
+
     @ConfigurableProperty(name = "dicomInstalled")
-    private Boolean auditLoggerInstalled;//TODO
+    private Boolean auditLoggerInstalled;
+
     @ConfigurableProperty(name = "dcmAuditIncludeInstanceUID")
-    private Boolean includeInstanceUID = false;
+    private Boolean doIncludeInstanceUID = false;
 
     @ConfigurableProperty(name = "dcmAuditLoggerSpoolDirectoryURI")
+    private String spoolDirectoryURI;
+
     private File spoolDirectory;
 
     private String spoolFileNamePrefix = "audit";
@@ -245,7 +251,7 @@ public class AuditLogger extends DeviceExtension {
             new ArrayList<AuditSuppressCriteria>(0);
 
     @ConfigurableProperty(name = "dicomNetworkConnectionReference", collectionOfReferences = true)
-    private List<Connection> conns = new ArrayList<Connection>(1);
+    private List<Connection> connections = new ArrayList<Connection>(1);
 
     private transient MessageBuilder builder;
     private transient ActiveConnection activeConnection;
@@ -260,20 +266,29 @@ public class AuditLogger extends DeviceExtension {
     };
 
 
+    public List<AuditSuppressCriteria> getSuppressAuditMessageFilters() {
+        return suppressAuditMessageFilters;
+    }
+
+    public void setSuppressAuditMessageFilters(List<AuditSuppressCriteria> suppressAuditMessageFilters) {
+        this.suppressAuditMessageFilters.clear();
+        for (AuditSuppressCriteria filter : suppressAuditMessageFilters) this.suppressAuditMessageFilters.add(filter);
+    }
+
     public final Device getAuditRecordRepositoryDevice() {
-        return arrDevice;
+        return auditRecordRepositoryDevice;
     }
 
     public String getAuditRecordRepositoryDeviceName() {
-        if (arrDevice == null)
+        if (auditRecordRepositoryDevice == null)
             throw new IllegalStateException("AuditRecordRepositoryDevice not initalized");
-        return arrDevice.getDeviceName();
+        return auditRecordRepositoryDevice.getDeviceName();
     }
 
     public void setAuditRecordRepositoryDevice(Device arrDevice) {
         SafeClose.close(activeConnection);
         activeConnection = null;
-        this.arrDevice = arrDevice;
+        this.auditRecordRepositoryDevice = arrDevice;
     }
 
     public final Facility getFacility() {
@@ -500,12 +515,17 @@ public class AuditLogger extends DeviceExtension {
         this.auditLoggerInstalled = installed;
     }
 
+
     public Boolean isIncludeInstanceUID() {
-        return includeInstanceUID;
+        return doIncludeInstanceUID;
     }
 
-    public void setIncludeInstanceUID(Boolean includeInstanceUID) {
-        this.includeInstanceUID = includeInstanceUID;
+    public Boolean getDoIncludeInstanceUID() {
+        return doIncludeInstanceUID;
+    }
+
+    public void setDoIncludeInstanceUID(Boolean doIncludeInstanceUID) {
+        this.doIncludeInstanceUID = doIncludeInstanceUID;
     }
 
     /**
@@ -591,21 +611,27 @@ public class AuditLogger extends DeviceExtension {
         if (device != null && device != conn.getDevice())
             throw new IllegalStateException(conn + " not contained by " +
                     device.getDeviceName());
-        conns.add(conn);
+        connections.add(conn);
     }
 
     @Override
     public void verifyNotUsed(Connection conn) {
-        if (conns.contains(conn))
+        if (connections.contains(conn))
             throw new IllegalStateException(conn + " used by Audit Logger");
     }
 
     public boolean removeConnection(Connection conn) {
-        return conns.remove(conn);
+        return connections.remove(conn);
+    }
+
+
+    public void setConnections(List<Connection> connections) {
+        this.connections.clear();
+        for (Connection connection : connections) addConnection(connection);
     }
 
     public List<Connection> getConnections() {
-        return conns;
+        return connections;
     }
 
     public List<AuditSuppressCriteria> getAuditSuppressCriteriaList() {
@@ -675,9 +701,9 @@ public class AuditLogger extends DeviceExtension {
         setSpoolFileNameSuffix(from.spoolFileNameSuffix);
         setRetryInterval(from.retryInterval);
         setAuditLoggerInstalled(from.auditLoggerInstalled);
-        setAuditRecordRepositoryDevice(from.arrDevice);
+        setAuditRecordRepositoryDevice(from.auditRecordRepositoryDevice);
         setAuditSuppressCriteriaList(from.suppressAuditMessageFilters);
-        device.reconfigureConnections(conns, from.conns);
+        device.reconfigureConnections(connections, from.connections);
         closeActiveConnection();
     }
 
@@ -899,19 +925,19 @@ public class AuditLogger extends DeviceExtension {
         if (activeConnection != null)
             return activeConnection;
 
-        Device arrDev = this.arrDevice;
-        if (arrDevice == null)
+        Device arrDev = this.auditRecordRepositoryDevice;
+        if (auditRecordRepositoryDevice == null)
             throw new IllegalStateException("No AuditRecordRepositoryDevice initalized");
 
         AuditRecordRepository arr = arrDev.getDeviceExtension(AuditRecordRepository.class);
         if (arr == null)
             throw new IllegalStateException("AuditRecordRepositoryDevice "
-                    + arrDevice.getDeviceName()
+                    + auditRecordRepositoryDevice.getDeviceName()
                     + " does not provide Audit Record Repository");
 
         for (Connection remoteConn : arr.getConnections())
             if (remoteConn.isInstalled() && remoteConn.isServer())
-                for (Connection conn : conns)
+                for (Connection conn : connections)
                     if (conn.isInstalled() && conn.isCompatible(remoteConn)) {
                         return (this.activeConnection =
                                 conn.getProtocol().isTCP()

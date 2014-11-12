@@ -50,8 +50,6 @@ import org.dcm4che3.conf.core.adapters.DefaultConfigTypeAdapters;
 import org.dcm4che3.conf.core.adapters.ReflectiveAdapter;
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -126,7 +124,7 @@ public class BeanVitalizer {
     @SuppressWarnings("unchecked")
     public ConfigTypeAdapter lookupTypeAdapter(AnnotatedConfigurableProperty property) throws ConfigurationException {
 
-        Class clazz = getRawClass(property);
+        Class clazz = property.getRawClass();
 
         // first check for a custom adapter
         ConfigTypeAdapter typeAdapter = customConfigTypeAdapters.get(clazz);
@@ -134,18 +132,6 @@ public class BeanVitalizer {
 
         // delegate to default otherwise
         return lookupDefaultTypeAdapter(clazz);
-    }
-
-    public static Class getRawClass(AnnotatedConfigurableProperty property) {
-        Type type = property.getType();
-        Class clazz;
-
-        if (type instanceof ParameterizedType)
-            clazz = (Class) ((ParameterizedType) type).getRawType();
-        else {
-            clazz = (Class) type;
-        }
-        return clazz;
     }
 
     @SuppressWarnings("unchecked")

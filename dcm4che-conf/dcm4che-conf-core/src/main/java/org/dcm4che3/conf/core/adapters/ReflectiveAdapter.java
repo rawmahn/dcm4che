@@ -114,7 +114,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
                 // invoke setter
                 setter.getMethod().invoke(confObj, args);
             } catch (Exception e) {
-                throw new ConfigurationException("Error while trying to initialize the object with method " + setter.getMethod().getName(), e);
+                throw new ConfigurationException("Error while trying to initialize the object with method '" + setter.getMethod().getName()+"'", e);
             }
         }
 
@@ -137,7 +137,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
                 Object value = PropertyUtils.getSimpleProperty(object, fieldProperty.getName());
                 DefaultConfigTypeAdapters.delegateChildToConfigNode(value, configNode, fieldProperty, vitalizer);
             } catch (Exception e) {
-                throw new ConfigurationException("Error while serializing configuration field " + fieldProperty.getName() + " in class " + clazz.getSimpleName(), e);
+                throw new ConfigurationException("Error while serializing configuration field '" + fieldProperty.getName() + "' in class " + clazz.getSimpleName(), e);
             }
         }
 

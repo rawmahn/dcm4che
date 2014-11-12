@@ -65,20 +65,20 @@ public class HL7Application implements Serializable {
     private Device device;
 
     @ConfigurableProperty(name = "hl7ApplicationName")
-    private String name;
+    private String applicationName;
 
     @ConfigurableProperty(name = "hl7DefaultCharacterSet")
-    private String hl7DefaultCharacterSet;
+    private String HL7DefaultCharacterSet;
 
     @ConfigurableProperty(name = "dicomInstalled")
     private Boolean hl7Installed;
 
     @ConfigurableProperty(name = "hl7AcceptedSendingApplication")
-    private Set<String> acceptedSendingApplications =
+    private Set<String> acceptedSendingApplicationsSet =
             new LinkedHashSet<String>();
 
     @ConfigurableProperty(name = "hl7AcceptedMessageType")
-    private Set<String> acceptedMessageTypes =
+    private Set<String> acceptedMessageTypesSet =
             new LinkedHashSet<String>();
 
     @ConfigurableProperty(name = "dicomNetworkConnectionReference", collectionOfReferences = true)
@@ -89,8 +89,11 @@ public class HL7Application implements Serializable {
 
     private transient HL7MessageListener hl7MessageListener;
 
-    public HL7Application(String name) {
-        setApplicationName(name);
+    public HL7Application() {
+    }
+
+    public HL7Application(String applicationName) {
+        setApplicationName(applicationName);
     }
 
     public final Device getDevice() {
@@ -111,12 +114,14 @@ public class HL7Application implements Serializable {
     }
 
     public String getApplicationName() {
-        return name;
+        return applicationName;
     }
 
     public void setApplicationName(String name) {
         if (name.isEmpty())
             throw new IllegalArgumentException("name cannot be empty");
+        this.applicationName = name;
+/*      TODO: inspect - commented out since this is done in HL7DeviceExtension.hl7apps setter
         HL7DeviceExtension ext = device != null
                 ? device.getDeviceExtension(HL7DeviceExtension.class)
                 : null;
@@ -124,37 +129,53 @@ public class HL7Application implements Serializable {
             ext.removeHL7Application(this.name);
         this.name = name;
         if (ext != null)
-            ext.addHL7Application(this);
+            ext.addHL7Application(this);*/
+    }
+
+    public Set<String> getAcceptedMessageTypesSet() {
+        return acceptedMessageTypesSet;
+    }
+
+    public void setAcceptedMessageTypesSet(Set<String> acceptedMessageTypesSet) {
+        this.acceptedMessageTypesSet = acceptedMessageTypesSet;
     }
 
     public final String getHL7DefaultCharacterSet() {
-        return hl7DefaultCharacterSet;
+        return HL7DefaultCharacterSet;
     }
 
     public final void setHL7DefaultCharacterSet(String hl7DefaultCharacterSet) {
-        this.hl7DefaultCharacterSet = hl7DefaultCharacterSet;
+        this.HL7DefaultCharacterSet = hl7DefaultCharacterSet;
+    }
+
+    public Set<String> getAcceptedSendingApplicationsSet() {
+        return acceptedSendingApplicationsSet;
+    }
+
+    public void setAcceptedSendingApplicationsSet(Set<String> acceptedSendingApplicationsSet) {
+        this.acceptedSendingApplicationsSet = acceptedSendingApplicationsSet;
     }
 
     public String[] getAcceptedSendingApplications() {
-        return acceptedSendingApplications.toArray(
-                new String[acceptedSendingApplications.size()]);
+        return acceptedSendingApplicationsSet.toArray(
+                new String[acceptedSendingApplicationsSet.size()]);
     }
 
     public void setAcceptedSendingApplications(String... names) {
-        acceptedSendingApplications.clear();
+        acceptedSendingApplicationsSet.clear();
         for (String name : names)
-            acceptedSendingApplications.add(name);
+            acceptedSendingApplicationsSet.add(name);
     }
 
     public String[] getAcceptedMessageTypes() {
-        return acceptedMessageTypes.toArray(
-                new String[acceptedMessageTypes.size()]);
+        return acceptedMessageTypesSet.toArray(
+                new String[acceptedMessageTypesSet.size()]);
     }
 
     public void setAcceptedMessageTypes(String... types) {
-        acceptedMessageTypes.clear();
+        acceptedMessageTypesSet.clear();
         for (String name : types)
-            acceptedMessageTypes.add(name);
+            acceptedMessageTypesSet.add(name);
     }
 
     public boolean isInstalled() {
@@ -207,15 +228,24 @@ public class HL7Application implements Serializable {
         return conns;
     }
 
+    public List<Connection> getConns() {
+        return conns;
+    }
+
+    public void setConns(List<Connection> conns) {
+        this.conns.clear();
+        for (Connection conn : conns) addConnection(conn);
+    }
+
     byte[] onMessage(Connection conn, Socket s, HL7Segment msh, byte[] msg, int off,
                      int len, int mshlen) throws HL7Exception {
         if (!(isInstalled() && conns.contains(conn)))
             throw new HL7Exception(HL7Exception.AR, "Receiving Application not recognized");
-        if (!(acceptedSendingApplications.isEmpty()
-                || acceptedSendingApplications.contains(msh.getSendingApplicationWithFacility())))
+        if (!(acceptedSendingApplicationsSet.isEmpty()
+                || acceptedSendingApplicationsSet.contains(msh.getSendingApplicationWithFacility())))
             throw new HL7Exception(HL7Exception.AR, "Sending Application not recognized");
-        if (!(acceptedMessageTypes.contains("*")
-                || acceptedMessageTypes.contains(msh.getMessageType())))
+        if (!(acceptedMessageTypesSet.contains("*")
+                || acceptedMessageTypesSet.contains(msh.getMessageType())))
             throw new HL7Exception(HL7Exception.AR, "Message Type not supported");
 
         HL7MessageListener listener = getHL7MessageListener();
@@ -301,7 +331,7 @@ public class HL7Application implements Serializable {
     }
 
     protected void setHL7ApplicationAttributes(HL7Application src) {
-        setHL7DefaultCharacterSet(src.hl7DefaultCharacterSet);
+        setHL7DefaultCharacterSet(src.HL7DefaultCharacterSet);
         setAcceptedSendingApplications(src.getAcceptedSendingApplications());
         setAcceptedMessageTypes(src.getAcceptedMessageTypes());
         setHl7Installed(src.hl7Installed);

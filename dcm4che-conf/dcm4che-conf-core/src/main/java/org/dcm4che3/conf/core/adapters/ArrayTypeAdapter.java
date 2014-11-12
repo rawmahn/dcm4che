@@ -116,6 +116,8 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     @Override
     public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
+        if (object == null) return null;
+
         Class<?> componentType = ((Class) property.getType()).getComponentType();
 
         // handle byte[]. Convert to base64 String.
