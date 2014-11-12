@@ -4,6 +4,7 @@ import org.dcm4che3.conf.api.ConfigurationAlreadyExistsException;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.ConfigurationNotFoundException;
 import org.dcm4che3.conf.api.DicomConfiguration;
+import org.dcm4che3.conf.api.hl7.HL7Configuration;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
@@ -14,6 +15,7 @@ import org.dcm4che3.data.Code;
 import org.dcm4che3.data.Issuer;
 import org.dcm4che3.data.ValueSelector;
 import org.dcm4che3.net.*;
+import org.dcm4che3.net.hl7.HL7Application;
 import org.dcm4che3.util.AttributesFormat;
 import org.dcm4che3.util.Property;
 import org.slf4j.Logger;
@@ -126,7 +128,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     }
 
     private String getAETPath(String aet) {
-        return "dicomConfigurationRoot/dicomUniqueAETitlesRegistryRoot/" + ConfigNodeUtil.escape(aet);
+        return "dicomConfigurationRoot/dicomUniqueAETitlesRegistryRoot[@name='" + ConfigNodeUtil.escapeApos(aet)+"']";
     }
 
     @Override
@@ -137,8 +139,6 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     @Override
     public ApplicationEntity findApplicationEntity(String aet) throws ConfigurationException {
 
-        // TODO: IMPLEMENT
-        // will be supported later
         Iterator search = config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='"+ aet + "']]/dicomDeviceName");
 
         try {
@@ -221,18 +221,27 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     @Override
     public String[] listDeviceNames() throws ConfigurationException {
         Iterator search = config.search("dicomConfigurationRoot/dicomDeviceRoot/*/dicomDeviceName");
-        List<String> deviceNames = new ArrayList<String>();
-        while (search.hasNext())
-            deviceNames.add((String) search.next());
+        List<String> deviceNames = null;
+        try {
+            deviceNames = new ArrayList<String>();
+            while (search.hasNext())
+                deviceNames.add((String) search.next());
+        } catch (Exception e) {
+            throw new ConfigurationException("Error while getting list of device names", e);
+        }
         return deviceNames.toArray(new String[deviceNames.size()]);
     }
 
     @Override
     public String[] listRegisteredAETitles() throws ConfigurationException {
-        Iterator search = config.search("dicomConfigurationRoot/dicomDeviceRoot/*/dicomNetworkAE/dicomAETitle");
         List<String> aeNames = new ArrayList<String>();
-        while (search.hasNext())
-            aeNames.add((String) search.next());
+        try {
+            Iterator search = config.search("dicomConfigurationRoot/dicomDeviceRoot/*/dicomNetworkAE/dicomAETitle");
+            while (search.hasNext())
+                aeNames.add((String) search.next());
+        } catch (Exception e) {
+            throw new ConfigurationException("Error while getting the list of registered AE titles", e);
+        }
         return aeNames.toArray(new String[aeNames.size()]);
     }
 
@@ -319,4 +328,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     public <T> T getDicomConfigurationExtension(Class<T> clazz) {
         throw new RuntimeException("Not implemented yet");
     }
+
+
 }
+

@@ -37,7 +37,11 @@
             <artifactId>dcm4che-conf-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- for reflective config - get/set config class fields -->
+        <dependency>
+            <groupId>org.dcm4che</groupId>
+            <artifactId>dcm4che-conf-api-hl7</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>

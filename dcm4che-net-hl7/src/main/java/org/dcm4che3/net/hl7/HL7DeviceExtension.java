@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.hl7.HL7Exception;
@@ -54,6 +55,8 @@ import org.dcm4che3.net.DeviceExtension;
  * @author Gunter Zeilinger <gunterze@gmail.com>
  *
  */
+@LDAP(noContainerNode = true)
+@ConfigurableClass
 public class HL7DeviceExtension extends DeviceExtension {
 
     private static final long serialVersionUID = -411853996726542266L;
@@ -68,6 +71,18 @@ public class HL7DeviceExtension extends DeviceExtension {
     private Map<String, HL7Application> hl7apps = new LinkedHashMap<String, HL7Application>();
 
     private transient HL7MessageListener hl7MessageListener;
+
+
+    public Map<String, HL7Application> getHl7apps() {
+        return hl7apps;
+    }
+
+    public void setHl7apps(Map<String, HL7Application> hl7apps) {
+        // remove old
+        for (String appName : this.hl7apps.keySet()) removeHL7Application(appName);
+        // add new
+        for (HL7Application hl7Application : hl7apps.values()) addHL7Application(hl7Application);
+    }
 
     @Override
     public void verifyNotUsed(Connection conn) {
