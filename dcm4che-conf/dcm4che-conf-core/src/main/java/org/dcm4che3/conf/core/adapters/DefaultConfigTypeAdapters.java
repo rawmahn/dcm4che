@@ -71,6 +71,9 @@ public class DefaultConfigTypeAdapters {
 
         // lookup adapter and run it on the property
         ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
+
+        // normalize
+        node = adapter.normalize(node, property);
         return adapter.fromConfigNode(node, property, vitalizer);
     }
 
@@ -132,6 +135,9 @@ public class DefaultConfigTypeAdapters {
                     else
                         throw new ClassCastException();
                 } else if (metadata.get("type").equals("boolean")) {
+                    // special handling for Boolean's null
+                    if (configNode == null || configNode.equals("null")) return null;
+
                     if (configNode.getClass().equals(String.class))
                         return (T) Boolean.valueOf((String) configNode);
                     else if (configNode.getClass().equals(Boolean.class))
@@ -200,8 +206,8 @@ public class DefaultConfigTypeAdapters {
                 switch (howToRepresent) {
                     case ORDINAL:
                         Method valuesMethod = ((Class) property.getType()).getMethod("values");
-                        valuesMethod.invoke(null);
-                        return null;
+                        Enum[] vals = (Enum[]) valuesMethod.invoke(null);
+                        return vals[(Integer)configNode];
                     default:
                     case STRING:
                         Method valueOfMethod = ((Class) property.getType()).getMethod("valueOf", String.class);
@@ -244,7 +250,7 @@ public class DefaultConfigTypeAdapters {
         @Override
         public Object normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
             //TODO: validate ?
-            if (configNode == null) throw new ConfigurationException("null not allowed for enum");
+            if (configNode == null) return null;//throw new ConfigurationException("null not allowed for enum");
             switch (property.getAnnotation(ConfigurableProperty.class).enumRepresentation()) {
                 case ORDINAL:
                     try {
@@ -253,9 +259,9 @@ public class DefaultConfigTypeAdapters {
                         else if (configNode.getClass().equals(Integer.class))
                             return configNode;
                         else
-                            throw new ConfigurationException("Expected int ordinal value for enum, got " + configNode.getClass().getName());
+                            throw new NumberFormatException();
                     } catch (NumberFormatException e) {
-
+                        throw new ConfigurationException("Expected int ordinal value for enum, got " + configNode.getClass().getName(), e);
                     }
                 default:
                 case STRING:
@@ -288,7 +294,7 @@ public class DefaultConfigTypeAdapters {
         defaultTypeAdapters.put(Float.class, doubleAdapter);
 
         defaultTypeAdapters.put(Map.class, new MapTypeAdapter());
-        defaultTypeAdapters.put(Set.class, new CollectionTypeAdapter<Set>(HashSet.class));
+        defaultTypeAdapters.put(Set.class, new CollectionTypeAdapter<Set>(LinkedHashSet.class));
         defaultTypeAdapters.put(EnumSet.class, new CollectionTypeAdapter<Set>(HashSet.class));
         defaultTypeAdapters.put(List.class, new CollectionTypeAdapter<List>(ArrayList.class));
         defaultTypeAdapters.put(Collection.class, new CollectionTypeAdapter<List>(ArrayList.class));

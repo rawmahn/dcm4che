@@ -82,13 +82,21 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
         return node;
     }
 
-    private void applyDefaults(Map<String, Object> node, Class nodeClass) throws ConfigurationException {
+    private void applyDefaults(Object node, Class nodeClass) throws ConfigurationException {
+
+        // if because of any reason this is not a map (e.g. a reference or a custom adapter for a configurableclass),
+        // we don't care about defaults
+        if (!(node instanceof Map)) return;
+
+        Map<String,Object> containerNode = (Map<String, Object>) node;
+
         List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(nodeClass);
         for (AnnotatedConfigurableProperty property : properties) {
+            Object childNode = containerNode.get(property.getAnnotatedName());
 
             // if the property is a configclass
             if (property.getRawClass().getAnnotation(ConfigurableClass.class) != null) {
-                applyDefaults((Map<String, Object>) node.get(property.getAnnotatedName()), property.getRawClass());
+                applyDefaults(childNode, property.getRawClass());
                 continue;
             }
 
@@ -98,9 +106,9 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
                     !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
                     property.getPseudoPropertyForGenericsParamater(0).getRawClass().getAnnotation(ConfigurableClass.class) != null) {
 
-                Collection<Map<String, Object>> collection = (Collection<Map<String, Object>>) node.get(property.getAnnotatedName());
+                Collection collection = (Collection) childNode;
 
-                for (Map<String, Object> object : collection)
+                for (Object object : collection)
                     applyDefaults(object, property.getPseudoPropertyForGenericsParamater(0).getRawClass());
 
                 continue;
@@ -112,19 +120,19 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
                             !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
                             property.getPseudoPropertyForGenericsParamater(1).getRawClass().getAnnotation(ConfigurableClass.class) != null) {
 
-                Map<String,Map<String, Object>> collection = (Map<String, Map<String, Object>>) node.get(property.getAnnotatedName());
+                Map<String, Object> collection = (Map<String, Object>) childNode;
 
-                for (Map.Entry<String, Map<String, Object>> object : collection.entrySet())
-                    applyDefaults(object.getValue(), property.getPseudoPropertyForGenericsParamater(1).getRawClass());
+                for (Object object : collection.values())
+                    applyDefaults(object, property.getPseudoPropertyForGenericsParamater(1).getRawClass());
 
                 continue;
             }
 
             // if no value for this property, see if there is default and set it
-            if (!node.containsKey(property.getAnnotatedName())) {
+            if (!containerNode.containsKey(property.getAnnotatedName())) {
                 String defaultValue = property.getAnnotation(ConfigurableProperty.class).defaultValue();
                 if (!defaultValue.equals(ConfigurableProperty.NO_DEFAULT_VALUE))
-                    node.put(property.getAnnotatedName(),defaultValue);
+                    containerNode.put(property.getAnnotatedName(),defaultValue);
 
             }
         }

@@ -222,41 +222,45 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
 
         try {
-            Object configurationNode = config.getConfigurationNode(deviceRef(name), Device.class);
 
-            if (configurationNode == null) return null;
-
-            Device device = new Device();
-            deviceCache.put(name, device);
-
-            vitalizer.configureInstance(device, Device.class, (Map<String, Object>) configurationNode);
-
-            // add device extensions
-            for (Class<? extends DeviceExtension> deviceExtensionClass : deviceExtensionClasses) {
-                Map<String, Object> deviceExtensionNode = (Map<String, Object>) config.getConfigurationNode(deviceRef(name) + "/deviceExtensions/" + deviceExtensionClass.getSimpleName(), deviceExtensionClass);
-                if (deviceExtensionNode != null)
-                    device.addDeviceExtension(vitalizer.newConfiguredInstance(deviceExtensionClass, deviceExtensionNode));
-            }
-
-            // add ae extensions
-            for (Map.Entry<String, ApplicationEntity> entry : device.getApplicationEntitiesMap().entrySet()) {
-                String aeTitle = entry.getKey();
-                ApplicationEntity ae = entry.getValue();
-                for (Class<? extends AEExtension> aeExtensionClass : aeExtensionClasses) {
-                    Object aeExtNode = config.getConfigurationNode(deviceRef(name) + "/dicomNetworkAE[@name='" + ConfigNodeUtil.escapeApos(aeTitle) + "']/aeExtensions/" + aeExtensionClass.getSimpleName(), aeExtensionClass);
-                    if (aeExtNode != null) {
-                        ae.addAEExtension(vitalizer.newConfiguredInstance(aeExtensionClass, (Map<String, Object>) aeExtNode));
-                    }
-                }
-            }
-
-            return device;
+            return loadDevice(name, deviceCache);
         } catch (ConfigurationException e) {
             throw new ConfigurationException("Configuration for device " + name + " cannot be loaded", e);
         } finally {
             // if this loadDevice call initialized the cache, then clean it up
             if (doCleanUpCache) currentlyLoadedDevicesLocal.remove();
         }
+    }
+
+    protected Device loadDevice(String name, Map<String, Device> deviceCache) throws ConfigurationException {
+        Object configurationNode = config.getConfigurationNode(deviceRef(name), Device.class);
+        if (configurationNode == null) return null;
+
+        Device device = new Device();
+        deviceCache.put(name, device);
+
+        vitalizer.configureInstance(device, Device.class, (Map<String, Object>) configurationNode);
+
+        // add device extensions
+        for (Class<? extends DeviceExtension> deviceExtensionClass : deviceExtensionClasses) {
+            Map<String, Object> deviceExtensionNode = (Map<String, Object>) config.getConfigurationNode(deviceRef(name) + "/deviceExtensions/" + deviceExtensionClass.getSimpleName(), deviceExtensionClass);
+            if (deviceExtensionNode != null)
+                device.addDeviceExtension(vitalizer.newConfiguredInstance(deviceExtensionClass, deviceExtensionNode));
+        }
+
+        // add ae extensions
+        for (Map.Entry<String, ApplicationEntity> entry : device.getApplicationEntitiesMap().entrySet()) {
+            String aeTitle = entry.getKey();
+            ApplicationEntity ae = entry.getValue();
+            for (Class<? extends AEExtension> aeExtensionClass : aeExtensionClasses) {
+                Object aeExtNode = config.getConfigurationNode(deviceRef(name) + "/dicomNetworkAE[@name='" + ConfigNodeUtil.escapeApos(aeTitle) + "']/aeExtensions/" + aeExtensionClass.getSimpleName(), aeExtensionClass);
+                if (aeExtNode != null) {
+                    ae.addAEExtension(vitalizer.newConfiguredInstance(aeExtensionClass, (Map<String, Object>) aeExtNode));
+                }
+            }
+        }
+
+        return device;
     }
 
     @Override

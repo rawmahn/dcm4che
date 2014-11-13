@@ -84,7 +84,7 @@ public class DicomReferenceHandlerAdapter<T> extends DefaultReferenceAdapter<T> 
                 return (T) device.connectionWithEqualsRDN(conn);
 
             } catch (Exception e) {
-                throw new ConfigurationException("Cannot find referenced connection (" + configNode + ")", e);
+                throw new ConfigurationException("Cannot load referenced connection (" + configNode + ")", e);
             }
         }
         return super.fromConfigNode(configNode, property, vitalizer);
@@ -99,13 +99,13 @@ public class DicomReferenceHandlerAdapter<T> extends DefaultReferenceAdapter<T> 
 
             String predicate;
             if (conn.getCommonName() != null)
-                predicate = "[cn='" + conn.getCommonName() + "']";
+                predicate = "[cn='" + ConfigNodeUtil.escapeApos(conn.getCommonName()) + "']";
             else if (conn.isServer())
-                predicate = "[dicomHostname='" + ConfigNodeUtil.escape(conn.getHostname()) + "' and dicomPort='" + conn.getPort() + "']";
+                predicate = "[dicomHostname='" + ConfigNodeUtil.escapeApos(conn.getHostname()) + "' and dicomPort='" + conn.getPort() + "']";
             else
-                predicate = "[dicomHostname='" + ConfigNodeUtil.escape(conn.getHostname()) + "']";
+                predicate = "[dicomHostname='" + ConfigNodeUtil.escapeApos(conn.getHostname()) + "']";
 
-            return "/dicomConfigurationRoot/dicomDevicesRoot/*[dicomDeviceName='" + ConfigNodeUtil.escape(conn.getDevice().getDeviceName()) + "']/dicomConnection" + predicate;
+            return "/dicomConfigurationRoot/dicomDevicesRoot/*[dicomDeviceName='" + ConfigNodeUtil.escapeApos(conn.getDevice().getDeviceName()) + "']/dicomConnection" + predicate;
         }
         return super.toConfigNode(object, property, vitalizer);
     }
