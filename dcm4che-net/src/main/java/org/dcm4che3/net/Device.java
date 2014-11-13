@@ -825,6 +825,8 @@ public class Device implements Serializable {
             con.needRebind();
      }
 
+
+
     private void needReconfigureTLS()  {
         for (Connection con : connections)
             if (con.isTls())
@@ -833,6 +835,7 @@ public class Device implements Serializable {
     }
 
     public void unbindConnections() {
+        // the needReconfigureTLS method is cool
         for (Connection con : connections)
             con.unbind();
     }
