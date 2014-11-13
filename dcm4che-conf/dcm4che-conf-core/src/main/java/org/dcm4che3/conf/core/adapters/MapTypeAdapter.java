@@ -44,6 +44,7 @@ import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.BeanVitalizer;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -67,7 +68,7 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
         AnnotatedConfigurableProperty valuePseudoProperty = property.getPseudoPropertyForGenericsParamater(1);
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) vitalizer.lookupTypeAdapter(valuePseudoProperty);
 
-        Map<K, V> map = new HashMap<K, V>();
+        Map<K, V> map = new LinkedHashMap<K, V>();
 
         for (Entry<String, Object> e : configNode.entrySet()) {
             map.put(keyAdapter.fromConfigNode(e.getKey(), keyPseudoProperty, vitalizer),
@@ -89,7 +90,7 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
         AnnotatedConfigurableProperty valuePseudoProperty = property.getPseudoPropertyForGenericsParamater(1);
         ConfigTypeAdapter<V, Object> valueAdapter = (ConfigTypeAdapter<V, Object>) vitalizer.lookupTypeAdapter(valuePseudoProperty);
 
-        Map<String, Object> configNode = new HashMap<String, Object>();
+        Map<String, Object> configNode = new LinkedHashMap<String, Object>();
 
         for (Entry<K, V> e : object.entrySet()) {
             configNode.put(keyAdapter.toConfigNode(e.getKey(), keyPseudoProperty, vitalizer),

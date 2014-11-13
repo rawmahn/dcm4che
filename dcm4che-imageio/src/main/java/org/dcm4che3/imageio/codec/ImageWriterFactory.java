@@ -43,14 +43,8 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
@@ -180,7 +174,7 @@ public class ImageWriterFactory implements Serializable {
         label = "Image Writers",
         description = "Image writers by transfer syntaxes"
     )
-    private Map<String, ImageWriterParam> map = new HashMap<String, ImageWriterParam>();
+    private Map<String, ImageWriterParam> map = new LinkedHashMap<String, ImageWriterParam>();
 
     private static String nullify(String s) {
         return s == null || s.isEmpty() || s.equals("*") ? null : s;

@@ -124,11 +124,11 @@ public class ApplicationEntity implements Serializable {
 
     // populated/collected by allTransferCapabilities' setter/getter
     private final HashMap<String, TransferCapability> scuTCs =
-            new HashMap<String, TransferCapability>();
+            new LinkedHashMap<String, TransferCapability>();
 
     // populated/collected by allTransferCapabilities' setter/getter
     private final HashMap<String, TransferCapability> scpTCs =
-            new HashMap<String, TransferCapability>();
+            new LinkedHashMap<String, TransferCapability>();
 
     private final HashMap<Class<? extends AEExtension>,AEExtension> extensions =
             new HashMap<Class<? extends AEExtension>,AEExtension>();
@@ -139,7 +139,7 @@ public class ApplicationEntity implements Serializable {
     private transient DimseRQHandler dimseRQHandler;
 
     public Map<String, TransferCapability> getAllTransferCapabilities() {
-        HashMap<String, TransferCapability> allTCs = new HashMap<String, TransferCapability>();
+        HashMap<String, TransferCapability> allTCs = new LinkedHashMap<String, TransferCapability>();
         allTCs.putAll(scpTCs);
         allTCs.putAll(scuTCs);
         return allTCs;

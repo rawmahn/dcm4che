@@ -43,14 +43,8 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -144,7 +138,7 @@ public class ImageReaderFactory implements Serializable {
             label = "Image Readers",
             description = "Image readers by transfer syntaxes"
     )
-    private Map<String, ImageReaderParam> map = new HashMap<String, ImageReaderParam>();
+    private Map<String, ImageReaderParam> map = new LinkedHashMap<String, ImageReaderParam>();
 
     public Map<String, ImageReaderParam> getMap() {
         return map;
