@@ -239,13 +239,17 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         Device device = new Device();
         deviceCache.put(name, device);
 
-        vitalizer.configureInstance(device, Device.class, (Map<String, Object>) configurationNode);
+        vitalizer.configureInstance(device, (Map<String, Object>) configurationNode, Device.class);
 
         // add device extensions
         for (Class<? extends DeviceExtension> deviceExtensionClass : deviceExtensionClasses) {
             Map<String, Object> deviceExtensionNode = (Map<String, Object>) config.getConfigurationNode(deviceRef(name) + "/deviceExtensions/" + deviceExtensionClass.getSimpleName(), deviceExtensionClass);
-            if (deviceExtensionNode != null)
-                device.addDeviceExtension(vitalizer.newConfiguredInstance(deviceExtensionClass, deviceExtensionNode));
+            if (deviceExtensionNode != null) {
+                DeviceExtension ext = vitalizer.newInstance(deviceExtensionClass);
+                // add extension before vitalizing it, so the device field is accessible for use in setters
+                device.addDeviceExtension(ext);
+                vitalizer.configureInstance(ext, deviceExtensionNode, deviceExtensionClass);
+            }
         }
 
         // add ae extensions
@@ -255,7 +259,10 @@ public class CommonDicomConfiguration implements DicomConfiguration {
             for (Class<? extends AEExtension> aeExtensionClass : aeExtensionClasses) {
                 Object aeExtNode = config.getConfigurationNode(deviceRef(name) + "/dicomNetworkAE[@name='" + ConfigNodeUtil.escapeApos(aeTitle) + "']/aeExtensions/" + aeExtensionClass.getSimpleName(), aeExtensionClass);
                 if (aeExtNode != null) {
-                    ae.addAEExtension(vitalizer.newConfiguredInstance(aeExtensionClass, (Map<String, Object>) aeExtNode));
+                    AEExtension ext = vitalizer.newInstance(aeExtensionClass);
+                    // add extension before vitalizing it, so the device field is accessible for use in setters
+                    ae.addAEExtension(ext);
+                    vitalizer.configureInstance(ext, (Map<String, Object>) aeExtNode, aeExtensionClass);
                 }
             }
         }

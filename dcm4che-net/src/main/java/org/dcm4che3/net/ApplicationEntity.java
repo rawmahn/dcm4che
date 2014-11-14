@@ -120,13 +120,13 @@ public class ApplicationEntity implements Serializable {
      */
     @ConfigurableProperty(  name = "dcmTransferCapability",
                             description = "DICOM Transfer Capabilities")
-    private Map<String, TransferCapability> allTransferCapabilities;
+    private Collection<TransferCapability> transferCapabilities;
 
-    // populated/collected by allTransferCapabilities' setter/getter
+    // populated/collected by transferCapabilities' setter/getter
     private final HashMap<String, TransferCapability> scuTCs =
             new LinkedHashMap<String, TransferCapability>();
 
-    // populated/collected by allTransferCapabilities' setter/getter
+    // populated/collected by transferCapabilities' setter/getter
     private final HashMap<String, TransferCapability> scpTCs =
             new LinkedHashMap<String, TransferCapability>();
 
@@ -138,30 +138,6 @@ public class ApplicationEntity implements Serializable {
 
     private transient DimseRQHandler dimseRQHandler;
 
-    public Map<String, TransferCapability> getAllTransferCapabilities() {
-        HashMap<String, TransferCapability> allTCs = new LinkedHashMap<String, TransferCapability>();
-        allTCs.putAll(scpTCs);
-        allTCs.putAll(scuTCs);
-        return allTCs;
-    }
-
-    public void setAllTransferCapabilities(Map<String, TransferCapability> allTransferCapabilities) {
-        scpTCs.clear();
-        scuTCs.clear();
-
-        for (Map.Entry<String, TransferCapability> tcEntry : allTransferCapabilities.entrySet()) {
-            tcEntry.getValue().setApplicationEntity(this);
-            switch (tcEntry.getValue().getRole()) {
-                case SCP:
-                    scpTCs.put(tcEntry.getKey(), tcEntry.getValue());
-                    break;
-                case SCU:
-                    scuTCs.put(tcEntry.getKey(), tcEntry.getValue());
-            }
-        }
-    }
-
-
     public ApplicationEntity() {
     }
 
@@ -169,9 +145,34 @@ public class ApplicationEntity implements Serializable {
         setAETitle(aeTitle);
     }
 
+
+    public void setTransferCapabilities(Collection<TransferCapability> transferCapabilities) {
+        scpTCs.clear();
+        scuTCs.clear();
+
+        for (TransferCapability tc : transferCapabilities) {
+            tc.setApplicationEntity(this);
+            switch (tc.getRole()) {
+                case SCP:
+                    scpTCs.put(tc.getSopClass(), tc);
+                    break;
+                case SCU:
+                    scuTCs.put(tc.getSopClass(), tc);
+            }
+        }
+    }
+
+    public Collection<TransferCapability> getTransferCapabilities() {
+        ArrayList<TransferCapability> tcs =
+                new ArrayList<TransferCapability>(scuTCs.size() + scpTCs.size());
+        tcs.addAll(scpTCs.values());
+        tcs.addAll(scuTCs.values());
+        return tcs;
+    }
+
     /**
      * Get the device that is identified by this application entity.
-     * 
+     *
      * @return The owning <code>Device</code>.
      */
     public final Device getDevice() {
@@ -180,18 +181,18 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Set the device that is identified by this application entity.
-     * 
+     *
      * @param device
      *                The owning <code>Device</code>.
      */
     void setDevice(Device device) {
         if (device != null) {
             if (this.device != null)
-                throw new IllegalStateException("already owned by " + 
+                throw new IllegalStateException("already owned by " +
                         this.device.getDeviceName());
             for (Connection conn : connections)
                 if (conn.getDevice() != device)
-                    throw new IllegalStateException(conn + " not owned by " + 
+                    throw new IllegalStateException(conn + " not owned by " +
                             device.getDeviceName());
         }
         this.device = device;
@@ -199,7 +200,7 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Get the AE title for this Network AE.
-     * 
+     *
      * @return A String containing the AE title.
      */
     public final String getAETitle() {
@@ -208,7 +209,7 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Set the AE title for this Network AE.
-     * 
+     *
      * @param aet
      *            A String containing the AE title.
      */
@@ -225,7 +226,7 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Get the description of this network AE
-     * 
+     *
      * @return A String containing the description.
      */
     public final String getDescription() {
@@ -234,7 +235,7 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Set a description of this network AE.
-     * 
+     *
      * @param description
      *                A String containing the description.
      */
@@ -244,7 +245,7 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Get any vendor information or configuration specific to this network AE.
-     * 
+     *
      * @return An Object of the vendor data.
      */
     public final byte[][] getVendorData() {
@@ -253,7 +254,7 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Set any vendor information or configuration specific to this network AE
-     * 
+     *
      * @param vendorData
      *                An Object of the vendor data.
      */
@@ -264,7 +265,7 @@ public class ApplicationEntity implements Serializable {
     /**
      * Get the locally defined names for a subset of related applications. E.g.
      * neuroradiology.
-     * 
+     *
      * @return A String[] containing the names.
      */
     public String[] getApplicationClusters() {
@@ -278,7 +279,7 @@ public class ApplicationEntity implements Serializable {
     /**
      * Get the AE Title(s) that are preferred for initiating associations
      * from this network AE.
-     * 
+     *
      * @return A String[] of the preferred called AE titles.
      */
     public String[] getPreferredCalledAETitles() {
@@ -292,7 +293,7 @@ public class ApplicationEntity implements Serializable {
     /**
      * Get the AE title(s) that are preferred for accepting associations by
      * this network AE.
-     * 
+     *
      * @return A String[] containing the preferred calling AE titles.
      */
     public String[] getPreferredCallingAETitles() {
@@ -325,7 +326,7 @@ public class ApplicationEntity implements Serializable {
      * Character Set (0008,0005) in PS3.3. If no values are present, this
      * implies that the Network AE supports only the default character
      * repertoire (ISO IR 6).
-     * 
+     *
      * @return A String array of the supported character sets.
      */
     public String[] getSupportedCharacterSets() {
@@ -338,7 +339,7 @@ public class ApplicationEntity implements Serializable {
      * Character Set (0008,0005) in PS3.3. If no values are present, this
      * implies that the Network AE supports only the default character
      * repertoire (ISO IR 6).
-     * 
+     *
      * @param characterSets
      *                A String array of the supported character sets.
      */
@@ -348,7 +349,7 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Determine whether or not this network AE can accept associations.
-     * 
+     *
      * @return A boolean value. True if the Network AE can accept associations,
      *         false otherwise.
      */
@@ -358,7 +359,7 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Set whether or not this network AE can accept associations.
-     * 
+     *
      * @param acceptor
      *                A boolean value. True if the Network AE can accept
      *                associations, false otherwise.
@@ -369,7 +370,7 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Determine whether or not this network AE can initiate associations.
-     * 
+     *
      * @return A boolean value. True if the Network AE can accept associations,
      *         false otherwise.
      */
@@ -379,7 +380,7 @@ public class ApplicationEntity implements Serializable {
 
     /**
      * Set whether or not this network AE can initiate associations.
-     * 
+     *
      * @param initiator
      *                A boolean value. True if the Network AE can accept
      *                associations, false otherwise.
@@ -387,6 +388,7 @@ public class ApplicationEntity implements Serializable {
     public final void setAssociationInitiator(boolean initiator) {
         this.initiator = initiator;
     }
+
 
     /**
      * Determine whether or not this network AE is installed on a network.
@@ -400,10 +402,11 @@ public class ApplicationEntity implements Serializable {
                 && (aeInstalled == null || aeInstalled.booleanValue());
     }
 
-
     public Boolean getAeInstalled() {
         return aeInstalled;
     }
+
+
 
     /**
      * Set whether or not this network AE is installed on a network.
@@ -416,8 +419,6 @@ public class ApplicationEntity implements Serializable {
     public void setAeInstalled(Boolean aeInstalled) {
         this.aeInstalled = aeInstalled;
     }
-
-
 
     public DimseRQHandler getDimseRQHandler() {
         DimseRQHandler handler = dimseRQHandler;
@@ -460,7 +461,7 @@ public class ApplicationEntity implements Serializable {
                     "protocol != DICOM - " + conn.getProtocol());
 
         if (device != null && device != conn.getDevice())
-            throw new IllegalStateException(conn + " not contained by Device: " + 
+            throw new IllegalStateException(conn + " not contained by Device: " +
                     device.getDeviceName());
         connections.add(conn);
     }
@@ -494,14 +495,6 @@ public class ApplicationEntity implements Serializable {
         if (tc != null)
             tc.setApplicationEntity(null);
         return tc;
-    }
-
-    public Collection<TransferCapability> getTransferCapabilities() {
-        ArrayList<TransferCapability> tcs =
-                new ArrayList<TransferCapability>(scuTCs.size() + scpTCs.size());
-        tcs.addAll(scpTCs.values());
-        tcs.addAll(scuTCs.values());
-        return tcs;
     }
 
     public Collection<TransferCapability> getTransferCapabilitiesWithRole(

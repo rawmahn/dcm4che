@@ -116,7 +116,7 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
 
             // map, where a value generics parameter is a configurable class
             if (
-                    Collection.class.isAssignableFrom(property.getRawClass()) &&
+                    Map.class.isAssignableFrom(property.getRawClass()) &&
                             !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
                             property.getPseudoPropertyForGenericsParamater(1).getRawClass().getAnnotation(ConfigurableClass.class) != null) {
 

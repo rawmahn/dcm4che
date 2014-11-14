@@ -154,8 +154,10 @@ public class CommonDicomConfigurationWithHL7 extends CommonDicomConfiguration im
                     String path = getPathForHL7AppExtension(device, hl7ApplicationEntry.getKey(), hl7ApplicationExtensionClass);
                     Object configurationNode = config.getConfigurationNode(path, hl7ApplicationExtensionClass);
                     if (configurationNode == null) continue;
-                    HL7ApplicationExtension hl7AppExtension = vitalizer.newConfiguredInstance(hl7ApplicationExtensionClass, (Map<String, Object>) configurationNode);
-                    hl7ApplicationEntry.getValue().addHL7ApplicationExtension(hl7AppExtension);
+                    HL7ApplicationExtension hl7ApplicationExtension = vitalizer.newInstance(hl7ApplicationExtensionClass);
+                    // add extension before vitalizing, so the hl7app field is accessible for use in setters
+                    hl7ApplicationEntry.getValue().addHL7ApplicationExtension(hl7ApplicationExtension);
+                    vitalizer.configureInstance(hl7ApplicationExtension, (Map<String, Object>) configurationNode, hl7ApplicationExtensionClass);
                 } catch (Exception e) {
                     throw new ConfigurationException("Failed to load HL7 app extension '"+hl7ApplicationExtensionClass.getSimpleName()+"' for hl7app '"+hl7ApplicationEntry.getKey()+"'",e);
                 }

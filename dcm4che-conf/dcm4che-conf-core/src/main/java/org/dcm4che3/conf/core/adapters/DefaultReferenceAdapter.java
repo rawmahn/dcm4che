@@ -69,7 +69,7 @@ public class DefaultReferenceAdapter<T> implements ConfigTypeAdapter<T, String> 
         // treat configNode as path, load the node at that path, create an instance from it
         Map<String, Object> referencedNode = (Map<String, Object>) config.getConfigurationNode(configNode, property.getRawClass());
         if (referencedNode == null) throw new ConfigurationException("Referenced node '"+configNode+"' not found");
-        return (T) vitalizer.newConfiguredInstance(property.getRawClass(), referencedNode);
+        return (T) vitalizer.newConfiguredInstance(referencedNode, property.getRawClass());
     }
 
     @Override

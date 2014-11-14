@@ -40,6 +40,7 @@
 package org.dcm4che3.conf.core.util;
 
 
+import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 
@@ -196,9 +197,14 @@ public class ConfigIterators {
         return currentClassFields;
     }
 
-    public static void reconfigure(Object source, Object target) {
-        // TODO
-        throw new RuntimeException("Not implemented!");
+    public static void reconfigure(Object source, Object target, Class configurableClass) {
+        for (AnnotatedConfigurableProperty property : getAllConfigurableFields(configurableClass)) {
+            try {
+                PropertyUtils.setSimpleProperty(target, property.getName(), PropertyUtils.getSimpleProperty(source, property.getName()));
+            } catch (Exception e) {
+                throw new RuntimeException("Unable to reconfigure instance of class " + property.getRawClass(), e);
+            }
+        }
     }
 
 }

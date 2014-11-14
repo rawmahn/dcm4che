@@ -323,7 +323,7 @@ public class VitalizerTest {
         HashMap<String, Object> testConfigClassNode = getTestConfigClassMap();
         BeanVitalizer beanVitalizer = new BeanVitalizer();
 
-        TestConfigClass configuredInstance = beanVitalizer.newConfiguredInstance(TestConfigClass.class, testConfigClassNode);
+        TestConfigClass configuredInstance = beanVitalizer.newConfiguredInstance(testConfigClassNode, TestConfigClass.class);
         Object generatedNode = beanVitalizer.createConfigNodeFromInstance(configuredInstance);
 
         //boolean b = DeepEquals.deepEquals(testConfigClassNode, generatedNode);
@@ -342,7 +342,7 @@ public class VitalizerTest {
 
         for (int i=0;i<10000;i++)
         {
-            TestConfigClass configuredInstance = beanVitalizer.newConfiguredInstance(TestConfigClass.class, testConfigClassNode);
+            TestConfigClass configuredInstance = beanVitalizer.newConfiguredInstance(testConfigClassNode, TestConfigClass.class);
             Object generatedNode = beanVitalizer.createConfigNodeFromInstance(configuredInstance);
         }
 

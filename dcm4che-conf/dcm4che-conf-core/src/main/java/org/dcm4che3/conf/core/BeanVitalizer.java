@@ -71,11 +71,24 @@ public class BeanVitalizer {
         return referenceTypeAdapter;
     }
 
-    public <T> T newConfiguredInstance(Class<T> clazz, Map<String, Object> configNode) throws ConfigurationException {
+    public <T> T newConfiguredInstance(Map<String, Object> configNode, Class<T> clazz) throws ConfigurationException {
+        T instance = newInstance(clazz);
+        configureInstance(instance, configNode, clazz);
+        return instance;
+    }
+
+    /** Creates a new instance
+     *  TODO: Decorate to allow to use bean manager to init @Inject'ed fields..
+     *
+     * @param clazz
+     * @param <T>
+     * @return
+     * @throws ConfigurationException
+     */
+    public <T> T newInstance(Class<T> clazz) throws ConfigurationException {
         try {
 
             T object = clazz.newInstance();
-            configureInstance(object, clazz, configNode);
             return object;
 
         } catch (InstantiationException e) {
@@ -88,12 +101,12 @@ public class BeanVitalizer {
     /**
      * Scans for annotations in <i>object</i> and initializes all its properties from the provided configuration node.
      *
+     * @param <T>
      * @param object
      * @param configNode
-     * @param <T>
      * @return
      */
-    public <T> void configureInstance(T object, Class configurableClass, Map<String, Object> configNode) throws ConfigurationException {
+    public <T> void configureInstance(T object, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
         new ReflectiveAdapter<T>(object).fromConfigNode(configNode, new AnnotatedConfigurableProperty(configurableClass), this);
     }
 
