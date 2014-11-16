@@ -88,6 +88,24 @@ public class AnnotatedConfigurableProperty {
         return pseudoProperty;
     }
 
+    /**
+     * get type of generic/component for collection/Array, Value type for map
+     * @return
+     */
+    public AnnotatedConfigurableProperty getPseudoPropertyForCollectionElement() {
+
+        Type type;
+        if (isMapOfConfObjects())
+            type = getTypeForGenericsParameter(1); else
+        if (isCollectionOfConfObjects())
+            type = getTypeForGenericsParameter(0); else
+        if (isArrayOfConfObjects())
+            type = getRawClass().getComponentType(); else
+            throw new IllegalArgumentException("This property is not a collection/array/map - "+getType());
+
+        AnnotatedConfigurableProperty pseudoProperty = new AnnotatedConfigurableProperty(type);
+        return pseudoProperty;
+    }
 
     @SuppressWarnings("unchecked")
     public <T> T getAnnotation(Class<T> annotationType) {

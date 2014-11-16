@@ -45,6 +45,7 @@ import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.conf.core.util.ConfigIterators;
+import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
 
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
@@ -70,14 +71,14 @@ public class LdapConfigurationStorage implements Configuration {
             env.put("java.naming.provider.url", e.substring(0, end));
             this.baseDN = e.substring(end + 1);
             this.ldapCtx = new InitialDirContext(env);
-        } catch (Exception var4) {
-            throw new ConfigurationException(var4);
+        } catch (Exception e) {
+            throw new ConfigurationException(e);
         }
     }
 
     @Override
     public Map<String, Object> getConfigurationRoot() throws ConfigurationException {
-        return null;
+        return new HashMap<String, Object>();
     }
 
     // special classes for root, app registrues,(or allow to register)
@@ -109,8 +110,12 @@ public class LdapConfigurationStorage implements Configuration {
         if (path.equals("/dicomConfigurationRoot")) {
             LdapNode ldapNode = new LdapNode();
             ldapNode.dn = dnOf(baseDN, "cn", "DICOM Configuration");
-            populateLdapNode(configNode, configurableClass, ldapNode);
+            populateLdapNode(configNode, CommonDicomConfiguration.DicomConfigurationRootNode.class, ldapNode);
 
+            System.out.println("");
+
+
+            // TODO: also fill in other parameters from the configNode according to 'partially overwritten' contract
         } else
             throw new RuntimeException("Not implemented yet");
     }
@@ -118,93 +123,192 @@ public class LdapConfigurationStorage implements Configuration {
 
     public static class LdapNode {
 
-        LdapNode parent;
+        private LdapNode parent;
         String rdn;
         String dn;
         Collection<String> objectClasses = new ArrayList<String>();
         Attributes attributes = new BasicAttributes();
-        ;
         Collection<LdapNode> children = new ArrayList<LdapNode>();
 
+        public LdapNode getParent() {
+            return parent;
+        }
+
+        public void setParent(LdapNode parent) {
+            this.parent = parent;
+            parent.children.add(this);
+        }
     }
 
 
-    void storeCtx() {
+    /*void storeCtx() {
         try {
             ldapCtx.createSubcontext(dnOf(currentDN, classLDAPAnno.distinguishingField(), itemValue), attrs);
         } catch (NamingException e) {
             throw new ConfigurationException("Error while storing configuration for class " + configurableClass.getSimpleName());
         }
 
-    }
+    }*/
 
+
+    /**
+     * Responsible for
+     * objectClasses, attributes, children
+     * <p/>
+     * NOT responsible for
+     * parent, dn
+     *
+     * @param configNode
+     * @param configurableClass
+     * @param ldapNode
+     * @throws ConfigurationException
+     */
     private void populateLdapNode(Map<String, Object> configNode, Class configurableClass, LdapNode ldapNode) throws ConfigurationException {
 
-        LDAP classLDAPAnno = (LDAP) configurableClass.getAnnotation(LDAP.class);
-        ConfigurableClass classAnno = (ConfigurableClass) configurableClass.getAnnotation(ConfigurableClass.class);
+        if (configurableClass == null ||
+                configurableClass.getAnnotation(ConfigurableClass.class) == null ||
+                configurableClass.getAnnotation(LDAP.class) == null)
+            throw new ConfigurationException("Unexpected error - class '" + configurableClass == null ? null : configurableClass.getName() + "' is not a configurable class");
 
-        if (classAnno == null || classLDAPAnno == null) throw new ConfigurationException("Unexpected error");
-
-        BasicAttributes attrs = new BasicAttributes();
+        ldapNode.objectClasses = getObjectClasses(configurableClass);
 
         List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(configurableClass);
-
         for (AnnotatedConfigurableProperty property : properties) {
 
-            // map
-            if (property.isMapOfConfObjects()) {
-                Map<String, Object> map = (Map<String, Object>) configNode.get(property.getAnnotatedName());
+            Object propertyConfigNode = configNode.get(property.getAnnotatedName());
 
-                AnnotatedConfigurableProperty elementProperty = property.getPseudoPropertyForGenericsParamater(1);
-                boolean noContainerNode1 = elementProperty.getAnnotation(LDAP.class).noContainerNode();
+            if (propertyConfigNode == null) continue;
 
-                LdapNode thisParent;
-                boolean noContainerNode = property.getAnnotation(LDAP.class).noContainerNode() || noContainerNode1;
+            // map of anything
+            if (Map.class.isAssignableFrom(property.getRawClass())) {
+                LdapNode thisParent = makeLdapCollectionNode(ldapNode, property);
+                for (Map.Entry<String, Object> entry : ((Map<String, Object>) propertyConfigNode).entrySet()) {
+                    LdapNode elementNode = makeLdapElementNode(property, thisParent, entry.getKey());
 
-                if (noContainerNode) {
-                    thisParent = ldapNode;
-                } else {
-                    thisParent = new LdapNode();
-                    thisParent.dn = dnOf(ldapNode.dn, "cn", getLDAPPropertyName(property));
+                    // now if it is a conf obj, not primitive or custom representation, go deeper
+                    if (property.isMapOfConfObjects() && entry.getValue() instanceof Map) {
+                        populateLdapNode((Map<String, Object>) entry.getValue(), property.getPseudoPropertyForCollectionElement().getRawClass(), elementNode);
+                        continue;
+                    }
 
-                    if (property.getAnnotation(LDAP.class).objectClasses().length == 0)
-                        thisParent.objectClasses.add("dcmCollection");
-                    else
-                        thisParent.objectClasses = new ArrayList<String>(Arrays.asList(property.getAnnotation(LDAP.class).objectClasses()));
+                    //otherwise, make this mock with value
+                    elementNode.objectClasses = Arrays.asList(property.getAnnotation(LDAP.class).mapEntryObjectClass());
+                    elementNode.attributes.put(property.getAnnotation(LDAP.class).mapValueAttribute(), entry.getValue());
 
-                    thisParent.parent = ldapNode;
-                    ldapNode.children.add(thisParent);
                 }
-
-                String elementDistibguishingName = elementProperty.getAnnotation(LDAP.class).distinguishingField();
-                for (Map.Entry<String, Object> entry : map.entrySet()) {
-                    LdapNode elementNode = new LdapNode();
-                    elementNode.dn = dnOf(thisParent.dn, elementDistibguishingName, entry.getKey());
-                }
-
-
+                continue;
             }
 
-            //collection/array
+            //collection/array of confobjects, (but not custom representations)
+            if (property.isArrayOfConfObjects() || property.isCollectionOfConfObjects()) {
+                Iterator iterator = ((Collection) propertyConfigNode).iterator();
+                // collection not empty and first element is not a custom rep
+                if (iterator.hasNext() && iterator.next() instanceof Map) {
+                    LdapNode thisParent = makeLdapCollectionNode(ldapNode, property);
+                    for (Map<String, Object> o : ((Collection<Map<String, Object>>) propertyConfigNode)) {
+                        LdapNode elementNode = makeLdapElementNode(property, thisParent, (String) o.get(getDistinguishingFieldForCollectionElement(property)));
+                        populateLdapNode(o, property.getPseudoPropertyForCollectionElement().getRawClass(), elementNode);
+                    }
+                    continue;
+                }
+            }
 
+            // nested conf object, not custom representation
+            if (property.getRawClass().getAnnotation(ConfigurableClass.class) != null)
+                if (propertyConfigNode instanceof Map) {
+                    LdapNode nestedNode;
+                    if (isNoContainerNode(property)) nestedNode = ldapNode;
+                    else {
+                        nestedNode = new LdapNode();
+                        nestedNode.dn = dnOf(ldapNode.dn, getDistinguishingField(property), getLDAPPropertyName(property));
+                        nestedNode.attributes.put(getDistinguishingField(property), getLDAPPropertyName(property));
+                    }
+                    populateLdapNode((Map<String, Object>) propertyConfigNode, property.getRawClass(), nestedNode);
+                    continue;
+                }
 
-            // nested object
+            // array/collection
+            /*if (propertyConfigNode instanceof Collection) {
+                ldapNode.attributes.put(propertyConfigNode);
+            }*/
 
-
-            // default
-
-            //TODO map
-            //TODO array/collection
-
-            ldapNode.attributes.put(getLDAPPropertyName(property), configNode.get(property.getAnnotatedName()));
+            // regular attribute
+            ldapNode.attributes.put(getLDAPPropertyName(property), propertyConfigNode);
 
         }
 
     }
 
+    private LdapNode makeLdapElementNode(AnnotatedConfigurableProperty property, LdapNode parent, String key) {
+        LdapNode elementNode1 = new LdapNode();
+        String elementDistinguishingField = getDistinguishingFieldForCollectionElement(property);
+        elementNode1.dn = dnOf(parent.dn, elementDistinguishingField, key);
+        elementNode1.attributes.put(elementDistinguishingField, key);
+        elementNode1.setParent(parent);
+        return elementNode1;
+    }
+
+    // resolve map/collection key field
+    private String getDistinguishingFieldForCollectionElement(AnnotatedConfigurableProperty property) {
+
+        // by default use what annotated on the property
+        String elementDistinguishingField = property.getAnnotation(LDAP.class).distinguishingField();
+
+        // if property is default, check the annotation on the element class if its a confclass
+        if (elementDistinguishingField.equals(LDAP.DEFAULT_DISTINGUISHING_FIELD))
+            if (property.isArrayOfConfObjects() || property.isCollectionOfConfObjects() || property.isMapOfConfObjects())
+                elementDistinguishingField = ((LDAP) property.getPseudoPropertyForCollectionElement().getRawClass().getAnnotation(LDAP.class)).distinguishingField();
+
+        return elementDistinguishingField;
+    }
+
+    private String getDistinguishingField(AnnotatedConfigurableProperty property) {
+        String distinguishingField = property.getAnnotation(LDAP.class).distinguishingField();
+        if (distinguishingField.equals(LDAP.DEFAULT_DISTINGUISHING_FIELD))
+            distinguishingField = ((LDAP) property.getRawClass().getAnnotation(LDAP.class)).distinguishingField();
+        return distinguishingField;
+    }
+
+    private LdapNode makeLdapCollectionNode(LdapNode ldapNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+
+        LdapNode thisParent;
+
+        if (isNoContainerNode(property)) {
+            thisParent = ldapNode;
+        } else {
+            thisParent = new LdapNode();
+            thisParent.dn = dnOf(ldapNode.dn, "cn", getLDAPPropertyName(property));
+
+            if (property.getAnnotation(LDAP.class).objectClasses().length == 0)
+                thisParent.objectClasses.add("dcmCollection");
+            else
+                thisParent.objectClasses = getObjectClasses(property);
+
+            thisParent.setParent(ldapNode);
+        }
+        return thisParent;
+    }
+
+    private boolean isNoContainerNode(AnnotatedConfigurableProperty property) {
+        return property.getAnnotation(LDAP.class).noContainerNode() ||
+                ((LDAP) property.getPseudoPropertyForCollectionElement().getRawClass().getAnnotation(LDAP.class)).noContainerNode();
+    }
+
+    private ArrayList<String> getObjectClasses(AnnotatedConfigurableProperty property) {
+        return new ArrayList<String>(Arrays.asList(property.getAnnotation(LDAP.class).objectClasses()));
+    }
+
+    private ArrayList<String> getObjectClasses(Class clazz) {
+        return new ArrayList<String>(Arrays.asList(((LDAP) clazz.getAnnotation(LDAP.class)).objectClasses()));
+    }
+
     private String getLDAPPropertyName(AnnotatedConfigurableProperty property) throws ConfigurationException {
-        String ldapName = property.getAnnotation(LDAP.class).overriddenName();
-        return ldapName.equals("") ? property.getAnnotatedName() : ldapName;
+        LDAP ldapAnno = property.getAnnotation(LDAP.class);
+        if (ldapAnno == null || ldapAnno.overriddenName().equals("")) {
+            return property.getAnnotatedName();
+        } else {
+            return ldapAnno.overriddenName();
+        }
     }
 
     public String dnOf(String parentDN, String attrID, String attrValue) {

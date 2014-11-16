@@ -244,7 +244,7 @@ public class AuditLogger extends DeviceExtension {
 
     @LDAP(
             noContainerNode = true,
-            mapKeyAttribute = "cn"
+            distinguishingField = "cn"
     )
     @ConfigurableProperty(name = "dcmAuditSuppressCriteria")
     private final List<AuditSuppressCriteria> suppressAuditMessageFilters =

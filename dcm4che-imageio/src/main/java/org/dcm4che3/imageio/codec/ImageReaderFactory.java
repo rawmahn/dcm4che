@@ -48,9 +48,7 @@ import java.util.Map.Entry;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
-import javax.imageio.ImageWriter;
 import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.spi.ImageWriterSpi;
 
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
@@ -132,7 +130,7 @@ public class ImageReaderFactory implements Serializable {
 
     private static ImageReaderFactory defaultFactory;
 
-    @LDAP(mapKeyAttribute = "dicomTransferSyntax", noContainerNode = true)
+    @LDAP(distinguishingField = "dicomTransferSyntax", noContainerNode = true)
     @ConfigurableProperty(
             name="dicomImageReaderMap",
             label = "Image Readers",

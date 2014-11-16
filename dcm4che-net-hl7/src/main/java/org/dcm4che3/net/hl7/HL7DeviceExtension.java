@@ -66,7 +66,7 @@ public class HL7DeviceExtension extends DeviceExtension {
                 Connection.Protocol.HL7, HL7ProtocolHandler.INSTANCE);
     }
 
-    @LDAP(noContainerNode = true, mapKeyAttribute = "hl7ApplicationName")
+    @LDAP(noContainerNode = true, distinguishingField = "hl7ApplicationName")
     @ConfigurableProperty(name="hl7Apps", label = "HL7 Applications")
     private Map<String, HL7Application> hl7apps = new LinkedHashMap<String, HL7Application>();
 

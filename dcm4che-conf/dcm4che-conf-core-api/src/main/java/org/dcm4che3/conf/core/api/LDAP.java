@@ -12,7 +12,9 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE,ElementType.FIELD})
 public @interface LDAP {
 
-    String distinguishingField() default "cn";
+    public static final String DEFAULT_DISTINGUISHING_FIELD = "cn";
+
+    String distinguishingField() default DEFAULT_DISTINGUISHING_FIELD;
 
     /**
      * Can be used on classes and on fields
@@ -24,10 +26,6 @@ public @interface LDAP {
     String[] objectClasses() default {};
 
 
-    // maps mapping, these
-
-
-    String mapKeyAttribute() default "";
 
     // needed if map entry value is a primitive
     String mapValueAttribute() default "";

@@ -52,7 +52,7 @@ import java.util.Map;
 public class CachedRootNodeConfiguration extends DelegatingConfiguration {
 
 
-    private Map<String, Object> configurationRoot = null;
+    protected Map<String, Object> configurationRoot = null;
 
     public CachedRootNodeConfiguration(Configuration delegate) {
         super(delegate);
@@ -89,6 +89,11 @@ public class CachedRootNodeConfiguration extends DelegatingConfiguration {
     @Override
     public void refreshNode(String path) throws ConfigurationException {
         ConfigNodeUtil.replaceNode(getConfigurationRoot(), path, delegate.getConfigurationNode(path, null));
+    }
+
+    @Override
+    public boolean nodeExists(String path) throws ConfigurationException {
+        return ConfigNodeUtil.nodeExists(getConfigurationRoot(), path);
     }
 
     @Override

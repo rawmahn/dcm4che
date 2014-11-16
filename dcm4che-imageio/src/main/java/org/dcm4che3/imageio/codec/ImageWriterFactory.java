@@ -46,10 +46,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.Map.Entry;
 
-import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageWriterSpi;
 
 import org.dcm4che3.conf.core.api.ConfigurableClass;
@@ -168,7 +165,7 @@ public class ImageWriterFactory implements Serializable {
 
     private static ImageWriterFactory defaultFactory;
 
-    @LDAP(mapKeyAttribute = "dicomTransferSyntax", noContainerNode = true)
+    @LDAP(distinguishingField = "dicomTransferSyntax", noContainerNode = true)
     @ConfigurableProperty(
         name="dicomImageWriterMap",
         label = "Image Writers",

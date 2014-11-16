@@ -120,7 +120,7 @@ public class XStreamConfigurationStorage implements Configuration {
 
 
             } else
-                configurationRoot = (Map<String, Object>) configNode;
+                configurationRoot = configNode;
 
             if (storeAsJSON) {
                 ObjectMapper objectMapper = new ObjectMapper();

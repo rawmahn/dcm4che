@@ -48,6 +48,7 @@ import org.dcm4che3.conf.api.ConfigurationNotFoundException;
 import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.Configuration;
+import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
@@ -140,6 +141,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     }
 
     @LDAP(objectClasses = "dicomUniqueAETitle", distinguishingField = "dicomAETitle")
+    @ConfigurableClass
     public static class AETitleItem {
 
         public AETitleItem(String aeTitle) {
@@ -160,6 +162,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     }
 
     @LDAP(objectClasses = "dicomConfigurationRoot")
+    @ConfigurableClass
     public static class DicomConfigurationRootNode {
 
         @LDAP(
