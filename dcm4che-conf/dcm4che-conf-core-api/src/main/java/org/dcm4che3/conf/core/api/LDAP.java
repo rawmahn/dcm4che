@@ -48,4 +48,10 @@ public @interface LDAP {
      * The array must contain property names that correspond to enum values in the right order.
      */
     String[] booleanBasedEnumStorageOptions() default {};
+
+    /**
+     * Alternative property name that overrides the ConfigurableProperty's name when this property is stored in LDAP.
+     * @return
+     */
+    String overriddenName() default "";
 }

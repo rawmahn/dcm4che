@@ -38,6 +38,10 @@
  *  ***** END LICENSE BLOCK *****
  */
 import com.fasterxml.jackson.databind.ObjectMapper
+import junit.extensions.TestSetup
+import org.apache.commons.jxpath.ri.Compiler
+import org.apache.commons.jxpath.ri.Parser
+import org.apache.commons.jxpath.ri.compiler.TreeCompiler
 import org.dcm4che3.conf.core.XStreamStorageTest
 import org.dcm4che3.conf.core.impl.XStreamConfigurationStorage
 import org.dcm4che3.conf.core.util.ConfigNodeUtil

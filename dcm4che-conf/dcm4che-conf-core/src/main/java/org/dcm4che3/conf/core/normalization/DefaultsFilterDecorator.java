@@ -42,7 +42,6 @@ package org.dcm4che3.conf.core.normalization;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.Configuration;
-import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.impl.DelegatingConfiguration;
 import org.dcm4che3.conf.core.util.ConfigIterators;
@@ -76,7 +75,7 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
     @Override
     public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
         // fill in default values for properties that are null and have defaults
-        Map<String,Object> node = (Map<String, Object>) super.getConfigurationNode(path, configurableClass);
+        Map<String, Object> node = (Map<String, Object>) super.getConfigurationNode(path, configurableClass);
         if (configurableClass != null && node != null)
             applyDefaults(node, configurableClass);
         return node;
@@ -88,23 +87,20 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
         // we don't care about defaults
         if (!(node instanceof Map)) return;
 
-        Map<String,Object> containerNode = (Map<String, Object>) node;
+        Map<String, Object> containerNode = (Map<String, Object>) node;
 
         List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(nodeClass);
         for (AnnotatedConfigurableProperty property : properties) {
             Object childNode = containerNode.get(property.getAnnotatedName());
 
             // if the property is a configclass
-            if (property.getRawClass().getAnnotation(ConfigurableClass.class) != null) {
+            if (property.isConfObject()) {
                 applyDefaults(childNode, property.getRawClass());
                 continue;
             }
 
-            // collection, where a generics parameter is a configurable class
-            if (
-                    Collection.class.isAssignableFrom(property.getRawClass()) &&
-                    !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
-                    property.getPseudoPropertyForGenericsParamater(0).getRawClass().getAnnotation(ConfigurableClass.class) != null) {
+            // collection, where a generics parameter is a configurable class or it is an array with comp type of configurableClass
+            if (property.isCollectionOfConfObjects() || property.isArrayOfConfObjects()) {
 
                 Collection collection = (Collection) childNode;
 
@@ -115,10 +111,7 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
             }
 
             // map, where a value generics parameter is a configurable class
-            if (
-                    Map.class.isAssignableFrom(property.getRawClass()) &&
-                            !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
-                            property.getPseudoPropertyForGenericsParamater(1).getRawClass().getAnnotation(ConfigurableClass.class) != null) {
+            if (property.isMapOfConfObjects()) {
 
                 Map<String, Object> collection = (Map<String, Object>) childNode;
 
@@ -132,7 +125,7 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
             if (!containerNode.containsKey(property.getAnnotatedName())) {
                 String defaultValue = property.getAnnotation(ConfigurableProperty.class).defaultValue();
                 if (!defaultValue.equals(ConfigurableProperty.NO_DEFAULT_VALUE))
-                    containerNode.put(property.getAnnotatedName(),defaultValue);
+                    containerNode.put(property.getAnnotatedName(), defaultValue);
 
             }
         }

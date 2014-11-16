@@ -126,7 +126,7 @@ public class ConfigNodeUtil {
     private final static String XPREDICATE = "(" + IDENTIFIER + "=" + VALUE + ")";
     private final static String XPREDICATENAMED = "(" + IDENTIFIER_NAMED + "=" + VALUE_NAMED + ")";
 
-    private final static String XPATHNODE = "/(?<nodename>" + IDENTIFIER + "|\\*)(\\[(?<predicates>" + XPREDICATE + "( and " + XPREDICATE + ")*)\\])?";
+    private final static String XPATHNODE = "/(?<nodename>" + IDENTIFIER + "|\\*)"+"(\\[(?<predicates>" + XPREDICATE + "( and " + XPREDICATE + ")*)\\])?";
     private final static String XPATH = "(" + XPATHNODE + ")*";
 
     public final static Pattern xPathPattern = Pattern.compile(XPATH);

@@ -40,11 +40,13 @@
 package org.dcm4che3.conf.core;
 
 import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,6 +63,17 @@ public class AnnotatedConfigurableProperty {
 
     public AnnotatedConfigurableProperty(Type type) {
         setType(type);
+    }
+
+    public boolean isArrayOfConfObjects() {
+        return getRawClass().isArray() &&
+                        getRawClass().getComponentType().getAnnotation(ConfigurableClass.class) != null;
+    }
+
+    public boolean isCollectionOfConfObjects() {
+        return Collection.class.isAssignableFrom(getRawClass()) &&
+                        !getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
+                        getPseudoPropertyForGenericsParamater(0).getRawClass().getAnnotation(ConfigurableClass.class) != null;
     }
 
     public Type getTypeForGenericsParameter(int genericParameterIndex) {
@@ -121,5 +134,15 @@ public class AnnotatedConfigurableProperty {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public boolean isConfObject() {
+        return getRawClass().getAnnotation(ConfigurableClass.class) != null;
+    }
+
+    public boolean isMapOfConfObjects() {
+        return Map.class.isAssignableFrom(getRawClass()) &&
+                !getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
+                getPseudoPropertyForGenericsParamater(1).isConfObject();
     }
 }

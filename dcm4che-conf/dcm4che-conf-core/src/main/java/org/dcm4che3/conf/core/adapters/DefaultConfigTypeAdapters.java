@@ -64,7 +64,7 @@ public class DefaultConfigTypeAdapters {
      * @return
      * @throws org.dcm4che3.conf.api.ConfigurationException
      */
-    static Object delegateGetChildFromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public static Object delegateGetChildFromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         // determine node name and get the property
         String nodeName = property.getAnnotatedName();
         Object node = configNode.get(nodeName);
@@ -77,7 +77,7 @@ public class DefaultConfigTypeAdapters {
         return adapter.fromConfigNode(node, property, vitalizer);
     }
 
-    static void delegateChildToConfigNode(Object object, Map<String, Object> parentNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public static void delegateChildToConfigNode(Object object, Map<String, Object> parentNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         String nodeName = property.getAnnotatedName();
         ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
         parentNode.put(nodeName, adapter.toConfigNode(object, property, vitalizer));

@@ -39,6 +39,8 @@
  */
 package org.dcm4che3.conf.core;
 
+import org.apache.commons.jxpath.ri.Parser;
+import org.apache.commons.jxpath.ri.compiler.TreeCompiler;
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.api.ConfigurationException;
@@ -346,6 +348,11 @@ public class VitalizerTest {
             Object generatedNode = beanVitalizer.createConfigNodeFromInstance(configuredInstance);
         }
 
+    }
+
+    @Test
+    public void testParser() {
+        Object expression = Parser.parseExpression("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='DCM4CHEE']]/dicomName", new TreeCompiler());
     }
 
 }

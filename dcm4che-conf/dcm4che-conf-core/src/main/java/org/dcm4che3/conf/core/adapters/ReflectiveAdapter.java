@@ -141,6 +141,10 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
             }
         }
 
+
+        // store className
+        configNode.put("$class", object.getClass().getName());
+
         // there must be no setters
         for (ConfigIterators.AnnotatedSetter setter : ConfigIterators.getAllConfigurableSetters(clazz))
             throw new ConfigurationUnserializableException("Cannot infer properties which are setter parameters. This object has a setter (" + setter.getMethod().getName() + ")");

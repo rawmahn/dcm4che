@@ -159,6 +159,33 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         }
     }
 
+    @LDAP(objectClasses = "dicomConfigurationRoot")
+    public static class DicomConfigurationRootNode {
+
+        @LDAP(
+                overriddenName = "Devices",
+                objectClasses = "dicomDevicesRoot"
+        )
+        @ConfigurableProperty(name = "dicomDevicesRoot")
+        Map<String,Device> devices;
+
+        @LDAP(
+                overriddenName = "Unique AE Titles Registry",
+                objectClasses = "dicomUniqueAETitlesRegistryRoot"
+        )
+        @ConfigurableProperty(name = "dicomUniqueAETitlesRegistryRoot")
+        Map<String,AETitleItem> uniqueAETitleRegistry;
+
+        @LDAP(
+                overriddenName = "Unique HL7 Application Names Registry",
+                objectClasses = "hl7UniqueApplicationNamesRegistryRoot"
+        )
+        @ConfigurableProperty(name = "hl7UniqueApplicationNamesRegistryRoot")
+        Map<String,AETitleItem> hl7UniqueApplicationNamesRegistry;
+
+    }
+
+
     @Override
     public boolean registerAETitle(String aet) throws ConfigurationException {
 
@@ -168,7 +195,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         final HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("dicomAETitle", aet);
 
-        config.persistNode(path, map, AETitleItem.class);
+        config.persistNode(path, map, DicomConfigurationRootNode.class);
         return true;
 
     }
