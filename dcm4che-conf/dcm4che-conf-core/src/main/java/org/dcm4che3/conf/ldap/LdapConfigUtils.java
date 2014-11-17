@@ -43,6 +43,7 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -54,7 +55,8 @@ public class LdapConfigUtils {
     static String getDistinguishingFieldForCollectionElement(AnnotatedConfigurableProperty property) {
 
         // by default use what annotated on the property
-        String elementDistinguishingField = property.getAnnotation(LDAP.class).distinguishingField();
+        LDAP annotation = property.getAnnotation(LDAP.class);
+        String elementDistinguishingField = annotation == null ? LDAP.DEFAULT_DISTINGUISHING_FIELD : annotation.distinguishingField();
 
         // if property is default, check the annotation on the element class if its a confclass
         if (elementDistinguishingField.equals(LDAP.DEFAULT_DISTINGUISHING_FIELD))
@@ -65,15 +67,39 @@ public class LdapConfigUtils {
     }
 
     static String getDistinguishingField(AnnotatedConfigurableProperty property) {
-        String distinguishingField = property.getAnnotation(LDAP.class).distinguishingField();
-        if (distinguishingField.equals(LDAP.DEFAULT_DISTINGUISHING_FIELD))
-            distinguishingField = ((LDAP) property.getRawClass().getAnnotation(LDAP.class)).distinguishingField();
+        LDAP propLdapAnno = property.getAnnotation(LDAP.class);
+
+        String distinguishingField;
+        if (propLdapAnno != null)
+            distinguishingField = propLdapAnno.distinguishingField();
+        else
+            distinguishingField = LDAP.DEFAULT_DISTINGUISHING_FIELD;
+
+        if (distinguishingField.equals(LDAP.DEFAULT_DISTINGUISHING_FIELD)) {
+            Annotation classLdapAnno = property.getRawClass().getAnnotation(LDAP.class);
+            if (classLdapAnno != null)
+                distinguishingField = ((LDAP) classLdapAnno).distinguishingField();
+        }
+
         return distinguishingField;
     }
 
     static boolean isNoContainerNode(AnnotatedConfigurableProperty property) {
-        return property.getAnnotation(LDAP.class).noContainerNode() ||
-                ((LDAP) property.getPseudoPropertyForCollectionElement().getRawClass().getAnnotation(LDAP.class)).noContainerNode();
+        LDAP propLdapAnno = property.getAnnotation(LDAP.class);
+
+        LDAP classLdapAnno = null;
+        if (property.isConfObject())
+            classLdapAnno = propLdapAnno;
+        else {
+            AnnotatedConfigurableProperty pseudoProperty = property.getPseudoPropertyForCollectionElement();
+            if (pseudoProperty != null)
+                classLdapAnno = (LDAP) pseudoProperty.getRawClass().getAnnotation(LDAP.class);
+        }
+
+        if (propLdapAnno == null || classLdapAnno == null) return false;
+
+        return propLdapAnno.noContainerNode() ||
+                classLdapAnno.noContainerNode();
     }
 
     static String getLDAPPropertyName(AnnotatedConfigurableProperty property) throws ConfigurationException {
@@ -86,11 +112,7 @@ public class LdapConfigUtils {
     }
 
     public static String dnOf(String parentDN, String attrID, String attrValue) {
-        return attrID + '=' + attrValue + ',' + parentDN;
-    }
-
-    static ArrayList<String> getObjectClasses(Class clazz) {
-        return new ArrayList<String>(Arrays.asList(((LDAP) clazz.getAnnotation(LDAP.class)).objectClasses()));
+        return attrID + '=' + attrValue.replace(",","\\,") + ',' + parentDN;
     }
 
     static ArrayList<String> getObjectClasses(AnnotatedConfigurableProperty property) {

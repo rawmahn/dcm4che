@@ -86,7 +86,7 @@ public class TransferCapability implements Serializable {
 
     @LDAP(  booleanBasedEnumStorageOptions = {"dcmRelationalQueries","dcmCombinedDateTimeMatching","dcmFuzzySemanticMatching","dcmTimezoneQueryAdjustment"},
             noContainerNode = true)
-    @ConfigurableProperty(name = "dcmQueryOptions")
+    @ConfigurableProperty(name = "dcmQueryOptions", enumRepresentation = ConfigurableProperty.EnumRepresentation.ORDINAL)
     private EnumSet<QueryOption> queryOptions;
 
     @LDAP(noContainerNode = true)

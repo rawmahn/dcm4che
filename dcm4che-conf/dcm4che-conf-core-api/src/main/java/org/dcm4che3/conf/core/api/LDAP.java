@@ -35,12 +35,12 @@ public @interface LDAP {
 
     /**
      * Applicable to EnumSet&lt;some enum&gt;. Triggers an alternative representation of EnumSets, instead of
-     *  enumField : ["OPT1", "OPT2"]
+     *  enumField : [0,2]
      * recognizes
      * enumfield:{
      *  OPT1 : TRUE,
-     *  OPT2 : TRUE,
-     *  OPT3 : FALSE
+     *  OPT2 : FALSE,
+     *  OPT3 : TRUE
      * }
      *
      * The array must contain property names that correspond to enum values in the right order.

@@ -46,6 +46,7 @@ import java.util.*;
 
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
+import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.hl7.HL7Exception;
 import org.dcm4che3.hl7.HL7Segment;
 import org.dcm4che3.hl7.MLLPConnection;
@@ -57,6 +58,7 @@ import org.dcm4che3.net.IncompatibleConnectionException;
 /**
  * @author Gunter Zeilinger <gunterze@gmail.com>
  */
+@LDAP(objectClasses = "hl7Application")
 @ConfigurableClass
 public class HL7Application implements Serializable {
 

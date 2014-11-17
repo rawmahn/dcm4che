@@ -46,7 +46,10 @@ import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.conf.core.util.ConfigIterators;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
+import org.dcm4che3.net.ApplicationEntity;
 import org.dcm4che3.net.Connection;
+import org.dcm4che3.net.Device;
+import org.dcm4che3.net.hl7.HL7Application;
 
 import javax.naming.directory.Attributes;
 import javax.naming.directory.BasicAttribute;
@@ -58,14 +61,30 @@ import java.util.*;
  */
 public class LdapNode {
 
+
     private LdapNode parent;
     private String dn;
     private Collection<String> objectClasses = new ArrayList<String>();
     private Attributes attributes = new BasicAttributes();
     private Collection<LdapNode> children = new ArrayList<LdapNode>();
 
+    private LdapConfigurationStorage ldapConfigurationStorage;
+
+    public LdapNode() {
+    }
+
+    public LdapNode(LdapConfigurationStorage ldapConfigurationStorage) {
+
+        this.ldapConfigurationStorage = ldapConfigurationStorage;
+    }
+
+    public LdapConfigurationStorage getLdapConfigurationStorage() {
+        return ldapConfigurationStorage == null && parent != null ? parent.getLdapConfigurationStorage() : ldapConfigurationStorage;
+    }
+
     private String getBaseDn() {
-        if (parent == null) return dn; else return parent.getBaseDn();
+        if (parent == null) return dn;
+        else return parent.getBaseDn();
     }
 
 
@@ -90,11 +109,11 @@ public class LdapNode {
                 if (!valid) throw new RuntimeException("Path is invalid");
 
                 // diRRty hardcoding TODO implement
-                return "cn="+props.get(3).get("cn")+",dicomDeviceName="+deviceName+",cn=Devices,cn=DICOM Configuration"+getBaseDn();
+                return "cn=" + props.get(3).get("cn") + ",dicomDeviceName=" + deviceName + ",cn=Devices,cn=DICOM Configuration" + getBaseDn();
             } else
                 throw new RuntimeException("Not supported reference type " + clazz);
         } catch (Exception e) {
-            throw new RuntimeException("Cannot transform reference "+ref+" to LDAP dn", e);
+            throw new RuntimeException("Cannot transform reference " + ref + " to LDAP dn", e);
         }
     }
 
@@ -125,13 +144,15 @@ public class LdapNode {
     public void populate(Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
 
         if (configurableClass == null ||
-                configurableClass.getAnnotation(ConfigurableClass.class) == null ||
-                configurableClass.getAnnotation(LDAP.class) == null)
+                configurableClass.getAnnotation(ConfigurableClass.class) == null)
             throw new ConfigurationException("Unexpected error - class '" + configurableClass == null ? null : configurableClass.getName() + "' is not a configurable class");
 
+        // fill in objectclasses
+        LDAP classLdapAnno = (LDAP) configurableClass.getAnnotation(LDAP.class);
+        if (classLdapAnno != null)
+            getObjectClasses().addAll(new ArrayList<String>(Arrays.asList(classLdapAnno.objectClasses())));
 
-        getObjectClasses().addAll(LdapConfigUtils.getObjectClasses(configurableClass));
-
+        // iterate over configurable properties
         List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(configurableClass);
         for (AnnotatedConfigurableProperty property : properties) {
 
@@ -187,10 +208,23 @@ public class LdapNode {
                     continue;
                 }
 
-            // array/collection
+            // any other array/collection
             if (propertyConfigNode instanceof Collection) {
 
                 Collection<Object> collection = (Collection<Object>) propertyConfigNode;
+
+                // special case - boolean based enumSet
+                LDAP ldapAnno = property.getAnnotation(LDAP.class);
+                if (ldapAnno != null && ldapAnno.booleanBasedEnumStorageOptions().length > 0) {
+                    int i = 0;
+                    for (String enumStorageOption : ldapAnno.booleanBasedEnumStorageOptions()) {
+                        getAttributes().put(enumStorageOption, collection.contains(i) ? "TRUE" : "FALSE");
+                        i++;
+                    }
+                    continue;
+                }
+
+                // store only if not empty
                 if (collection.isEmpty()) continue;
 
                 BasicAttribute attribute = new BasicAttribute(LdapConfigUtils.getLDAPPropertyName(property));
@@ -217,6 +251,85 @@ public class LdapNode {
 
         }
 
+        // hardcoded workarounds for extensions
+        if (configurableClass.equals(Device.class)) {
+            fillInExtensions(configNode, "deviceExtensions");
+        } else if (configurableClass.equals(ApplicationEntity.class)) {
+            fillInExtensions(configNode, "aeExtensions");
+        } else if (configurableClass.equals(HL7Application.class)) {
+            fillInExtensions(configNode, "hl7AppExtensions");
+        }
+
+
+        /**
+         * Workaround for objectClass dcmArchiveExtension
+         * TODO: inspect. dicomArchiveDevice added due to presence of attributes from there.
+         * extensions are added later, so this objectclass is not there while persisting the device alone.
+         * Adding it to Device does not work since there are some required attributes
+         * */
+
+        String[] archiveDeviceExtensionPropNames = {
+                "dcmIncorrectWorklistEntrySelectedCode",
+                "dcmFuzzyAlgorithmClass",
+                "dcmHostNameAEResolution",
+                "dcmConfigurationStaleTimeout",
+                "dcmDeIdentifyLogs",
+                "dcmUpdateDbRetries",
+                "dcmWadoAttributesStaleTimeout",
+                "dcmRejectedObjectsCleanUpPollInterval",
+                "dcmRejectedObjectsCleanUpMaxNumberOfDeletes",
+                "dcmMPPSEmulationPollInterval"};
+
+
+        boolean isArchiveExtension = false;
+        for (String propName : archiveDeviceExtensionPropNames)
+            if (configNode.containsKey(propName) && !getObjectClasses().contains(propName))
+                isArchiveExtension = true;
+
+/*
+        if (isArchiveExtension) {
+            if (!getObjectClasses().contains("dcmArchiveDevice"))
+                getObjectClasses().add("dcmArchiveDevice");
+        }
+*/
+
+    }
+
+    private void fillInExtensions(Map<String, Object> configNode, String whichExtensions) throws ConfigurationException {
+        Map<String, Map<String, Object>> extensions = (Map<String, Map<String, Object>>) configNode.get(whichExtensions);
+        if (extensions != null) {
+            for (Map.Entry<String, Map<String, Object>> ext : extensions.entrySet()) {
+                Class<?> extClass = null;
+                try {
+                    extClass = getExtensionClassBySimpleName(ext);
+                } catch (Exception e) {
+                    throw new ConfigurationException("Cannot find extension class " + ext.getKey(), e);
+                }
+
+                LdapNode extNode = this;
+                LDAP ldapAnno = (LDAP) extClass.getAnnotation(LDAP.class);
+                if (ldapAnno == null || !ldapAnno.noContainerNode()) {
+                    extNode = new LdapNode();
+                    String attrID = ldapAnno == null ? LDAP.DEFAULT_DISTINGUISHING_FIELD : ldapAnno.distinguishingField();
+                    extNode.setDn(LdapConfigUtils.dnOf(getDn(), attrID, ext.getKey()));
+                    extNode.getAttributes().put(attrID, ext.getKey());
+                    extNode.setParent(this);
+                }
+
+                extNode.populate(ext.getValue(), extClass);
+            }
+        }
+    }
+
+    private Class<?> getExtensionClassBySimpleName(Map.Entry<String, Map<String, Object>> ext) throws ClassNotFoundException {
+
+        List<Class<?>> extensionClasses = getLdapConfigurationStorage().getAllExtensionClasses();
+
+        for (Class<?> aClass : extensionClasses) {
+            if (aClass.getSimpleName().equals(ext.getKey())) return aClass;
+        }
+
+        throw new ClassNotFoundException();
     }
 
     private LdapNode makeLdapCollectionNode(AnnotatedConfigurableProperty property) throws ConfigurationException {
@@ -229,7 +342,8 @@ public class LdapNode {
             thisParent = new LdapNode();
             thisParent.setDn(LdapConfigUtils.dnOf(getDn(), "cn", LdapConfigUtils.getLDAPPropertyName(property)));
 
-            if (property.getAnnotation(LDAP.class).objectClasses().length == 0)
+            LDAP annotation = property.getAnnotation(LDAP.class);
+            if (annotation == null || annotation.objectClasses().length == 0)
                 thisParent.getObjectClasses().add("dcmCollection");
             else
                 thisParent.setObjectClasses(LdapConfigUtils.getObjectClasses(property));

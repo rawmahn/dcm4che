@@ -80,7 +80,9 @@ import org.dcm4che3.util.StringUtils;
  * @author Gunter Zeilinger <gunterze@gmail.com>
  *
  */
-@LDAP(objectClasses = {"dcmDevice", "dicomDevice"}, distinguishingField = "dicomDeviceName")
+@LDAP(
+        objectClasses = {"dcmDevice", "dicomDevice"},
+        distinguishingField = "dicomDeviceName")
 @ConfigurableClass
 public class Device implements Serializable {
 
@@ -122,7 +124,7 @@ public class Device implements Serializable {
     @ConfigurableProperty(name = "dcmKeyStoreType")
     private String keyStoreType;
 
-    @ConfigurableProperty(name = "dicomKeyStorePin")
+    @ConfigurableProperty(name = "dcmKeyStorePin")
     private String keyStorePin;
 
     @ConfigurableProperty(name = "dcmKeyStorePinProperty")
@@ -158,10 +160,10 @@ public class Device implements Serializable {
     @ConfigurableProperty(name = "dicomIssuerOfSpecimenIdentifier")
     private Issuer issuerOfSpecimenIdentifier;
 
-    //@ConfigurableProperty(name = "dicomSoftwareVersions")
+    @ConfigurableProperty(name = "dicomSoftwareVersion")
     private String[] softwareVersions = {};
 
-    //@ConfigurableProperty(name = "dicomPrimaryDeviceType")
+    @ConfigurableProperty(name = "dicomPrimaryDeviceType")
     private String[] primaryDeviceTypes = {};
 
     @ConfigurableProperty(name = "dicomInstitutionName")

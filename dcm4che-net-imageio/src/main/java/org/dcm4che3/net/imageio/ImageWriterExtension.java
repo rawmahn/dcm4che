@@ -40,6 +40,7 @@ package org.dcm4che3.net.imageio;
 
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
+import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.imageio.codec.ImageWriterFactory;
 import org.dcm4che3.net.DeviceExtension;
 
@@ -47,6 +48,7 @@ import org.dcm4che3.net.DeviceExtension;
  * @author Gunter Zeilinger <gunterze@gmail.com>
  *
  */
+@LDAP(noContainerNode = true)
 @ConfigurableClass
 public class ImageWriterExtension extends DeviceExtension {
 

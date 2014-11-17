@@ -101,7 +101,8 @@ public class AnnotatedConfigurableProperty {
             type = getTypeForGenericsParameter(0); else
         if (isArrayOfConfObjects())
             type = getRawClass().getComponentType(); else
-            throw new IllegalArgumentException("This property is not a collection/array/map - "+getType());
+        return null;
+            //throw new IllegalArgumentException("This property is not a collection/array/map - "+getType());
 
         AnnotatedConfigurableProperty pseudoProperty = new AnnotatedConfigurableProperty(type);
         return pseudoProperty;

@@ -58,9 +58,14 @@ public class LdapConfigurationStorage implements Configuration {
 
     private final String baseDN;
     private final InitialDirContext ldapCtx;
+    private List<Class<?>> allExtensionClasses;
 
+    public List<Class<?>> getAllExtensionClasses() {
+        return allExtensionClasses;
+    }
 
-    public LdapConfigurationStorage(Hashtable<String, String> env) throws ConfigurationException {
+    public LdapConfigurationStorage(Hashtable<String, String> env, List<Class<?>> allExtensionClasses) throws ConfigurationException {
+        this.allExtensionClasses = allExtensionClasses;
 
         try {
             env = (Hashtable) env.clone();
@@ -137,7 +142,7 @@ public class LdapConfigurationStorage implements Configuration {
         // dynamic dn generation for lists... maybe allow to use an extension
 
         if (path.equals("/dicomConfigurationRoot")) {
-            LdapNode ldapNode = new LdapNode();
+            LdapNode ldapNode = new LdapNode(this);
             ldapNode.setDn(LdapConfigUtils.dnOf(baseDN, "cn", "DICOM Configuration"));
             ldapNode.populate(configNode, CommonDicomConfiguration.DicomConfigurationRootNode.class);
 
@@ -148,17 +153,6 @@ public class LdapConfigurationStorage implements Configuration {
         } else
             throw new RuntimeException("Not implemented yet");
     }
-
-
-    /*void storeCtx() {
-        try {
-            ldapCtx.createSubcontext(dnOf(currentDN, classLDAPAnno.distinguishingField(), itemValue), attrs);
-        } catch (NamingException e) {
-            throw new ConfigurationException("Error while storing configuration for class " + configurableClass.getSimpleName());
-        }
-
-    }*/
-
 
     @Override
     public void refreshNode(String path) throws ConfigurationException {
