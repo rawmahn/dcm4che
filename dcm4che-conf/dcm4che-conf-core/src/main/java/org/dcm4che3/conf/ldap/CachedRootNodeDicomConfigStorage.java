@@ -1,7 +1,8 @@
-package org.dcm4che3.conf.core.impl;
+package org.dcm4che3.conf.ldap;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
+import org.dcm4che3.conf.core.impl.CachedRootNodeConfiguration;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 
 import java.util.Map;

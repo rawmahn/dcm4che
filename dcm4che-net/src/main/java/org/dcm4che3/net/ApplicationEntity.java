@@ -133,8 +133,11 @@ public class ApplicationEntity implements Serializable {
     private final HashMap<Class<? extends AEExtension>,AEExtension> extensions =
             new HashMap<Class<? extends AEExtension>,AEExtension>();
 
-    private boolean acceptor = true;
-    private boolean initiator = true;
+    @ConfigurableProperty(name = "dicomAssociationAcceptor")
+    private boolean associationAcceptor = true;
+
+    @ConfigurableProperty(name="dicomAssociationInitiator")
+    private boolean associationInitiator = true;
 
     private transient DimseRQHandler dimseRQHandler;
 
@@ -354,7 +357,7 @@ public class ApplicationEntity implements Serializable {
      *         false otherwise.
      */
     public final boolean isAssociationAcceptor() {
-        return acceptor;
+        return associationAcceptor;
     }
 
     /**
@@ -365,7 +368,7 @@ public class ApplicationEntity implements Serializable {
      *                associations, false otherwise.
      */
     public final void setAssociationAcceptor(boolean acceptor) {
-        this.acceptor = acceptor;
+        this.associationAcceptor = acceptor;
     }
 
     /**
@@ -375,7 +378,7 @@ public class ApplicationEntity implements Serializable {
      *         false otherwise.
      */
     public final boolean isAssociationInitiator() {
-        return initiator;
+        return associationInitiator;
     }
 
     /**
@@ -386,7 +389,7 @@ public class ApplicationEntity implements Serializable {
      *                associations, false otherwise.
      */
     public final void setAssociationInitiator(boolean initiator) {
-        this.initiator = initiator;
+        this.associationInitiator = initiator;
     }
 
 
@@ -648,8 +651,8 @@ public class ApplicationEntity implements Serializable {
         String indent2 = indent + "  ";
         StringUtils.appendLine(sb, indent, "ApplicationEntity[title: ", AETitle);
         StringUtils.appendLine(sb, indent2,"desc: ", description);
-        StringUtils.appendLine(sb, indent2,"acceptor: ", acceptor);
-        StringUtils.appendLine(sb, indent2,"initiator: ", initiator);
+        StringUtils.appendLine(sb, indent2,"acceptor: ", associationAcceptor);
+        StringUtils.appendLine(sb, indent2,"initiator: ", associationInitiator);
         StringUtils.appendLine(sb, indent2,"installed: ", getAeInstalled());
         for (Connection conn : connections)
             conn.promptTo(sb, indent2).append(StringUtils.LINE_SEPARATOR);
@@ -700,8 +703,8 @@ public class ApplicationEntity implements Serializable {
         setPreferredCallingAETitles(from.preferredCallingAETitles);
         setAcceptedCallingAETitles(from.getAcceptedCallingAETitles());
         setSupportedCharacterSets(from.supportedCharacterSets);
-        setAssociationAcceptor(from.acceptor);
-        setAssociationInitiator(from.initiator);
+        setAssociationAcceptor(from.associationAcceptor);
+        setAssociationInitiator(from.associationInitiator);
         setAeInstalled(from.aeInstalled);
     }
 

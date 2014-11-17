@@ -161,7 +161,7 @@ public class Device implements Serializable {
     //@ConfigurableProperty(name = "dicomSoftwareVersions")
     private String[] softwareVersions = {};
 
-    @ConfigurableProperty(name = "dicomPrimaryDeviceType")
+    //@ConfigurableProperty(name = "dicomPrimaryDeviceType")
     private String[] primaryDeviceTypes = {};
 
     @ConfigurableProperty(name = "dicomInstitutionName")
