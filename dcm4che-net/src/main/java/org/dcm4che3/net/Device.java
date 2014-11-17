@@ -158,7 +158,7 @@ public class Device implements Serializable {
     @ConfigurableProperty(name = "dicomIssuerOfSpecimenIdentifier")
     private Issuer issuerOfSpecimenIdentifier;
 
-    @ConfigurableProperty(name = "dicomSoftwareVersions")
+    //@ConfigurableProperty(name = "dicomSoftwareVersions")
     private String[] softwareVersions = {};
 
     @ConfigurableProperty(name = "dicomPrimaryDeviceType")

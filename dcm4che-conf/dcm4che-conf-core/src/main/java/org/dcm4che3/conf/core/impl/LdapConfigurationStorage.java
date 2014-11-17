@@ -47,8 +47,12 @@ import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.conf.core.util.ConfigIterators;
 import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
 
+import javax.naming.NameClassPair;
+import javax.naming.NameNotFoundException;
+import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
+import javax.naming.directory.BasicAttribute;
 import javax.naming.directory.BasicAttributes;
 import javax.naming.directory.InitialDirContext;
 import java.util.*;
@@ -76,12 +80,64 @@ public class LdapConfigurationStorage implements Configuration {
         }
     }
 
+
+    /// LDAP
+
+    public synchronized void destroySubcontextWithChilds(String name) throws NamingException {
+        NamingEnumeration list = ldapCtx.list(name);
+
+        while (list.hasMore()) {
+            this.destroySubcontextWithChilds(((NameClassPair) list.next()).getNameInNamespace());
+        }
+
+        ldapCtx.destroySubcontext(name);
+    }
+
+    private void persist(LdapNode ldapNode) {
+
+        Iterator<String> iterator = ldapNode.objectClasses.iterator();
+        BasicAttribute objectClass = new BasicAttribute("objectClass");
+        while (iterator.hasNext()) objectClass.add(iterator.next());
+        ldapNode.attributes.put(objectClass);
+
+        try {
+            destroySubcontextWithChilds(ldapNode.dn);
+        } catch (NameNotFoundException e1) {
+            //noop
+        } catch (NamingException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            ldapCtx.createSubcontext(ldapNode.dn, ldapNode.attributes);
+        } catch (NamingException e) {
+            throw new RuntimeException(e);
+        }
+        for (LdapNode child : ldapNode.children) persist(child);
+    }
+
     @Override
     public Map<String, Object> getConfigurationRoot() throws ConfigurationException {
         return new HashMap<String, Object>();
     }
 
-    // special classes for root, app registrues,(or allow to register)
+    public static class LdapNode {
+
+        private LdapNode parent;
+        String rdn;
+        String dn;
+        Collection<String> objectClasses = new ArrayList<String>();
+        Attributes attributes = new BasicAttributes();
+        Collection<LdapNode> children = new ArrayList<LdapNode>();
+
+        public LdapNode getParent() {
+            return parent;
+        }
+
+        public void setParent(LdapNode parent) {
+            this.parent = parent;
+            parent.children.add(this);
+        }
+    }
 
     @Override
     public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
@@ -102,6 +158,7 @@ public class LdapConfigurationStorage implements Configuration {
         throw new RuntimeException("Not implemented yet");
     }
 
+
     @Override
     public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
         // TODO: byte[], x509 from base64
@@ -112,32 +169,12 @@ public class LdapConfigurationStorage implements Configuration {
             ldapNode.dn = dnOf(baseDN, "cn", "DICOM Configuration");
             populateLdapNode(configNode, CommonDicomConfiguration.DicomConfigurationRootNode.class, ldapNode);
 
-            System.out.println("");
 
+            persist(ldapNode);
 
             // TODO: also fill in other parameters from the configNode according to 'partially overwritten' contract
         } else
             throw new RuntimeException("Not implemented yet");
-    }
-
-
-    public static class LdapNode {
-
-        private LdapNode parent;
-        String rdn;
-        String dn;
-        Collection<String> objectClasses = new ArrayList<String>();
-        Attributes attributes = new BasicAttributes();
-        Collection<LdapNode> children = new ArrayList<LdapNode>();
-
-        public LdapNode getParent() {
-            return parent;
-        }
-
-        public void setParent(LdapNode parent) {
-            this.parent = parent;
-            parent.children.add(this);
-        }
     }
 
 
@@ -170,7 +207,8 @@ public class LdapConfigurationStorage implements Configuration {
                 configurableClass.getAnnotation(LDAP.class) == null)
             throw new ConfigurationException("Unexpected error - class '" + configurableClass == null ? null : configurableClass.getName() + "' is not a configurable class");
 
-        ldapNode.objectClasses = getObjectClasses(configurableClass);
+
+        ldapNode.objectClasses.addAll(getObjectClasses(configurableClass));
 
         List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(configurableClass);
         for (AnnotatedConfigurableProperty property : properties) {
@@ -228,12 +266,26 @@ public class LdapConfigurationStorage implements Configuration {
                 }
 
             // array/collection
-            /*if (propertyConfigNode instanceof Collection) {
-                ldapNode.attributes.put(propertyConfigNode);
-            }*/
+            if (propertyConfigNode instanceof Collection) {
+                Collection<Object> collection = (Collection<Object>) propertyConfigNode;
+                BasicAttribute attribute = new BasicAttribute(getLDAPPropertyName(property));
+                Object[] vals = new Object[collection.size()];
+                for (Object o : collection)
+                    attribute.add(o);
+
+                ldapNode.attributes.put(attribute);
+            }
 
             // regular attribute
-            ldapNode.attributes.put(getLDAPPropertyName(property), propertyConfigNode);
+            if (boolean.class.isAssignableFrom(property.getRawClass())) {
+                BasicAttribute basicAttribute;
+                propertyConfigNode J
+                if ((boolean) propertyConfigNode)
+                    basicAttribute = new BasicAttribute(getLDAPPropertyName(property), "TRUE");
+                else basicAttribute = new BasicAttribute(getLDAPPropertyName(property), "FALSE");
+                ldapNode.attributes.put();
+            } else
+                ldapNode.attributes.put(getLDAPPropertyName(property), propertyConfigNode);
 
         }
 
@@ -329,6 +381,7 @@ public class LdapConfigurationStorage implements Configuration {
 
     @Override
     public Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException {
-        throw new RuntimeException("Not implemented yet");
-    }
+    throw new RuntimeException("Not implemented yet");
+}
+
 }
