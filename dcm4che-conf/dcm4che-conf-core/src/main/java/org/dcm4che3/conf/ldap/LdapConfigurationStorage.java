@@ -41,6 +41,7 @@ package org.dcm4che3.conf.ldap;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
+import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
 
 import javax.naming.NameClassPair;

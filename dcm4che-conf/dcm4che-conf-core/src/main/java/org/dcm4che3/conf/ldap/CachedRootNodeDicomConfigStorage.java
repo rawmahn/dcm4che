@@ -19,6 +19,8 @@ public class CachedRootNodeDicomConfigStorage extends CachedRootNodeConfiguratio
     @Override
     public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
 
+        System.out.println(path);
+
         getConfigurationRoot();
 
         if (configurableClass != null)

@@ -41,11 +41,15 @@ package org.dcm4che3.conf.ldap;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
+import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
+import org.dcm4che3.conf.core.util.ConfigIterators;
+import org.dcm4che3.conf.core.util.ConfigNodeUtil;
+import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
+import org.dcm4che3.net.Connection;
 
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 /**
  * @author: Roman K
@@ -112,10 +116,79 @@ public class LdapConfigUtils {
     }
 
     public static String dnOf(String parentDN, String attrID, String attrValue) {
-        return attrID + '=' + attrValue.replace(",","\\,") + ',' + parentDN;
+        return attrID + '=' + attrValue.replace(",", "\\,") + ',' + parentDN;
     }
 
     static ArrayList<String> getObjectClasses(AnnotatedConfigurableProperty property) {
         return new ArrayList<String>(Arrays.asList(property.getAnnotation(LDAP.class).objectClasses()));
+    }
+
+    static String refToLdapDN(String ref, AnnotatedConfigurableProperty property, String baseDn) {
+
+        // /dicomConfigurationRoot/dicomDevicesRoot[@name='dcm4chee-arc']/deviceExtensions/ArchiveDeviceExtension
+        // /dicomConfigurationRoot/dicomDevicesRoot[@name='dcm4chee-arc']/dicomNetworkAE[@name='DCM4CHEE']/aeExtensions/ArchiveAEExtension
+        // /dicomConfigurationRoot/dicomDevicesRoot[@name='dcm4chee-arc']/deviceExtensions/HL7DeviceExtension/hl7Apps[@name='*']/hl7AppExtensions/ArchiveHL7ApplicationExtension
+
+        try {
+            List<Map<String, Object>> pathItems = ConfigNodeUtil.parseReference(ref);
+            Iterator<Map<String, Object>> pathItemIter = pathItems.iterator();
+
+            // first pathitem is always dicomconfigroot
+            if (!pathItemIter.next().get("$name").equals("dicomConfigurationRoot"))
+                throw new IllegalArgumentException("No dicom config root");
+
+            Class currentClass = CommonDicomConfiguration.DicomConfigurationRootNode.class;
+            while (pathItemIter.hasNext()) {
+
+                List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(currentClass);
+
+                Map<String, Object> pathItem = pathItemIter.next();
+
+                Object name = pathItem.get("$name");
+
+                for (AnnotatedConfigurableProperty annotatedConfigurableProperty : properties) {
+                    if (name.equals(property.getAnnotatedName())) {
+                        // we have found the correct prop
+                        if (p)
+                        getLDAPPropertyName(property)
+
+
+                    }
+                }
+
+
+            }
+
+
+
+
+            Class clazz = null;
+            if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())
+                clazz = property.getPseudoPropertyForGenericsParamater(0).getRawClass();
+
+
+            if (Connection.class.isAssignableFrom(clazz)) {
+                List<Map<String, Object>> props = ConfigNodeUtil.parseReference(ref);
+
+                String deviceName = (String) props.get(2).get("dicomDeviceName");
+                if (deviceName == null) deviceName = (String) props.get(2).get("$name");
+
+                boolean valid = props.get(0).get("$name").equals("dicomConfigurationRoot") &&
+                        props.get(1).get("$name").equals("dicomDevicesRoot") &&
+                        deviceName != null &&
+                        props.get(3).get("$name").equals("dicomConnection");
+                if (!valid) throw new RuntimeException("Path is invalid");
+
+                // diRRty hardcoding TODO implement
+                return "cn=" + props.get(3).get("cn") + ",dicomDeviceName=" + deviceName + ",cn=Devices,cn=DICOM Configuration" + baseDn;
+            } else
+                throw new RuntimeException("Not supported reference type " + clazz);
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot transform reference " + ref + " to LDAP dn", e);
+        }
+    }
+
+    static String LdapDNToRef(String ldapDn) {
+        return ldapDn;
     }
 }

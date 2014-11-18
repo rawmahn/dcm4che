@@ -45,9 +45,7 @@ import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.conf.core.util.ConfigIterators;
-import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.net.ApplicationEntity;
-import org.dcm4che3.net.Connection;
 import org.dcm4che3.net.Device;
 import org.dcm4che3.net.hl7.HL7Application;
 
@@ -87,39 +85,6 @@ public class LdapNode {
         else return parent.getBaseDn();
     }
 
-
-    //TODO hardcoded. Implement!!!
-    String refToLdapDN(String ref, AnnotatedConfigurableProperty property) {
-        try {
-            Class clazz = null;
-            if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())
-                clazz = property.getPseudoPropertyForGenericsParamater(0).getRawClass();
-
-
-            if (Connection.class.isAssignableFrom(clazz)) {
-                List<Map<String, Object>> props = ConfigNodeUtil.parseReference(ref);
-
-                String deviceName = (String) props.get(2).get("dicomDeviceName");
-                if (deviceName == null) deviceName = (String) props.get(2).get("$name");
-
-                boolean valid = props.get(0).get("$name").equals("dicomConfigurationRoot") &&
-                        props.get(1).get("$name").equals("dicomDevicesRoot") &&
-                        deviceName != null &&
-                        props.get(3).get("$name").equals("dicomConnection");
-                if (!valid) throw new RuntimeException("Path is invalid");
-
-                // diRRty hardcoding TODO implement
-                return "cn=" + props.get(3).get("cn") + ",dicomDeviceName=" + deviceName + ",cn=Devices,cn=DICOM Configuration" + getBaseDn();
-            } else
-                throw new RuntimeException("Not supported reference type " + clazz);
-        } catch (Exception e) {
-            throw new RuntimeException("Cannot transform reference " + ref + " to LDAP dn", e);
-        }
-    }
-
-    String LdapDNToRef(String ldapDn) {
-        return ldapDn;
-    }
 
     public LdapNode getParent() {
         return parent;
@@ -234,7 +199,7 @@ public class LdapNode {
 
                     // handle refs
                     if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())
-                        attrVal = refToLdapDN(attrVal, property);
+                        attrVal = LdapConfigUtils.refToLdapDN(attrVal, property, getBaseDn());
 
                     attribute.add(attrVal);
                 }

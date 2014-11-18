@@ -115,7 +115,7 @@ public class ConfigNodeUtil {
         return str;
     }
 
-    private final static String IDENTIFIER = "[a-zA-Z\\d_]+";
+    private final static String IDENTIFIER = "@?[a-zA-Z\\d_]+";
     private static final String VALUE = "(('.+?')|(\\-?[\\d]+)|true|false)";
     private final static String IDENTIFIER_NAMED = "(?<identifier>" + IDENTIFIER + ")";
     private static final String VALUE_NAMED = "(('(?<strvalue>.+?)')|(?<intvalue>\\-?[\\d]+)|(?<boolvalue>true|false))";
@@ -146,12 +146,16 @@ public class ConfigNodeUtil {
      */
     public static List<Map<String, Object>> parseReference(String s) {
 
+        List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
+
+        //special case
+        if (s.equals("/")) return list;
+
         if (!xPathPattern.matcher(s).matches()) {
             throw new IllegalArgumentException("Failed to parse provided reference (" + s + ")");
         }
 
 
-        List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
         Matcher nodeMatcher = xPathNodePattern.matcher(s);
         while (nodeMatcher.find()) {
 
@@ -193,11 +197,8 @@ public class ConfigNodeUtil {
 
                 }
 
-
             }
-
         }
-        ;
 
         return list;
     }

@@ -204,7 +204,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     }
 
     private String getAETPath(String aet) {
-        return "dicomConfigurationRoot/dicomUniqueAETitlesRegistryRoot[@name='" + ConfigNodeUtil.escapeApos(aet) + "']";
+        return "/dicomConfigurationRoot/dicomUniqueAETitlesRegistryRoot[@name='" + ConfigNodeUtil.escapeApos(aet) + "']";
     }
 
     @Override
@@ -382,7 +382,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public String deviceRef(String name) {
-        return "dicomConfigurationRoot/dicomDevicesRoot[@name='" + ConfigNodeUtil.escapeApos(name) + "']";
+        return "/dicomConfigurationRoot/dicomDevicesRoot[@name='" + ConfigNodeUtil.escapeApos(name) + "']";
     }
 
     @Override
