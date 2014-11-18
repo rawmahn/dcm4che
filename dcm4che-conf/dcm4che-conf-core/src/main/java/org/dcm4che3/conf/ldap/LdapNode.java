@@ -199,7 +199,7 @@ public class LdapNode {
 
                     // handle refs
                     if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())
-                        attrVal = LdapConfigUtils.refToLdapDN(attrVal, property, getBaseDn());
+                        attrVal = LdapConfigUtils.refToLdapDN(attrVal, property, getBaseDn(), getLdapConfigurationStorage());
 
                     attribute.add(attrVal);
                 }
@@ -266,7 +266,7 @@ public class LdapNode {
             for (Map.Entry<String, Map<String, Object>> ext : extensions.entrySet()) {
                 Class<?> extClass = null;
                 try {
-                    extClass = getExtensionClassBySimpleName(ext);
+                    extClass = LdapConfigUtils.getExtensionClassBySimpleName(getLdapConfigurationStorage(), ext.getKey());
                 } catch (Exception e) {
                     throw new ConfigurationException("Cannot find extension class " + ext.getKey(), e);
                 }
@@ -284,17 +284,6 @@ public class LdapNode {
                 extNode.populate(ext.getValue(), extClass);
             }
         }
-    }
-
-    private Class<?> getExtensionClassBySimpleName(Map.Entry<String, Map<String, Object>> ext) throws ClassNotFoundException {
-
-        List<Class<?>> extensionClasses = getLdapConfigurationStorage().getAllExtensionClasses();
-
-        for (Class<?> aClass : extensionClasses) {
-            if (aClass.getSimpleName().equals(ext.getKey())) return aClass;
-        }
-
-        throw new ClassNotFoundException();
     }
 
     private LdapNode makeLdapCollectionNode(AnnotatedConfigurableProperty property) throws ConfigurationException {

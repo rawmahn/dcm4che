@@ -138,8 +138,8 @@ public class ConfigNodeUtil {
 
     /**
      * Returns list of path elements.
-     * $name - name
-     * key - value
+     * $name - name of the node (not @name, which is a predicate)
+     * other entries are just key - value
      *
      * @param s
      * @return
@@ -205,5 +205,9 @@ public class ConfigNodeUtil {
 
     public static String escapeApos(String name) {
         return name.replace("'", "&apos;");
+    }
+
+    public static String unescapeApos(String value) {
+        return value.replace("&apos;","'");
     }
 }

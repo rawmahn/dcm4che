@@ -47,6 +47,7 @@ import org.dcm4che3.conf.core.util.ConfigIterators;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
 import org.dcm4che3.net.Connection;
+import org.dcm4che3.net.Device;
 
 import java.lang.annotation.Annotation;
 import java.util.*;
@@ -123,19 +124,20 @@ public class LdapConfigUtils {
         return new ArrayList<String>(Arrays.asList(property.getAnnotation(LDAP.class).objectClasses()));
     }
 
-    static String refToLdapDN(String ref, AnnotatedConfigurableProperty property, String baseDn) {
+    static String refToLdapDN(String ref, AnnotatedConfigurableProperty property, String baseDn, LdapConfigurationStorage ldapStorage) {
 
         // /dicomConfigurationRoot/dicomDevicesRoot[@name='dcm4chee-arc']/deviceExtensions/ArchiveDeviceExtension
         // /dicomConfigurationRoot/dicomDevicesRoot[@name='dcm4chee-arc']/dicomNetworkAE[@name='DCM4CHEE']/aeExtensions/ArchiveAEExtension
         // /dicomConfigurationRoot/dicomDevicesRoot[@name='dcm4chee-arc']/deviceExtensions/HL7DeviceExtension/hl7Apps[@name='*']/hl7AppExtensions/ArchiveHL7ApplicationExtension
 
         try {
-            List<Map<String, Object>> pathItems = ConfigNodeUtil.parseReference(ref);
-            Iterator<Map<String, Object>> pathItemIter = pathItems.iterator();
+            Iterator<Map<String, Object>> pathItemIter = ConfigNodeUtil.parseReference(ref).iterator();
 
             // first pathitem is always dicomconfigroot
             if (!pathItemIter.next().get("$name").equals("dicomConfigurationRoot"))
                 throw new IllegalArgumentException("No dicom config root");
+
+            String dn = "cn=DICOM Configuration," + baseDn;
 
             Class currentClass = CommonDicomConfiguration.DicomConfigurationRootNode.class;
             while (pathItemIter.hasNext()) {
@@ -148,18 +150,57 @@ public class LdapConfigUtils {
 
                 for (AnnotatedConfigurableProperty annotatedConfigurableProperty : properties) {
                     if (name.equals(property.getAnnotatedName())) {
-                        // we have found the correct prop
-                        if (p)
-                        getLDAPPropertyName(property)
 
+                        // in any case
+                        if (!isNoContainerNode(property))
+                            dn = dnOf(dn, "cn", getLDAPPropertyName(property));
+
+                        // for collections/maps, analyze predicates
+                        if (property.isCollectionOfConfObjects() || property.isMapOfConfObjects() || property.isArrayOfConfObjects()) {
+
+                            List<String> rdnItems = new ArrayList<String>();
+
+                            for (Map.Entry<String, Object> entry : pathItem.entrySet()) {
+                                // filter out the name
+                                if (entry.getKey().equals("$name")) continue;
+
+                                String df = null;
+                                if (entry.getKey().equals("@name"))
+                                    df = getDistinguishingField(property);
+                                else
+                                    df = entry.getKey();
+
+                                rdnItems.add(df + "=" + escapeStringToLdap(entry.getValue()));
+                            }
+
+                            dn = org.apache.commons.lang3.StringUtils.join(rdnItems, "+")+","+dn;
+                            currentClass = property.getPseudoPropertyForCollectionElement().getRawClass();
+                        }
+
+                        // ConfObject
+                        if (property.isConfObject())
+                            currentClass = property.getRawClass();
+
+                        // change class
 
                     }
                 }
 
+                // handle extension
+                if (currentClass.equals(Device.class)) {
+                    if (name.equals("deviceExtensions")) {
+                        Map<String, Object> extensionNode = pathItemIter.next();
+
+                        Class<?> clazz = getExtensionClassBySimpleName(ldapStorage, extensionNode.get("$name").toString());
+
+                        LDAP ldapanno = clazz.getAnnotation(LDAP.class);
+                        if (ldapanno == null || !ldapanno.noContainerNode())
+                            dn
+
+                    }
+                }
 
             }
-
-
 
 
             Class clazz = null;
@@ -188,7 +229,27 @@ public class LdapConfigUtils {
         }
     }
 
+    private static String escapeStringToLdap(Object value) {
+
+        return ConfigNodeUtil.unescapeApos(value.toString()).replace(",", "\\,");
+    }
+    private static String escapeStringFromLdap(Object value) {
+
+        return ConfigNodeUtil.escapeApos(value.toString()).replace("\\,", ",");
+    }
+
     static String LdapDNToRef(String ldapDn) {
         return ldapDn;
+    }
+
+    static Class<?> getExtensionClassBySimpleName(LdapConfigurationStorage configurationStorage, String extensionSimpleName) throws ClassNotFoundException {
+
+        List<Class<?>> extensionClasses = configurationStorage.getAllExtensionClasses();
+
+        for (Class<?> aClass : extensionClasses) {
+            if (aClass.getSimpleName().equals(extensionSimpleName)) return aClass;
+        }
+
+        throw new ClassNotFoundException();
     }
 }
