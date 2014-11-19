@@ -115,12 +115,10 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         // quick init
         try {
             if (!configurationExists()) {
-                Map<String, Object> rootNode = new HashMap<String, Object>();
-                HashMap<String, Map<String, Object>> subroots = new HashMap<String, Map<String, Object>>();
-                subroots.put("dicomDevicesRoot", new HashMap<String, Object>());
-                subroots.put("dicomUniqueAETitlesRegistryRoot", new HashMap<String, Object>());
-                rootNode.put("dicomConfigurationRoot", subroots);
-                config.persistNode("/", rootNode, null);
+                HashMap<String, Object> rootNode = new HashMap<String, Object>();
+                rootNode.put("dicomDevicesRoot", new HashMap<String, Object>());
+                rootNode.put("dicomUniqueAETitlesRegistryRoot", new HashMap<String, Object>());
+                config.persistNode("/dicomConfigurationRoot", rootNode, DicomConfigurationRootNode.class);
 
             }
         } catch (ConfigurationException e) {
@@ -136,7 +134,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     @Override
     public boolean purgeConfiguration() throws ConfigurationException {
         if (!configurationExists()) return false;
-        config.persistNode("dicomConfigurationRoot", new HashMap<String, Object>(), null);
+        config.persistNode("/dicomConfigurationRoot", new HashMap<String, Object>(), DicomConfigurationRootNode.class);
         return true;
     }
 
@@ -198,7 +196,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         final HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("dicomAETitle", aet);
 
-        config.persistNode(path, map, DicomConfigurationRootNode.class);
+        config.persistNode(path, map, AETitleItem.class);
         return true;
 
     }

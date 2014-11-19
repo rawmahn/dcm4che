@@ -41,15 +41,9 @@ package org.dcm4che3.conf.ldap;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
-import org.dcm4che3.conf.core.util.ConfigNodeUtil;
-import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
 
-import javax.naming.NameClassPair;
-import javax.naming.NameNotFoundException;
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.directory.BasicAttribute;
-import javax.naming.directory.InitialDirContext;
+import javax.naming.*;
+import javax.naming.directory.*;
 import java.util.*;
 
 /**
@@ -90,26 +84,15 @@ public class LdapConfigurationStorage implements Configuration {
         ldapCtx.destroySubcontext(name);
     }
 
-    private void persist(LdapNode ldapNode) {
 
-        Iterator<String> iterator = ldapNode.getObjectClasses().iterator();
-        BasicAttribute objectClass = new BasicAttribute("objectClass");
-        while (iterator.hasNext()) objectClass.add(iterator.next());
-        ldapNode.getAttributes().put(objectClass);
-
+    private void merge(LdapNode ldapNode) {
         try {
-            destroySubcontextWithChilds(ldapNode.getDn());
-        } catch (NameNotFoundException e1) {
-            //noop
+
+            mergeIn(ldapNode);
+
         } catch (NamingException e) {
             throw new RuntimeException(e);
         }
-        try {
-            ldapCtx.createSubcontext(ldapNode.getDn(), ldapNode.getAttributes());
-        } catch (NamingException e) {
-            throw new RuntimeException(e);
-        }
-        for (LdapNode child : ldapNode.getChildren()) persist(child);
     }
 
     @Override
@@ -136,23 +119,77 @@ public class LdapConfigurationStorage implements Configuration {
         throw new RuntimeException("Not implemented yet");
     }
 
-
     @Override
     public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
         // TODO: byte[], x509 from base64
         // dynamic dn generation for lists... maybe allow to use an extension
 
-        if (path.equals("/dicomConfigurationRoot")) {
-            LdapNode ldapNode = new LdapNode(this);
-            ldapNode.setDn(LdapConfigUtils.dnOf(baseDN, "cn", "DICOM Configuration"));
-            ldapNode.populate(configNode, CommonDicomConfiguration.DicomConfigurationRootNode.class);
+        String dn = LdapConfigUtils.refToLdapDN(path, this);
+
+        LdapNode ldapNode = new LdapNode(this);
+        ldapNode.setDn(dn);
+        ldapNode.populate(configNode, configurableClass);
 
 
-            persist(ldapNode);
+        merge(ldapNode);
 
-            // TODO: also fill in other parameters from the configNode according to 'partially overwritten' contract
-        } else
-            throw new RuntimeException("Not implemented yet");
+        // TODO: also fill in other parameters from the configNode according to 'partially overwritten' contract
+    }
+
+
+    private void mergeIn(LdapNode ldapNode) throws NamingException {
+
+        // merge attributes of this node
+        if (!ldapNode.getObjectClasses().isEmpty()) {
+
+            BasicAttribute objectClass = new BasicAttribute("objectClass");
+            for (String c : ldapNode.getObjectClasses()) objectClass.add(c);
+            ldapNode.getAttributes().put(objectClass);
+
+            try {
+                ldapCtx.createSubcontext(ldapNode.getDn(), ldapNode.getAttributes());
+            } catch (NameAlreadyBoundException alreadyBoundE) {
+
+                // Append objectClass
+                ldapNode.getAttributes().remove("objectClass");
+                Attribute existingObjectClasses = ldapCtx.getAttributes(ldapNode.getDn(), new String[]{"objectClass"}).get("objectClass");
+                for (String c : ldapNode.getObjectClasses())
+                    if (!existingObjectClasses.contains(c))
+                        existingObjectClasses.add(c);
+
+                ldapNode.getAttributes().put(existingObjectClasses);
+
+                // replace attributes
+                ldapCtx.modifyAttributes(ldapNode.getDn(), DirContext.REPLACE_ATTRIBUTE, ldapNode.getAttributes());
+            }
+        }
+
+        // remove children that do not exist in the new config
+        // see which objectclasses are children of the node and remove them all
+        for (String childObjClass : ldapNode.getChildrenObjectClasses()) {
+
+            SearchControls ctls = new SearchControls();
+            ctls.setSearchScope(1);
+            ctls.setReturningObjFlag(false);
+            NamingEnumeration<SearchResult> ne = ldapCtx.search(ldapNode.getDn(), "(objectclass=" + childObjClass + ")", ctls);
+
+            try {
+                while (ne.hasMore()) {
+                    SearchResult sr = (SearchResult) ne.next();
+                    // TODO: filter out those who dont need to be killed
+                    try {
+                        destroySubcontextWithChilds(sr.getName());
+                    } catch (NameNotFoundException exception) {
+                        //noop, proceed
+                    }
+                }
+            } finally {
+                LdapUtils.safeClose(ne);
+            }
+        }
+
+        // descent recursively
+        for (LdapNode child : ldapNode.getChildren()) mergeIn(child);
     }
 
     @Override
@@ -163,13 +200,26 @@ public class LdapConfigurationStorage implements Configuration {
 
     @Override
     public void removeNode(String path) throws ConfigurationException {
-        throw new RuntimeException("Not implemented yet");
+        LdapConfigUtils.BooleanContainer dnIsKillableWrapper = new LdapConfigUtils.BooleanContainer();
+        String dn = LdapConfigUtils.refToLdapDN(path, this, dnIsKillableWrapper);
+        if (dnIsKillableWrapper.isKillable()) {
+            try {
+                destroySubcontextWithChilds(dn);
+            } catch (NameNotFoundException nnfe) {
+                //noop
+            } catch (NamingException e) {
+                throw new ConfigurationException(e);
+            }
+        }
 
     }
 
     @Override
     public Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException {
-    throw new RuntimeException("Not implemented yet");
-}
+        throw new RuntimeException("Not implemented yet");
+    }
 
+    public String getBaseDN() {
+        return baseDN;
+    }
 }

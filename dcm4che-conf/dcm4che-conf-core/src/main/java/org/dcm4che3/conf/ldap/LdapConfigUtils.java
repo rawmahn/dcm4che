@@ -39,14 +39,13 @@
  */
 package org.dcm4che3.conf.ldap;
 
+import org.apache.commons.lang3.StringUtils;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
-import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.conf.core.util.ConfigIterators;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
-import org.dcm4che3.net.Connection;
 import org.dcm4che3.net.Device;
 
 import java.lang.annotation.Annotation;
@@ -124,12 +123,13 @@ public class LdapConfigUtils {
         return new ArrayList<String>(Arrays.asList(property.getAnnotation(LDAP.class).objectClasses()));
     }
 
-    static String refToLdapDN(String ref, AnnotatedConfigurableProperty property, String baseDn, LdapConfigurationStorage ldapStorage) {
+    static String refToLdapDN(String ref, LdapConfigurationStorage ldapStorage) {
+        return refToLdapDN(ref, ldapStorage, new BooleanContainer());
+    }
 
-        // /dicomConfigurationRoot/dicomDevicesRoot[@name='dcm4chee-arc']/deviceExtensions/ArchiveDeviceExtension
-        // /dicomConfigurationRoot/dicomDevicesRoot[@name='dcm4chee-arc']/dicomNetworkAE[@name='DCM4CHEE']/aeExtensions/ArchiveAEExtension
-        // /dicomConfigurationRoot/dicomDevicesRoot[@name='dcm4chee-arc']/deviceExtensions/HL7DeviceExtension/hl7Apps[@name='*']/hl7AppExtensions/ArchiveHL7ApplicationExtension
+    static String refToLdapDN(String ref, LdapConfigurationStorage ldapStorage, BooleanContainer dnIsKillableWrapper) {
 
+        boolean dnIsKillable = true;
         try {
             Iterator<Map<String, Object>> pathItemIter = ConfigNodeUtil.parseReference(ref).iterator();
 
@@ -137,7 +137,7 @@ public class LdapConfigUtils {
             if (!pathItemIter.next().get("$name").equals("dicomConfigurationRoot"))
                 throw new IllegalArgumentException("No dicom config root");
 
-            String dn = "cn=DICOM Configuration," + baseDn;
+            String dn = "cn=DICOM Configuration," + ldapStorage.getBaseDN();
 
             Class currentClass = CommonDicomConfiguration.DicomConfigurationRootNode.class;
             while (pathItemIter.hasNext()) {
@@ -148,32 +148,60 @@ public class LdapConfigUtils {
 
                 Object name = pathItem.get("$name");
 
-                for (AnnotatedConfigurableProperty annotatedConfigurableProperty : properties) {
+                for (AnnotatedConfigurableProperty property : properties) {
                     if (name.equals(property.getAnnotatedName())) {
 
                         // in any case
-                        if (!isNoContainerNode(property))
+                        if (!isNoContainerNode(property)) {
                             dn = dnOf(dn, "cn", getLDAPPropertyName(property));
+                            dnIsKillable = true;
+                        } else
+                            dnIsKillable = false;
 
                         // for collections/maps, analyze predicates
                         if (property.isCollectionOfConfObjects() || property.isMapOfConfObjects() || property.isArrayOfConfObjects()) {
 
+                            // remove $name, because it is the collection name in this pathitem
+                            pathItem.remove("$name");
+
+                            // add rdn
                             List<String> rdnItems = new ArrayList<String>();
+                            while (true) {
+                                // collect rdn pieces
+                                for (Map.Entry<String, Object> entry : pathItem.entrySet()) {
 
-                            for (Map.Entry<String, Object> entry : pathItem.entrySet()) {
-                                // filter out the name
-                                if (entry.getKey().equals("$name")) continue;
 
-                                String df = null;
-                                if (entry.getKey().equals("@name"))
-                                    df = getDistinguishingField(property);
-                                else
-                                    df = entry.getKey();
+                                    // skip wildcard - expect predicates
+                                    if (entry.getKey().equals("$name") && entry.getValue().equals("*")) {
+                                        if (pathItem.size()==1) throw new IllegalArgumentException("Wildcard without predicates is not allowed in references");
+                                        continue;
+                                    }
 
-                                rdnItems.add(df + "=" + escapeStringToLdap(entry.getValue()));
+                                    // add the rest of predicates to rdn
+                                    String df = null;
+                                    if (entry.getKey().equals("@name") || entry.getKey().equals("$name"))
+                                        df = getDistinguishingFieldForCollectionElement(property);
+                                    else
+                                        df = entry.getKey();
+                                    rdnItems.add(df + "=" + escapeStringToLdap(entry.getValue()));
+                                }
+
+
+                                if (!rdnItems.isEmpty()) {
+                                    // if rdn found, proceed
+                                    dn = StringUtils.join(rdnItems, "+") + "," + dn;
+                                    dnIsKillable = true;
+                                    break;
+                                } else if (!pathItemIter.hasNext()) {
+                                    // rdn not found, path is over,.. nothing to look for
+                                    break;
+                                } else {
+                                    // get next path item and collect the rdn there
+                                    pathItem = pathItemIter.next();
+                                }
                             }
 
-                            dn = org.apache.commons.lang3.StringUtils.join(rdnItems, "+")+","+dn;
+
                             currentClass = property.getPseudoPropertyForCollectionElement().getRawClass();
                         }
 
@@ -181,49 +209,40 @@ public class LdapConfigUtils {
                         if (property.isConfObject())
                             currentClass = property.getRawClass();
 
-                        // change class
-
                     }
                 }
 
-                // handle extension
+                // handle extensions
                 if (currentClass.equals(Device.class)) {
-                    if (name.equals("deviceExtensions")) {
-                        Map<String, Object> extensionNode = pathItemIter.next();
+                    if (name.equals("deviceExtensions") ||
+                            name.equals("aeExtensions") ||
+                            name.equals("hl7AppExtensions")) {
 
-                        Class<?> clazz = getExtensionClassBySimpleName(ldapStorage, extensionNode.get("$name").toString());
+                        dnIsKillable = false;
 
-                        LDAP ldapanno = clazz.getAnnotation(LDAP.class);
-                        if (ldapanno == null || !ldapanno.noContainerNode())
-                            dn
+                        String extName;
+                        if (pathItem.containsKey("@name")) {
+                            extName = pathItem.get("@name").toString();
+                        } else {
+                            pathItem = pathItemIter.next();
+                            extName = pathItem.get("$name").toString();
+                        }
+
+                        currentClass = getExtensionClassBySimpleName(ldapStorage, extName);
+
+                        LDAP ldapanno = (LDAP) currentClass.getAnnotation(LDAP.class);
+                        if (ldapanno == null || !ldapanno.noContainerNode()) {
+                            dn = dnOf(dn, "cn", currentClass.getSimpleName());
+                            dnIsKillable = true;
+                        }
 
                     }
                 }
 
             }
 
-
-            Class clazz = null;
-            if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())
-                clazz = property.getPseudoPropertyForGenericsParamater(0).getRawClass();
-
-
-            if (Connection.class.isAssignableFrom(clazz)) {
-                List<Map<String, Object>> props = ConfigNodeUtil.parseReference(ref);
-
-                String deviceName = (String) props.get(2).get("dicomDeviceName");
-                if (deviceName == null) deviceName = (String) props.get(2).get("$name");
-
-                boolean valid = props.get(0).get("$name").equals("dicomConfigurationRoot") &&
-                        props.get(1).get("$name").equals("dicomDevicesRoot") &&
-                        deviceName != null &&
-                        props.get(3).get("$name").equals("dicomConnection");
-                if (!valid) throw new RuntimeException("Path is invalid");
-
-                // diRRty hardcoding TODO implement
-                return "cn=" + props.get(3).get("cn") + ",dicomDeviceName=" + deviceName + ",cn=Devices,cn=DICOM Configuration" + baseDn;
-            } else
-                throw new RuntimeException("Not supported reference type " + clazz);
+            dnIsKillableWrapper.setKillable(dnIsKillable);
+            return dn;
         } catch (Exception e) {
             throw new RuntimeException("Cannot transform reference " + ref + " to LDAP dn", e);
         }
@@ -233,6 +252,7 @@ public class LdapConfigUtils {
 
         return ConfigNodeUtil.unescapeApos(value.toString()).replace(",", "\\,");
     }
+
     private static String escapeStringFromLdap(Object value) {
 
         return ConfigNodeUtil.escapeApos(value.toString()).replace("\\,", ",");
@@ -251,5 +271,17 @@ public class LdapConfigUtils {
         }
 
         throw new ClassNotFoundException();
+    }
+
+    protected static class BooleanContainer {
+        private boolean killable;
+
+        public void setKillable(boolean killable) {
+            this.killable = killable;
+        }
+
+        public boolean isKillable() {
+            return killable;
+        }
     }
 }

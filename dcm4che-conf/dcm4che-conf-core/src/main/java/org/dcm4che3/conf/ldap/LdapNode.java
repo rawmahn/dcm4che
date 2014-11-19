@@ -63,6 +63,7 @@ public class LdapNode {
     private LdapNode parent;
     private String dn;
     private Collection<String> objectClasses = new ArrayList<String>();
+    private Set<String> childrenObjectClasses = new HashSet<String>();
     private Attributes attributes = new BasicAttributes();
     private Collection<LdapNode> children = new ArrayList<LdapNode>();
 
@@ -110,12 +111,13 @@ public class LdapNode {
 
         if (configurableClass == null ||
                 configurableClass.getAnnotation(ConfigurableClass.class) == null)
-            throw new ConfigurationException("Unexpected error - class '" + configurableClass == null ? null : configurableClass.getName() + "' is not a configurable class");
+            throw new ConfigurationException("Unexpected error - class '" + configurableClass + "' is not a configurable class");
 
         // fill in objectclasses
-        LDAP classLdapAnno = (LDAP) configurableClass.getAnnotation(LDAP.class);
-        if (classLdapAnno != null)
-            getObjectClasses().addAll(new ArrayList<String>(Arrays.asList(classLdapAnno.objectClasses())));
+        ArrayList<String> objectClasses = extractObjectClasses(configurableClass);
+        getObjectClasses().addAll(objectClasses);
+        if (getParent()!= null)
+            getParent().getChildrenObjectClasses().addAll(objectClasses);
 
         // iterate over configurable properties
         List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(configurableClass);
@@ -138,7 +140,8 @@ public class LdapNode {
                     }
 
                     //otherwise, make this mock with value
-                    elementNode.setObjectClasses(Arrays.asList(property.getAnnotation(LDAP.class).mapEntryObjectClass()));
+                    elementNode.setObjectClasses(getObjectClasses(property));
+                    elementNode.getParent().getChildrenObjectClasses().addAll(elementNode.getObjectClasses());
                     elementNode.getAttributes().put(property.getAnnotation(LDAP.class).mapValueAttribute(), entry.getValue());
 
                 }
@@ -199,7 +202,7 @@ public class LdapNode {
 
                     // handle refs
                     if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())
-                        attrVal = LdapConfigUtils.refToLdapDN(attrVal, property, getBaseDn(), getLdapConfigurationStorage());
+                        attrVal = LdapConfigUtils.refToLdapDN(attrVal, getLdapConfigurationStorage());
 
                     attribute.add(attrVal);
                 }
@@ -225,13 +228,13 @@ public class LdapNode {
             fillInExtensions(configNode, "hl7AppExtensions");
         }
 
-
+/*
         /**
          * Workaround for objectClass dcmArchiveExtension
          * TODO: inspect. dicomArchiveDevice added due to presence of attributes from there.
          * extensions are added later, so this objectclass is not there while persisting the device alone.
          * Adding it to Device does not work since there are some required attributes
-         * */
+         *
 
         String[] archiveDeviceExtensionPropNames = {
                 "dcmIncorrectWorklistEntrySelectedCode",
@@ -251,13 +254,42 @@ public class LdapNode {
             if (configNode.containsKey(propName) && !getObjectClasses().contains(propName))
                 isArchiveExtension = true;
 
-/*
+
         if (isArchiveExtension) {
             if (!getObjectClasses().contains("dcmArchiveDevice"))
                 getObjectClasses().add("dcmArchiveDevice");
         }
 */
 
+    }
+
+    private List<String> getObjectClasses(AnnotatedConfigurableProperty property) {
+
+        AnnotatedConfigurableProperty elementAnno = property.getPseudoPropertyForCollectionElement();
+        if (elementAnno != null) {
+            LDAP annotation = elementAnno.getAnnotation(LDAP.class);
+            if (annotation != null) return new ArrayList<String>(Arrays.asList(annotation.objectClasses()));
+        }
+
+        LDAP propAnno = property.getAnnotation(LDAP.class);
+        if (propAnno != null)
+            return  Arrays.asList(propAnno.mapEntryObjectClass());
+
+        if (property.isConfObject()) {
+            LDAP confObjAnno = (LDAP) property.getRawClass().getAnnotation(LDAP.class);
+            if (confObjAnno != null) confObjAnno.objectClasses();
+        }
+
+        return new ArrayList<String>();
+    }
+
+    private ArrayList<String> extractObjectClasses(Class configurableClass) {
+        LDAP classLdapAnno = (LDAP) configurableClass.getAnnotation(LDAP.class);
+        ArrayList<String> objectClasses;
+        if (classLdapAnno != null)
+            objectClasses = new ArrayList<String>(Arrays.asList(classLdapAnno.objectClasses()));
+        else objectClasses = new ArrayList<String>();
+        return objectClasses;
     }
 
     private void fillInExtensions(Map<String, Object> configNode, String whichExtensions) throws ConfigurationException {
@@ -347,6 +379,10 @@ public class LdapNode {
 
     public void setChildren(Collection<LdapNode> children) {
         this.children = children;
+    }
+
+    public Set<String> getChildrenObjectClasses() {
+        return childrenObjectClasses;
     }
     //</editor-fold>
 

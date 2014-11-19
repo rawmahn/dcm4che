@@ -242,6 +242,10 @@ class ConfigNodePathTests {
 
         Iterator search = config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='DCM4CHEE']]");
         assert search.next()['dicomDeviceName'] == "dcm4chee-arc"
+
+//        search = config.search("dicomConfigurationRoot/dicomDevicesRoot[dicomNetworkAE[@name='DCM4CHEE']]");
+  //      assert search.next()['dicomDeviceName'] == "dcm4chee-arc"
+
     }
 
 }

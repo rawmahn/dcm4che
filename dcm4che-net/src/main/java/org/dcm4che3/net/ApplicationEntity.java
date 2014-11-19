@@ -118,6 +118,7 @@ public class ApplicationEntity implements Serializable {
     /**
      * "Proxy" property, actually forwards everything to scuTCs and scpTCs in its setter/getter
      */
+    @LDAP(noContainerNode = true)
     @ConfigurableProperty(  name = "dcmTransferCapability",
                             description = "DICOM Transfer Capabilities")
     private Collection<TransferCapability> transferCapabilities;
