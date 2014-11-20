@@ -43,6 +43,7 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -101,4 +102,10 @@ public class CachedRootNodeConfiguration extends DelegatingConfiguration {
         delegate.removeNode(path);
         ConfigNodeUtil.removeNode(getConfigurationRoot(), path);
     }
+
+    @Override
+    public Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException {
+        return ConfigNodeUtil.search(getConfigurationRoot(), liteXPathExpression);
+    }
+
 }

@@ -43,9 +43,6 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.hl7.HL7Configuration;
 import org.dcm4che3.conf.core.BeanVitalizer;
 import org.dcm4che3.conf.core.Configuration;
-import org.dcm4che3.conf.core.api.ConfigurableClass;
-import org.dcm4che3.conf.core.api.ConfigurableProperty;
-import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.net.AEExtension;
 import org.dcm4che3.net.Device;
@@ -64,22 +61,6 @@ public class CommonDicomConfigurationWithHL7 extends CommonDicomConfiguration im
 
     Collection<Class<? extends HL7ApplicationExtension>> hl7ApplicationExtensionClasses;
 
-    @LDAP(objectClasses = "hl7UniqueApplicationName", distinguishingField = "hl7ApplicationName")
-    @ConfigurableClass
-    private class HL7UniqueAppRegistryItem {
-
-        @ConfigurableProperty(name = "hl7ApplicationName")
-        String name;
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-    }
-
 
     @Override
     public boolean registerHL7Application(String name) throws ConfigurationException {
@@ -96,8 +77,15 @@ public class CommonDicomConfigurationWithHL7 extends CommonDicomConfiguration im
         return true;
     }
 
+    @Override
+    protected HashMap<String, Object> createInitialConfigRootNode() {
+        HashMap<String, Object> rootNode = super.createInitialConfigRootNode();
+        rootNode.put("hl7UniqueApplicationNamesRegistryRoot", new HashMap<String, Object>());
+        return rootNode;
+    }
+
     private String getHL7UniqueAppItemPath(String name) {
-        return "dicomConfigurationRoot/hl7UniqueApplicationNamesRegistryRoot[@name='" + ConfigNodeUtil.escapeApos(name) + "']";
+        return "/dicomConfigurationRoot/hl7UniqueApplicationNamesRegistryRoot[@name='" + ConfigNodeUtil.escapeApos(name) + "']";
     }
 
     @Override
@@ -107,7 +95,7 @@ public class CommonDicomConfigurationWithHL7 extends CommonDicomConfiguration im
 
     @Override
     public HL7Application findHL7Application(String name) throws ConfigurationException {
-        String pathForDeviceName = "dicomConfigurationRoot/dicomDevicesRoot/*[deviceExtensions/HL7DeviceExtension/hl7Apps/*[hl7ApplicationName='" + ConfigNodeUtil.escapeApos(name) + "']]/dicomDeviceName";
+        String pathForDeviceName = "/dicomConfigurationRoot/dicomDevicesRoot/*[deviceExtensions/HL7DeviceExtension/hl7Apps/*[hl7ApplicationName='" + ConfigNodeUtil.escapeApos(name) + "']]/dicomDeviceName";
         try {
             Iterator search = config.search(pathForDeviceName);
             String deviceName = (String) search.next();

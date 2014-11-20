@@ -337,6 +337,7 @@ public class VitalizerTest {
         //Assert.assertTrue("Config node before deserialization must be the same as after serializing back. Last keys"+DeepEquals.lastDualKey,b);
 
     }
+
     @Test
     public void testPerformance() throws ConfigurationException {
         HashMap<String, Object> testConfigClassNode = getTestConfigClassMap();

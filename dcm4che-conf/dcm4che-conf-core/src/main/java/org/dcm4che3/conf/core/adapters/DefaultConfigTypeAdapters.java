@@ -47,7 +47,6 @@ import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.validation.ValidationException;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.*;
 
 /**
@@ -73,7 +72,7 @@ public class DefaultConfigTypeAdapters {
         ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
 
         // normalize
-        node = adapter.normalize(node, property);
+        node = adapter.normalize(node, property, vitalizer);
         return adapter.fromConfigNode(node, property, vitalizer);
     }
 
@@ -124,7 +123,7 @@ public class DefaultConfigTypeAdapters {
 
         @SuppressWarnings("unchecked")
         @Override
-        public T normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        public T normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
             try {
                 if (metadata.get("type").equals("integer")) {
 
@@ -176,7 +175,7 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public String normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        public String normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
             return (String) configNode;
         }
     }
@@ -248,7 +247,7 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public Object normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        public Object normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
             //TODO: validate ?
             if (configNode == null) return null;//throw new ConfigurationException("null not allowed for enum");
             switch (property.getAnnotation(ConfigurableProperty.class).enumRepresentation()) {

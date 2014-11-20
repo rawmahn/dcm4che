@@ -96,8 +96,9 @@ public interface ConfigTypeAdapter<T, ST> {
      *
      * @param configNode
      * @param property
+     * @param vitalizer
      * @return
      */
-    ST normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+    ST normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException;
 
 }

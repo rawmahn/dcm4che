@@ -185,7 +185,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
     }
 
     @Override
-    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         return (Map<String, Object>) configNode;
     }
 }

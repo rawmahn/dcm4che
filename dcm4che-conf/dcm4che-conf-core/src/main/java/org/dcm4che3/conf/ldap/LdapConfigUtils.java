@@ -48,14 +48,24 @@ import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
 import org.dcm4che3.net.Device;
 
+import javax.naming.InvalidNameException;
+import javax.naming.directory.Attributes;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 import java.lang.annotation.Annotation;
 import java.util.*;
+
+import static org.dcm4che3.conf.core.util.ConfigNodeUtil.escapeApos;
 
 /**
  * @author: Roman K
  */
 public class LdapConfigUtils {
-    // resolve map/collection key field
+    /** Resolve map/collection key field for a property
+     *
+     * @param property
+     * @return
+     */
     static String getDistinguishingFieldForCollectionElement(AnnotatedConfigurableProperty property) {
 
         // by default use what annotated on the property
@@ -119,7 +129,7 @@ public class LdapConfigUtils {
         return attrID + '=' + attrValue.replace(",", "\\,") + ',' + parentDN;
     }
 
-    static ArrayList<String> getObjectClasses(AnnotatedConfigurableProperty property) {
+    static ArrayList<String> extractObjectClasses(AnnotatedConfigurableProperty property) {
         return new ArrayList<String>(Arrays.asList(property.getAnnotation(LDAP.class).objectClasses()));
     }
 
@@ -201,7 +211,6 @@ public class LdapConfigUtils {
                                 }
                             }
 
-
                             currentClass = property.getPseudoPropertyForCollectionElement().getRawClass();
                         }
 
@@ -248,6 +257,65 @@ public class LdapConfigUtils {
         }
     }
 
+    public static ArrayList<String> extractObjectClasses(Class configurableClass) {
+        LDAP classLdapAnno = (LDAP) configurableClass.getAnnotation(LDAP.class);
+        ArrayList<String> objectClasses;
+        if (classLdapAnno != null)
+            objectClasses = new ArrayList<String>(Arrays.asList(classLdapAnno.objectClasses()));
+        else objectClasses = new ArrayList<String>();
+        return objectClasses;
+    }
+
+
+    public static String connectionLdapDnToRef(String dn, LdapConfigurationStorage ldapStorage) {
+        try {
+
+            String baseDN = ldapStorage.getBaseDN();
+            List<Rdn> rdns = LdapConfigUtils.getNonBaseRdns(dn, baseDN);
+
+            if (!rdns.get(0).toString().equals("cn=DICOM Configuration") ||
+                    !rdns.get(1).toString().equals("cn=Devices") ||
+                    !rdns.get(2).getType().equals("dicomDeviceName")
+                    ) throw new IllegalArgumentException("Invalid dn " + dn);
+
+            String deviceName = (String) rdns.get(2).getValue();
+
+
+            Attributes attributes = rdns.get(3).toAttributes();
+            ArrayList<String> predicates = new ArrayList<String>();
+
+            if (attributes.get("cn") != null)
+                 predicates.add("cn='" + escapeApos(attributes.get("cn").get().toString())+"'");
+
+            if (attributes.get("dicomHostname") != null)
+                predicates.add("dicomHostname='" + attributes.get("dicomHostname").get().toString()+"'");
+
+            if (attributes.get("dicomPort") != null)
+                predicates.add("dicomPort='" + attributes.get("dicomPort").get().toString()+"'");
+
+            return "/dicomConfigurationRoot/dicomDevicesRoot/*[dicomDeviceName='" + escapeStringFromLdap(deviceName) + "']/dicomConnection["+StringUtils.join(predicates, ",")+"]";
+
+        } catch (javax.naming.NamingException e) {
+            throw new IllegalArgumentException(e);
+        }
+
+    }
+
+    private static List<Rdn> getNonBaseRdns(String dn, String baseDN) throws InvalidNameException {
+        LdapName baseDnName = new LdapName(baseDN);
+        LdapName name = new LdapName(dn);
+
+        // ffd to the interesting part
+        List<Rdn> rdns = new LinkedList<Rdn>(name.getRdns());
+        Iterator<Rdn> nameIter = rdns.iterator();
+        Iterator<Rdn> baseIter = baseDnName.getRdns().iterator();
+        while (baseIter.hasNext() && baseIter.next().equals(nameIter.next()) )
+            nameIter.remove();
+        if (baseIter.hasNext())
+            throw new IllegalArgumentException("Dn " + dn + " does not match base dn " + baseDnName);
+        return rdns;
+    }
+
     private static String escapeStringToLdap(Object value) {
 
         return ConfigNodeUtil.unescapeApos(value.toString()).replace(",", "\\,");
@@ -255,7 +323,7 @@ public class LdapConfigUtils {
 
     private static String escapeStringFromLdap(Object value) {
 
-        return ConfigNodeUtil.escapeApos(value.toString()).replace("\\,", ",");
+        return escapeApos(value.toString()).replace("\\,", ",");
     }
 
     static String LdapDNToRef(String ldapDn) {

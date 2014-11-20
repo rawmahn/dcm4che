@@ -84,6 +84,8 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
     @Override
     public T fromConfigNode(T configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
+        if (configNode == null) return null;
+
         AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
 
         ConfigTypeAdapter elementAdapter;
@@ -102,6 +104,8 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
 
     @Override
     public T toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+
+        if (object == null) return null;
 
         AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
 
@@ -141,7 +145,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
     }
 
     @Override
-    public T normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+    public T normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         return (T) configNode;
     }
 }

@@ -158,8 +158,20 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     }
 
     @Override
-    public Object normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
-        return configNode;
+    public Object normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+
+        if (configNode == null) return null;
+
+        Class<?> componentType = ((Class) property.getType()).getComponentType();
+        AnnotatedConfigurableProperty property1 = new AnnotatedConfigurableProperty(componentType);
+        ConfigTypeAdapter elemAdapter = vitalizer.lookupTypeAdapter(new AnnotatedConfigurableProperty(componentType));
+
+        Collection c = new ArrayList();
+        for (Object o : (Collection) configNode) {
+            c.add(elemAdapter.normalize(o, property.getPseudoPropertyForCollectionElement(), vitalizer));
+        }
+
+        return c;
     }
 
 }

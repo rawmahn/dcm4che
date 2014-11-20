@@ -715,6 +715,7 @@ public class ApplicationEntity implements Serializable {
 
     public void setAcceptedCallingAETitlesSet(Set<String> acceptedCallingAETitlesSet) {
         this.acceptedCallingAETitlesSet.clear();
+        if (acceptedCallingAETitlesSet!=null)
         this.acceptedCallingAETitlesSet.addAll(acceptedCallingAETitlesSet);
     }
 

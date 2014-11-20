@@ -130,7 +130,7 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
     }
 
     @Override
-    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         return (Map<String, Object>) configNode;
     }
 }

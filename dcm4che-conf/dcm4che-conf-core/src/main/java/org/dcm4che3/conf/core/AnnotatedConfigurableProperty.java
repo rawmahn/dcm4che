@@ -72,7 +72,6 @@ public class AnnotatedConfigurableProperty {
 
     public boolean isCollectionOfConfObjects() {
         return Collection.class.isAssignableFrom(getRawClass()) &&
-                        !getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
                         getPseudoPropertyForGenericsParamater(0).getRawClass().getAnnotation(ConfigurableClass.class) != null;
     }
 

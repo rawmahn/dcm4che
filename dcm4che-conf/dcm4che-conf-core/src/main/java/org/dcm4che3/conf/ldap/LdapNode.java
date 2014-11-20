@@ -77,6 +77,10 @@ public class LdapNode {
         this.ldapConfigurationStorage = ldapConfigurationStorage;
     }
 
+    public LdapNode(Attributes attributes) {
+        this.attributes = attributes;
+    }
+
     public LdapConfigurationStorage getLdapConfigurationStorage() {
         return ldapConfigurationStorage == null && parent != null ? parent.getLdapConfigurationStorage() : ldapConfigurationStorage;
     }
@@ -114,7 +118,7 @@ public class LdapNode {
             throw new ConfigurationException("Unexpected error - class '" + configurableClass + "' is not a configurable class");
 
         // fill in objectclasses
-        ArrayList<String> objectClasses = extractObjectClasses(configurableClass);
+        ArrayList<String> objectClasses = LdapConfigUtils.extractObjectClasses(configurableClass);
         getObjectClasses().addAll(objectClasses);
         if (getParent()!= null)
             getParent().getChildrenObjectClasses().addAll(objectClasses);
@@ -149,7 +153,7 @@ public class LdapNode {
             }
 
             //collection/array of confobjects, (but not custom representations)
-            if (property.isArrayOfConfObjects() || property.isCollectionOfConfObjects()) {
+            if (property.isArrayOfConfObjects() || property.isCollectionOfConfObjects() && !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences()) {
                 Iterator iterator = ((Collection) propertyConfigNode).iterator();
                 // collection not empty and first element is not a custom rep
                 if (iterator.hasNext() && iterator.next() instanceof Map) {
@@ -228,39 +232,6 @@ public class LdapNode {
             fillInExtensions(configNode, "hl7AppExtensions");
         }
 
-/*
-        /**
-         * Workaround for objectClass dcmArchiveExtension
-         * TODO: inspect. dicomArchiveDevice added due to presence of attributes from there.
-         * extensions are added later, so this objectclass is not there while persisting the device alone.
-         * Adding it to Device does not work since there are some required attributes
-         *
-
-        String[] archiveDeviceExtensionPropNames = {
-                "dcmIncorrectWorklistEntrySelectedCode",
-                "dcmFuzzyAlgorithmClass",
-                "dcmHostNameAEResolution",
-                "dcmConfigurationStaleTimeout",
-                "dcmDeIdentifyLogs",
-                "dcmUpdateDbRetries",
-                "dcmWadoAttributesStaleTimeout",
-                "dcmRejectedObjectsCleanUpPollInterval",
-                "dcmRejectedObjectsCleanUpMaxNumberOfDeletes",
-                "dcmMPPSEmulationPollInterval"};
-
-
-        boolean isArchiveExtension = false;
-        for (String propName : archiveDeviceExtensionPropNames)
-            if (configNode.containsKey(propName) && !getObjectClasses().contains(propName))
-                isArchiveExtension = true;
-
-
-        if (isArchiveExtension) {
-            if (!getObjectClasses().contains("dcmArchiveDevice"))
-                getObjectClasses().add("dcmArchiveDevice");
-        }
-*/
-
     }
 
     private List<String> getObjectClasses(AnnotatedConfigurableProperty property) {
@@ -281,15 +252,6 @@ public class LdapNode {
         }
 
         return new ArrayList<String>();
-    }
-
-    private ArrayList<String> extractObjectClasses(Class configurableClass) {
-        LDAP classLdapAnno = (LDAP) configurableClass.getAnnotation(LDAP.class);
-        ArrayList<String> objectClasses;
-        if (classLdapAnno != null)
-            objectClasses = new ArrayList<String>(Arrays.asList(classLdapAnno.objectClasses()));
-        else objectClasses = new ArrayList<String>();
-        return objectClasses;
     }
 
     private void fillInExtensions(Map<String, Object> configNode, String whichExtensions) throws ConfigurationException {
@@ -332,7 +294,7 @@ public class LdapNode {
             if (annotation == null || annotation.objectClasses().length == 0)
                 thisParent.getObjectClasses().add("dcmCollection");
             else
-                thisParent.setObjectClasses(LdapConfigUtils.getObjectClasses(property));
+                thisParent.setObjectClasses(LdapConfigUtils.extractObjectClasses(property));
 
             thisParent.setParent(this);
         }

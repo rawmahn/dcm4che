@@ -115,15 +115,19 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         // quick init
         try {
             if (!configurationExists()) {
-                HashMap<String, Object> rootNode = new HashMap<String, Object>();
-                rootNode.put("dicomDevicesRoot", new HashMap<String, Object>());
-                rootNode.put("dicomUniqueAETitlesRegistryRoot", new HashMap<String, Object>());
-                config.persistNode("/dicomConfigurationRoot", rootNode, DicomConfigurationRootNode.class);
+                config.persistNode("/dicomConfigurationRoot", createInitialConfigRootNode(), DicomConfigurationRootNode.class);
 
             }
         } catch (ConfigurationException e) {
             throw new RuntimeException("Dicom configuration cannot be initialized", e);
         }
+    }
+
+    protected HashMap<String, Object> createInitialConfigRootNode() {
+        HashMap<String, Object> rootNode = new HashMap<String, Object>();
+        rootNode.put("dicomDevicesRoot", new HashMap<String, Object>());
+        rootNode.put("dicomUniqueAETitlesRegistryRoot", new HashMap<String, Object>());
+        return rootNode;
     }
 
     @Override
@@ -138,6 +142,26 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         return true;
     }
 
+
+    @LDAP(objectClasses = "hl7UniqueApplicationName", distinguishingField = "hl7ApplicationName")
+    @ConfigurableClass
+    static class HL7UniqueAppRegistryItem {
+
+        @ConfigurableProperty(name = "hl7ApplicationName")
+        String name;
+
+        public HL7UniqueAppRegistryItem() {
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+
     @LDAP(objectClasses = "dicomUniqueAETitle", distinguishingField = "dicomAETitle")
     @ConfigurableClass
     public static class AETitleItem {
@@ -146,17 +170,17 @@ public class CommonDicomConfiguration implements DicomConfiguration {
             this.aeTitle = aeTitle;
         }
 
+
         @ConfigurableProperty(name = "dicomAETitle")
         String aeTitle;
-
 
         public String getAeTitle() {
             return aeTitle;
         }
-
         public void setAeTitle(String aeTitle) {
             this.aeTitle = aeTitle;
         }
+
     }
 
     @LDAP(objectClasses = "dicomConfigurationRoot")
@@ -182,10 +206,10 @@ public class CommonDicomConfiguration implements DicomConfiguration {
                 objectClasses = "hl7UniqueApplicationNamesRegistryRoot"
         )
         @ConfigurableProperty(name = "hl7UniqueApplicationNamesRegistryRoot")
-        Map<String,AETitleItem> hl7UniqueApplicationNamesRegistry;
+        Map<String,HL7UniqueAppRegistryItem> hl7UniqueApplicationNamesRegistry;
+
 
     }
-
 
     @Override
     public boolean registerAETitle(String aet) throws ConfigurationException {
@@ -338,6 +362,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         merge(device);
     }
 
+
     @Override
     public void merge(Device device) throws ConfigurationException {
         String devicePath = deviceRef(device.getDeviceName());
@@ -372,7 +397,6 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         }
     }
 
-
     @Override
     public void removeDevice(String name) throws ConfigurationException {
         config.removeNode(deviceRef(name));
@@ -405,14 +429,13 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public void sync() throws ConfigurationException {
-        config.refreshNode("dicomConfigurationRoot");
+        config.refreshNode("/dicomConfigurationRoot");
     }
+
 
     @Override
     public <T> T getDicomConfigurationExtension(Class<T> clazz) {
         throw new RuntimeException("Not implemented yet");
     }
-
-
 }
 
