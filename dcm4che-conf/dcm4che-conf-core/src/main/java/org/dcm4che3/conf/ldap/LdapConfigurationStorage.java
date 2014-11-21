@@ -42,14 +42,8 @@ package org.dcm4che3.conf.ldap;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.Configuration;
-import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
-import org.dcm4che3.conf.core.util.ConfigIterators;
 import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
-import org.dcm4che3.net.ApplicationEntity;
-import org.dcm4che3.net.Connection;
-import org.dcm4che3.net.Device;
-import org.dcm4che3.net.hl7.HL7Application;
 
 import javax.naming.*;
 import javax.naming.directory.*;
@@ -82,13 +76,13 @@ public class LdapConfigurationStorage implements Configuration {
     }
 
     public synchronized void destroySubcontextWithChilds(String name) throws NamingException {
-        NamingEnumeration list = ldapCtx.list(name);
+        NamingEnumeration list = getLdapCtx().list(name);
 
         while (list.hasMore()) {
             this.destroySubcontextWithChilds(((NameClassPair) list.next()).getNameInNamespace());
         }
 
-        ldapCtx.destroySubcontext(name);
+        getLdapCtx().destroySubcontext(name);
     }
 
 
@@ -118,123 +112,17 @@ public class LdapConfigurationStorage implements Configuration {
         String dn = LdapConfigUtils.refToLdapDN(path, this);
 
         try {
-            return readNode(dn, configurableClass);
+            return LdapConfigUtils.readNode(this, dn, configurableClass);
         } catch (NamingException e) {
             throw new ConfigurationException("Cannot read node from ldap :" + path, e);
         }
     }
 
-    private Map<String, Object> readNode(String dn, Class configurableClass) throws ConfigurationException, NamingException {
-        ArrayList<String> objectClasses = LdapConfigUtils.extractObjectClasses(configurableClass);
-
-        Attributes attributes;
-        try {
-            attributes = ldapCtx.getAttributes(dn);
-        } catch (NameNotFoundException noname) {
-            // workaround - endless loops due to the fact that we allow nodes without attributes.. and device is a ref... so just prohibit Device
-            // we have to use references on devices...
-            if (configurableClass.equals(Device.class)) return null;
-            attributes = null;
-        }
-
-        Map<String, Object> map = new HashMap<String, Object>();
-        for (AnnotatedConfigurableProperty property : ConfigIterators.getAllConfigurableFieldsAndSetterParameters(configurableClass)) {
-
-            // map
-            if (property.isMapOfConfObjects()) {
-                String subDn = getSubDn(dn, property);
-
-                Map<String, Object> m = new HashMap<String, Object>();
-                try {
-                    NamingEnumeration<SearchResult> enumeration = searchForCollectionElements(subDn, property);
-                    while (enumeration.hasMore()) {
-                        SearchResult res = enumeration.next();
-                        String distField = LdapConfigUtils.getDistinguishingFieldForCollectionElement(property);
-                        String key = (String) res.getAttributes().get(distField).get();
-                        Object value = readNode(res.getName() + "," + subDn, property.getPseudoPropertyForCollectionElement().getRawClass());
-                        m.put(key, value);
-                    }
-                    map.put(property.getAnnotatedName(), m);
-                } catch (NameNotFoundException e) {
-                    //noop
-                }
-
-                continue;
-
-            }
-
-            // nested
-            if (property.isConfObject()) {
-
-                String subDn = getSubDn(dn, property);
-                map.put(property.getAnnotatedName(), readNode(subDn, property.getRawClass()));
-                continue;
-            }
-
-            // collection with confObjects
-            if (property.isArrayOfConfObjects() || property.isCollectionOfConfObjects() && !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences()) {
-
-                Class elemClass = property.getPseudoPropertyForCollectionElement().getRawClass();
-                String subDn = getSubDn(dn, property);
-
-                try {
-                    NamingEnumeration<SearchResult> enumeration = searchForCollectionElements(subDn, property);
-                    ArrayList<Object> list = new ArrayList<Object>();
-                    while (enumeration.hasMore()) {
-                        SearchResult next = enumeration.next();
-                        list.add(readNode(next.getName() + "," + dn, elemClass));
-                    }
-                    map.put(property.getAnnotatedName(), list);
-                } catch (NameNotFoundException e) {
-                    //noop
-                }
-                continue;
-            }
-
-            // primitive collection
-            if ((Collection.class.isAssignableFrom(property.getRawClass()) || property.getRawClass().isArray()) && attributes != null) {
-                Attribute attribute = attributes.get(LdapConfigUtils.getLDAPPropertyName(property));
-
-                if (attribute == null) continue;
-
-                ArrayList<Object> list = new ArrayList<Object>();
-
-                // special case with references
-                for (int i = 0; i < attribute.size(); i++)
-                    if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
-                            property.getPseudoPropertyForCollectionElement().getRawClass().equals(Connection.class)) {
-                        list.add(LdapConfigUtils.connectionLdapDnToRef((String) attribute.get(i), this));
-                    } else {
-                        list.add(attribute.get(i));
-                    }
-                map.put(property.getAnnotatedName(), list);
-                continue;
-            }
-
-            if (attributes != null) {
-                Attribute attribute = attributes.get(LdapConfigUtils.getLDAPPropertyName(property));
-                if (attribute != null)
-                    map.put(property.getAnnotatedName(), attribute.get().toString());
-            }
-
-        }
-
-        if (configurableClass.equals(Device.class)) {
-            fillExtension(dn, map, "deviceExtensions");
-        } else if (configurableClass.equals(ApplicationEntity.class)) {
-            fillExtension(dn, map, "aeExtensions");
-        } else if (configurableClass.equals(HL7Application.class)) {
-            fillExtension(dn, map, "hl7AppExtensions");
-        }
-
-        return map;
-    }
-
-    private void fillExtension(String dn, Map<String, Object> map, String extensionLabel) throws NamingException, ConfigurationException {
+    public void fillExtension(String dn, Map<String, Object> map, String extensionLabel) throws NamingException, ConfigurationException {
         HashMap<String, Object> exts = new HashMap<String, Object>();
         map.put(extensionLabel, exts);
 
-        for (Class<?> aClass : allExtensionClasses) {
+        for (Class<?> aClass : getAllExtensionClasses()) {
 
             LDAP ldapAnno = aClass.getAnnotation(LDAP.class);
 
@@ -244,32 +132,12 @@ public class LdapConfigurationStorage implements Configuration {
             else
                 subDn = dn;
 
-            Map<String, Object> ext = readNode(subDn, aClass);
+            Object ext = LdapConfigUtils.readNode(this, subDn, aClass);
             if (ext == null || ext.isEmpty()) continue;
 
             exts.put(aClass.getSimpleName(), ext);
 
         }
-    }
-
-    private String getSubDn(String dn, AnnotatedConfigurableProperty property) throws ConfigurationException {
-        String subDn;
-        if (LdapConfigUtils.isNoContainerNode(property))
-            subDn = dn;
-        else
-            subDn = LdapConfigUtils.dnOf(dn, "cn", LdapConfigUtils.getLDAPPropertyName(property));
-        return subDn;
-    }
-
-    private NamingEnumeration<SearchResult> searchForCollectionElements(String dn, AnnotatedConfigurableProperty property) throws NamingException, ConfigurationException {
-        NamingEnumeration<SearchResult> enumeration;
-        Class aClass = property.getPseudoPropertyForCollectionElement().getRawClass();
-        try {
-            enumeration = searchSubcontextWithClass(LdapConfigUtils.extractObjectClasses(aClass).get(0), dn);
-        } catch (IndexOutOfBoundsException e) {
-            throw new ConfigurationException("No object class defined for class " + aClass, e);
-        }
-        return enumeration;
     }
 
     @Override
@@ -310,12 +178,12 @@ public class LdapConfigurationStorage implements Configuration {
             ldapNode.getAttributes().put(objectClass);
 
             try {
-                ldapCtx.createSubcontext(ldapNode.getDn(), ldapNode.getAttributes());
+                getLdapCtx().createSubcontext(ldapNode.getDn(), ldapNode.getAttributes());
             } catch (NameAlreadyBoundException alreadyBoundE) {
 
                 // Append objectClass
                 ldapNode.getAttributes().remove("objectClass");
-                Attribute existingObjectClasses = ldapCtx.getAttributes(ldapNode.getDn(), new String[]{"objectClass"}).get("objectClass");
+                Attribute existingObjectClasses = getLdapCtx().getAttributes(ldapNode.getDn(), new String[]{"objectClass"}).get("objectClass");
                 for (String c : ldapNode.getObjectClasses())
                     if (!existingObjectClasses.contains(c))
                         existingObjectClasses.add(c);
@@ -323,7 +191,7 @@ public class LdapConfigurationStorage implements Configuration {
                 ldapNode.getAttributes().put(existingObjectClasses);
 
                 // replace attributes
-                ldapCtx.modifyAttributes(ldapNode.getDn(), DirContext.REPLACE_ATTRIBUTE, ldapNode.getAttributes());
+                getLdapCtx().modifyAttributes(ldapNode.getDn(), DirContext.REPLACE_ATTRIBUTE, ldapNode.getAttributes());
             }
         }
 
@@ -331,7 +199,7 @@ public class LdapConfigurationStorage implements Configuration {
         // see which objectclasses are children of the node and remove them all
         for (String childObjClass : ldapNode.getChildrenObjectClasses()) {
 
-            NamingEnumeration<SearchResult> ne = searchSubcontextWithClass(childObjClass, ldapNode.getDn());
+            NamingEnumeration<SearchResult> ne = LdapConfigUtils.searchSubcontextWithClass(this, childObjClass, ldapNode.getDn());
 
             while (ne.hasMore()) {
                 SearchResult sr = (SearchResult) ne.next();
@@ -348,13 +216,6 @@ public class LdapConfigurationStorage implements Configuration {
 
         // descent recursively
         for (LdapNode child : ldapNode.getChildren()) mergeIn(child);
-    }
-
-    private NamingEnumeration<SearchResult> searchSubcontextWithClass(String childObjClass, String dn) throws NamingException {
-        SearchControls ctls = new SearchControls();
-        ctls.setSearchScope(1);
-        ctls.setReturningObjFlag(false);
-        return ldapCtx.search(dn, "(objectclass=" + childObjClass + ")", ctls);
     }
 
     @Override
@@ -386,5 +247,9 @@ public class LdapConfigurationStorage implements Configuration {
 
     public String getBaseDN() {
         return baseDN;
+    }
+
+    public InitialDirContext getLdapCtx() {
+        return ldapCtx;
     }
 }

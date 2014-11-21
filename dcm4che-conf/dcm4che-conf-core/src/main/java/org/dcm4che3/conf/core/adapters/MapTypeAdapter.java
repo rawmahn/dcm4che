@@ -131,6 +131,7 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
 
     @Override
     public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+        if (configNode == null) return new HashMap<String, Object>();
         return (Map<String, Object>) configNode;
     }
 }

@@ -65,7 +65,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
         this.clazz = clazz;
     }
 
-    private T createCollection(AnnotatedConfigurableProperty property) throws ConfigurationException {
+    private T createCollection() throws ConfigurationException {
         try {
             return (T) clazz.newInstance();
         } catch (Exception e) {
@@ -78,7 +78,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
             Class enumClass = (Class) property.getTypeForGenericsParameter(0);
             return EnumSet.noneOf(enumClass);
         } else
-            return createCollection(property);
+            return createCollection();
     }
 
     @Override
@@ -115,7 +115,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
         else
             elementAdapter = vitalizer.lookupTypeAdapter(elementPseudoProperty);
 
-        T node = createCollection(property);
+        T node = createCollection();
         for (Object element : object)
             node.add(elementAdapter.toConfigNode(element, elementPseudoProperty, vitalizer));
 
@@ -146,6 +146,8 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
 
     @Override
     public T normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+        if (configNode == null)
+            return createCollection();
         return (T) configNode;
     }
 }

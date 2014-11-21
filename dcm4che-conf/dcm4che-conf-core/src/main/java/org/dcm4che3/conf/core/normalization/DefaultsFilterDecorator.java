@@ -93,6 +93,15 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
         for (AnnotatedConfigurableProperty property : properties) {
             Object childNode = containerNode.get(property.getAnnotatedName());
 
+            // if no value for this property, see if there is default and set it
+            if (!containerNode.containsKey(property.getAnnotatedName())) {
+                String defaultValue = property.getAnnotation(ConfigurableProperty.class).defaultValue();
+                if (!defaultValue.equals(ConfigurableProperty.NO_DEFAULT_VALUE))
+                    containerNode.put(property.getAnnotatedName(), defaultValue);
+
+                continue;
+            }
+
             // if the property is a configclass
             if (property.isConfObject()) {
                 applyDefaults(childNode, property.getRawClass());
@@ -122,13 +131,6 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
                 continue;
             }
 
-            // if no value for this property, see if there is default and set it
-            if (!containerNode.containsKey(property.getAnnotatedName())) {
-                String defaultValue = property.getAnnotation(ConfigurableProperty.class).defaultValue();
-                if (!defaultValue.equals(ConfigurableProperty.NO_DEFAULT_VALUE))
-                    containerNode.put(property.getAnnotatedName(), defaultValue);
-
-            }
         }
     }
 

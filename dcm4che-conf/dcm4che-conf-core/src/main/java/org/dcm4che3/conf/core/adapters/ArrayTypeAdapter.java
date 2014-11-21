@@ -78,7 +78,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
 
         Class<?> componentType = ((Class) property.getType()).getComponentType();
 
-        // handle null
+        // handle null (in theory should never be the case since normalization is done)
         if (configNode == null) return Array.newInstance(componentType, 0);
 
         // handle byte[]. Expect a base64 String.
@@ -160,13 +160,13 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     @Override
     public Object normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
-        if (configNode == null) return null;
-
         Class<?> componentType = ((Class) property.getType()).getComponentType();
-        AnnotatedConfigurableProperty property1 = new AnnotatedConfigurableProperty(componentType);
         ConfigTypeAdapter elemAdapter = vitalizer.lookupTypeAdapter(new AnnotatedConfigurableProperty(componentType));
 
+        // always create an empty collection
         Collection c = new ArrayList();
+
+        if (configNode != null)
         for (Object o : (Collection) configNode) {
             c.add(elemAdapter.normalize(o, property.getPseudoPropertyForCollectionElement(), vitalizer));
         }

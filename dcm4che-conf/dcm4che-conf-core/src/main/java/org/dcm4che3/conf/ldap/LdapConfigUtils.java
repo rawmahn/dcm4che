@@ -42,14 +42,24 @@ package org.dcm4che3.conf.ldap;
 import org.apache.commons.lang3.StringUtils;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
+import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.conf.core.util.ConfigIterators;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
+import org.dcm4che3.net.ApplicationEntity;
+import org.dcm4che3.net.Connection;
 import org.dcm4che3.net.Device;
+import org.dcm4che3.net.hl7.HL7Application;
 
 import javax.naming.InvalidNameException;
+import javax.naming.NameNotFoundException;
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
+import javax.naming.directory.SearchControls;
+import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import java.lang.annotation.Annotation;
@@ -339,6 +349,139 @@ public class LdapConfigUtils {
         }
 
         throw new ClassNotFoundException();
+    }
+
+    static Object readNode(LdapConfigurationStorage ldapConfigurationStorage, String dn, Class configurableClass) throws ConfigurationException, NamingException {
+        ArrayList<String> objectClasses = extractObjectClasses(configurableClass);
+
+        Attributes attributes;
+        try {
+            attributes = ldapConfigurationStorage.getLdapCtx().getAttributes(dn);
+        } catch (NameNotFoundException noname) {
+            attributes = null;
+        }
+
+        Map<String, Object> map = new HashMap<String, Object>();
+        for (AnnotatedConfigurableProperty property : ConfigIterators.getAllConfigurableFieldsAndSetterParameters(configurableClass)) {
+
+
+            //TODO:use storedAsReference three times below
+
+            // map
+            if (property.isMapOfConfObjects()) {
+                String subDn = getSubDn(dn, property);
+
+                Map<String, Object> m = new HashMap<String, Object>();
+                try {
+                    NamingEnumeration<SearchResult> enumeration = searchForCollectionElements(ldapConfigurationStorage, subDn, property);
+                    while (enumeration.hasMore()) {
+                        SearchResult res = enumeration.next();
+                        String distField = getDistinguishingFieldForCollectionElement(property);
+                        String key = (String) res.getAttributes().get(distField).get();
+                        Object value = readNode(ldapConfigurationStorage, res.getName() + "," + subDn, property.getPseudoPropertyForCollectionElement().getRawClass());
+                        m.put(key, value);
+                    }
+                    map.put(property.getAnnotatedName(), m);
+                } catch (NameNotFoundException e) {
+                    //noop
+                }
+
+                continue;
+
+            }
+
+            // nested
+            if (property.isConfObject()) {
+
+                String subDn = getSubDn(dn, property);
+                map.put(property.getAnnotatedName(), readNode(ldapConfigurationStorage, subDn, property.getRawClass()));
+                continue;
+            }
+
+            // collection with confObjects
+            if (property.isArrayOfConfObjects() || property.isCollectionOfConfObjects() && !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences()) {
+
+                Class elemClass = property.getPseudoPropertyForCollectionElement().getRawClass();
+                String subDn = getSubDn(dn, property);
+
+                try {
+                    NamingEnumeration<SearchResult> enumeration = searchForCollectionElements(ldapConfigurationStorage, subDn, property);
+                    ArrayList<Object> list = new ArrayList<Object>();
+                    while (enumeration.hasMore()) {
+                        SearchResult next = enumeration.next();
+                        list.add(readNode(ldapConfigurationStorage, next.getName() + "," + dn, elemClass));
+                    }
+                    map.put(property.getAnnotatedName(), list);
+                } catch (NameNotFoundException e) {
+                    //noop
+                }
+                continue;
+            }
+
+            // primitive collection
+            if ((Collection.class.isAssignableFrom(property.getRawClass()) || property.getRawClass().isArray()) && attributes != null) {
+                Attribute attribute = attributes.get(getLDAPPropertyName(property));
+
+                if (attribute == null) continue;
+
+                ArrayList<Object> list = new ArrayList<Object>();
+
+                // special case with references
+                for (int i = 0; i < attribute.size(); i++)
+                    if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
+                            property.getPseudoPropertyForCollectionElement().getRawClass().equals(Connection.class)) {
+                        list.add(connectionLdapDnToRef((String) attribute.get(i), ldapConfigurationStorage));
+                    } else {
+                        list.add(attribute.get(i));
+                    }
+                map.put(property.getAnnotatedName(), list);
+                continue;
+            }
+
+            if (attributes != null) {
+                Attribute attribute = attributes.get(getLDAPPropertyName(property));
+                if (attribute != null)
+                    map.put(property.getAnnotatedName(), attribute.get().toString());
+            }
+
+        }
+
+        if (configurableClass.equals(Device.class)) {
+            ldapConfigurationStorage.fillExtension(dn, map, "deviceExtensions");
+        } else if (configurableClass.equals(ApplicationEntity.class)) {
+            ldapConfigurationStorage.fillExtension(dn, map, "aeExtensions");
+        } else if (configurableClass.equals(HL7Application.class)) {
+            ldapConfigurationStorage.fillExtension(dn, map, "hl7AppExtensions");
+        }
+
+        return map;
+    }
+
+    public static String getSubDn(String dn, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        String subDn;
+        if (isNoContainerNode(property))
+            subDn = dn;
+        else
+            subDn = dnOf(dn, "cn", getLDAPPropertyName(property));
+        return subDn;
+    }
+
+    static NamingEnumeration<SearchResult> searchSubcontextWithClass(LdapConfigurationStorage ldapConfigurationStorage, String childObjClass, String dn) throws NamingException {
+        SearchControls ctls = new SearchControls();
+        ctls.setSearchScope(1);
+        ctls.setReturningObjFlag(false);
+        return ldapConfigurationStorage.getLdapCtx().search(dn, "(objectclass=" + childObjClass + ")", ctls);
+    }
+
+    protected static NamingEnumeration<SearchResult> searchForCollectionElements(LdapConfigurationStorage ldapConfigurationStorage, String dn, AnnotatedConfigurableProperty property) throws NamingException, ConfigurationException {
+        NamingEnumeration<SearchResult> enumeration;
+        Class aClass = property.getPseudoPropertyForCollectionElement().getRawClass();
+        try {
+            enumeration = searchSubcontextWithClass(ldapConfigurationStorage, extractObjectClasses(aClass).get(0), dn);
+        } catch (IndexOutOfBoundsException e) {
+            throw new ConfigurationException("No object class defined for class " + aClass, e);
+        }
+        return enumeration;
     }
 
     protected static class BooleanContainer {

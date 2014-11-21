@@ -173,6 +173,7 @@ public class LdapNode {
                     if (LdapConfigUtils.isNoContainerNode(property)) nestedNode = this;
                     else {
                         nestedNode = new LdapNode();
+                        nestedNode.setParent(this);
                         nestedNode.setDn(LdapConfigUtils.dnOf(getDn(), LdapConfigUtils.getDistinguishingField(property), LdapConfigUtils.getLDAPPropertyName(property)));
                         nestedNode.getAttributes().put(LdapConfigUtils.getDistinguishingField(property), LdapConfigUtils.getLDAPPropertyName(property));
                     }

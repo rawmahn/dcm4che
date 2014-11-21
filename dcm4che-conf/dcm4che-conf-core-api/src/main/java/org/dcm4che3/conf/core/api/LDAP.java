@@ -52,4 +52,12 @@ public @interface LDAP {
      * @return
      */
     String overriddenName() default "";
+
+
+    /**
+     * Temporary solution to mark properties of configClasses that are not stored reflectively.
+     * TODO: Mark references with ConfigurableProperty instead.
+     */
+    @Deprecated
+    boolean storedAsReference() default false;
 }
