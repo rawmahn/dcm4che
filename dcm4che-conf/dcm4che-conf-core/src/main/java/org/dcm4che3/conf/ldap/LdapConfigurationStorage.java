@@ -132,7 +132,7 @@ public class LdapConfigurationStorage implements Configuration {
             else
                 subDn = dn;
 
-            Object ext = LdapConfigUtils.readNode(this, subDn, aClass);
+            Map ext = (Map) LdapConfigUtils.readNode(this, subDn, aClass);
             if (ext == null || ext.isEmpty()) continue;
 
             exts.put(aClass.getSimpleName(), ext);

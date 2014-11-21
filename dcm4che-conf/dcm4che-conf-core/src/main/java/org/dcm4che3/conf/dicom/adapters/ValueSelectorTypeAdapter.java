@@ -54,12 +54,12 @@ public class ValueSelectorTypeAdapter extends DefaultConfigTypeAdapters.CommonAb
 
     @Override
     public ValueSelector fromConfigNode(String configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
-        return configNode == null ? null : ValueSelector.valueOf(configNode);
+        return ValueSelector.valueOf(configNode);
     }
 
     @Override
     public String toConfigNode(ValueSelector object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
-        return object == null ? null : object.toString();
+        return object.toString();
     }
 
 }

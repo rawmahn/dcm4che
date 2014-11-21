@@ -169,6 +169,7 @@ public class DefaultConfigTypeAdapters {
             metadata.put("type", type);
         }
 
+
         @Override
         public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
             return metadata;
@@ -177,6 +178,11 @@ public class DefaultConfigTypeAdapters {
         @Override
         public String normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
             return (String) configNode;
+        }
+
+
+        public ConfigTypeAdapter getDecorated() {
+            return new NullToNullDecorator(this);
         }
     }
 

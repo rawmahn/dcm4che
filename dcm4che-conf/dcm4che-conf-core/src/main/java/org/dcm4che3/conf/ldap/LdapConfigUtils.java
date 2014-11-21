@@ -71,7 +71,8 @@ import static org.dcm4che3.conf.core.util.ConfigNodeUtil.escapeApos;
  * @author: Roman K
  */
 public class LdapConfigUtils {
-    /** Resolve map/collection key field for a property
+    /**
+     * Resolve map/collection key field for a property
      *
      * @param property
      * @return
@@ -128,10 +129,14 @@ public class LdapConfigUtils {
 
     static String getLDAPPropertyName(AnnotatedConfigurableProperty property) throws ConfigurationException {
         LDAP ldapAnno = property.getAnnotation(LDAP.class);
-        if (ldapAnno == null || ldapAnno.overriddenName().equals("")) {
-            return property.getAnnotatedName();
+        if (ldapAnno != null) {
+            if (!ldapAnno.overriddenName().equals("")) {
+                return ldapAnno.overriddenName();
+            } else {
+                return property.getAnnotatedName();
+            }
         } else {
-            return ldapAnno.overriddenName();
+            return property.getAnnotatedName();
         }
     }
 
@@ -193,7 +198,8 @@ public class LdapConfigUtils {
 
                                     // skip wildcard - expect predicates
                                     if (entry.getKey().equals("$name") && entry.getValue().equals("*")) {
-                                        if (pathItem.size()==1) throw new IllegalArgumentException("Wildcard without predicates is not allowed in references");
+                                        if (pathItem.size() == 1)
+                                            throw new IllegalArgumentException("Wildcard without predicates is not allowed in references");
                                         continue;
                                     }
 
@@ -295,15 +301,15 @@ public class LdapConfigUtils {
             ArrayList<String> predicates = new ArrayList<String>();
 
             if (attributes.get("cn") != null)
-                 predicates.add("cn='" + escapeApos(attributes.get("cn").get().toString())+"'");
+                predicates.add("cn='" + escapeApos(attributes.get("cn").get().toString()) + "'");
 
             if (attributes.get("dicomHostname") != null)
-                predicates.add("dicomHostname='" + attributes.get("dicomHostname").get().toString()+"'");
+                predicates.add("dicomHostname='" + attributes.get("dicomHostname").get().toString() + "'");
 
             if (attributes.get("dicomPort") != null)
-                predicates.add("dicomPort='" + attributes.get("dicomPort").get().toString()+"'");
+                predicates.add("dicomPort='" + attributes.get("dicomPort").get().toString() + "'");
 
-            return "/dicomConfigurationRoot/dicomDevicesRoot/*[dicomDeviceName='" + escapeStringFromLdap(deviceName) + "']/dicomConnection["+StringUtils.join(predicates, ",")+"]";
+            return "/dicomConfigurationRoot/dicomDevicesRoot/*[dicomDeviceName='" + escapeStringFromLdap(deviceName) + "']/dicomConnection[" + StringUtils.join(predicates, ",") + "]";
 
         } catch (javax.naming.NamingException e) {
             throw new IllegalArgumentException(e);
@@ -319,7 +325,7 @@ public class LdapConfigUtils {
         List<Rdn> rdns = new LinkedList<Rdn>(name.getRdns());
         Iterator<Rdn> nameIter = rdns.iterator();
         Iterator<Rdn> baseIter = baseDnName.getRdns().iterator();
-        while (baseIter.hasNext() && baseIter.next().equals(nameIter.next()) )
+        while (baseIter.hasNext() && baseIter.next().equals(nameIter.next()))
             nameIter.remove();
         if (baseIter.hasNext())
             throw new IllegalArgumentException("Dn " + dn + " does not match base dn " + baseDnName);
@@ -361,7 +367,7 @@ public class LdapConfigUtils {
             attributes = null;
         }
 
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> configNode = new HashMap<String, Object>();
         for (AnnotatedConfigurableProperty property : ConfigIterators.getAllConfigurableFieldsAndSetterParameters(configurableClass)) {
 
 
@@ -371,17 +377,24 @@ public class LdapConfigUtils {
             if (property.isMapOfConfObjects()) {
                 String subDn = getSubDn(dn, property);
 
-                Map<String, Object> m = new HashMap<String, Object>();
+                Map<String, Object> map = new HashMap<String, Object>();
                 try {
                     NamingEnumeration<SearchResult> enumeration = searchForCollectionElements(ldapConfigurationStorage, subDn, property);
                     while (enumeration.hasMore()) {
                         SearchResult res = enumeration.next();
                         String distField = getDistinguishingFieldForCollectionElement(property);
-                        String key = (String) res.getAttributes().get(distField).get();
-                        Object value = readNode(ldapConfigurationStorage, res.getName() + "," + subDn, property.getPseudoPropertyForCollectionElement().getRawClass());
-                        m.put(key, value);
+                        Attributes resAttributes = res.getAttributes();
+                        String key = (String) resAttributes.get(distField).get();
+
+                        // check if it is a primitive or a custom representation, e.g a ref
+                        if (property.getAnnotation(LDAP.class).storedAsReference()) {
+                            map.put(key, resAttributes.get(getLDAPPropertyName(property)).get());
+                        } else {
+                            Object value = readNode(ldapConfigurationStorage, res.getName() + "," + subDn, property.getPseudoPropertyForCollectionElement().getRawClass());
+                            map.put(key, value);
+                        }
                     }
-                    map.put(property.getAnnotatedName(), m);
+                    configNode.put(property.getAnnotatedName(), map);
                 } catch (NameNotFoundException e) {
                     //noop
                 }
@@ -393,13 +406,24 @@ public class LdapConfigUtils {
             // nested
             if (property.isConfObject()) {
 
-                String subDn = getSubDn(dn, property);
-                map.put(property.getAnnotatedName(), readNode(ldapConfigurationStorage, subDn, property.getRawClass()));
+                // custom rep?
+                if (property.getAnnotation(LDAP.class).storedAsReference()) {
+                    if (attributes != null) {
+                        configNode.put(property.getAnnotatedName(),attributes.get(getLDAPPropertyName(property)).get());
+                    }
+                } else {
+                    String subDn = getSubDn(dn, property);
+                    configNode.put(property.getAnnotatedName(), readNode(ldapConfigurationStorage, subDn, property.getRawClass()));
+                }
+
                 continue;
             }
 
             // collection with confObjects
-            if (property.isArrayOfConfObjects() || property.isCollectionOfConfObjects() && !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences()) {
+            if (property.isArrayOfConfObjects()
+                    || property.isCollectionOfConfObjects()
+                    && !property.getAnnotation(ConfigurableProperty.class).collectionOfReferences()
+                    && !property.getAnnotation(LDAP.class).storedAsReference()) {
 
                 Class elemClass = property.getPseudoPropertyForCollectionElement().getRawClass();
                 String subDn = getSubDn(dn, property);
@@ -409,16 +433,18 @@ public class LdapConfigUtils {
                     ArrayList<Object> list = new ArrayList<Object>();
                     while (enumeration.hasMore()) {
                         SearchResult next = enumeration.next();
+                        // check if it is a primitive or a custom representation, e.g a ref
                         list.add(readNode(ldapConfigurationStorage, next.getName() + "," + dn, elemClass));
                     }
-                    map.put(property.getAnnotatedName(), list);
+
+                    configNode.put(property.getAnnotatedName(), list);
                 } catch (NameNotFoundException e) {
                     //noop
                 }
                 continue;
             }
 
-            // primitive collection
+            // primitive collection or custom representation collection
             if ((Collection.class.isAssignableFrom(property.getRawClass()) || property.getRawClass().isArray()) && attributes != null) {
                 Attribute attribute = attributes.get(getLDAPPropertyName(property));
 
@@ -434,27 +460,27 @@ public class LdapConfigUtils {
                     } else {
                         list.add(attribute.get(i));
                     }
-                map.put(property.getAnnotatedName(), list);
+                configNode.put(property.getAnnotatedName(), list);
                 continue;
             }
 
             if (attributes != null) {
                 Attribute attribute = attributes.get(getLDAPPropertyName(property));
                 if (attribute != null)
-                    map.put(property.getAnnotatedName(), attribute.get().toString());
+                    configNode.put(property.getAnnotatedName(), attribute.get().toString());
             }
 
         }
 
         if (configurableClass.equals(Device.class)) {
-            ldapConfigurationStorage.fillExtension(dn, map, "deviceExtensions");
+            ldapConfigurationStorage.fillExtension(dn, configNode, "deviceExtensions");
         } else if (configurableClass.equals(ApplicationEntity.class)) {
-            ldapConfigurationStorage.fillExtension(dn, map, "aeExtensions");
+            ldapConfigurationStorage.fillExtension(dn, configNode, "aeExtensions");
         } else if (configurableClass.equals(HL7Application.class)) {
-            ldapConfigurationStorage.fillExtension(dn, map, "hl7AppExtensions");
+            ldapConfigurationStorage.fillExtension(dn, configNode, "hl7AppExtensions");
         }
 
-        return map;
+        return configNode;
     }
 
     public static String getSubDn(String dn, AnnotatedConfigurableProperty property) throws ConfigurationException {

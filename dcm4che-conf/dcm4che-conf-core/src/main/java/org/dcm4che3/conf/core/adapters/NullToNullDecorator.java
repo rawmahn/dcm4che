@@ -37,35 +37,48 @@
  *
  *  ***** END LICENSE BLOCK *****
  */
-package org.dcm4che3.conf.dicom.adapters;
+package org.dcm4che3.conf.core.adapters;
 
 import org.dcm4che3.conf.api.ConfigurationException;
-import org.dcm4che3.conf.api.ConfigurationUnserializableException;
-import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.BeanVitalizer;
-import org.dcm4che3.conf.core.adapters.DefaultConfigTypeAdapters;
-import org.dcm4che3.net.Device;
 
-public class DeviceReferenceByNameTypeAdapter extends DefaultConfigTypeAdapters.CommonAbstractTypeAdapter<Device> {
+import java.util.Map;
 
-    public DeviceReferenceByNameTypeAdapter() {
-        super("string");
-        metadata.put("class", "Device");
+/**
+ * @author: Roman K
+ */
+
+/**
+ * Returns null for from and toConfigNode when argument is null
+ * @param <T>
+ * @param <ST>
+ */
+public class NullToNullDecorator<T, ST> implements ConfigTypeAdapter<T, ST>{
+
+    private final ConfigTypeAdapter<T,ST> configTypeAdapter ;
+
+    public NullToNullDecorator(ConfigTypeAdapter configTypeAdapter) {
+        this.configTypeAdapter = configTypeAdapter;
     }
 
-    @Override
-    public Device fromConfigNode(String configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
-        try {
-            return vitalizer.getContext(DicomConfiguration.class).findDevice(configNode);
-        } catch (NullPointerException e) {
-            throw new ConfigurationException("Cannot dereference DICOM Device without DicomConfiguration context", e);
-        }
+    public T fromConfigNode(ST configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+        if (configNode == null) return null;
+        return configTypeAdapter.fromConfigNode(configNode, property, vitalizer);
     }
 
-    @Override
-    public String toConfigNode(Device object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
-        return object.getDeviceName();
+    public ST toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+        if (object == null) return null;
+        return configTypeAdapter.toConfigNode(object, property, vitalizer);
     }
+
+    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+        return configTypeAdapter.getSchema(property, vitalizer);
+    }
+
+    public ST normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+        return configTypeAdapter.normalize(configNode, property, vitalizer);
+    }
+
 
 }

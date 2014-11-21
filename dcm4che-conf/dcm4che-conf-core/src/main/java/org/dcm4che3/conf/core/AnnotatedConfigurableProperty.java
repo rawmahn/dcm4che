@@ -42,6 +42,7 @@ package org.dcm4che3.conf.core;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
+import org.dcm4che3.conf.core.api.LDAP;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
@@ -53,6 +54,7 @@ import java.util.Map;
 /**
  * @author Roman K
  */
+@LDAP
 public class AnnotatedConfigurableProperty {
     private Map<Type, Annotation> annotations = new HashMap<Type, Annotation>();
     private Type type;
@@ -107,11 +109,6 @@ public class AnnotatedConfigurableProperty {
         return pseudoProperty;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> T getAnnotation(Class<T> annotationType) {
-        return (T) annotations.get(annotationType);
-    }
-
 
     public Class getRawClass() {
         Class clazz;
@@ -123,6 +120,7 @@ public class AnnotatedConfigurableProperty {
         }
         return clazz;
     }
+
 
     public void setAnnotations(Map<Type, Annotation> annotations) {
         this.annotations = annotations;
@@ -148,6 +146,16 @@ public class AnnotatedConfigurableProperty {
         if (name != null) return name;
         throw new ConfigurationException("Property name not specified");
 
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T getAnnotation(Class<T> annotationType) {
+        T t = (T) annotations.get(annotationType);
+        if (t==null && annotationType.equals(LDAP.class)) {
+            return (T) AnnotatedConfigurableProperty.class.getAnnotation(LDAP.class);
+        }
+
+        return t;
     }
 
     public void setName(String name) {

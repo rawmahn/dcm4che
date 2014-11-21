@@ -96,17 +96,17 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         this.vitalizer.setReferenceTypeAdapter(new DicomReferenceHandlerAdapter(this.vitalizer, configurationStorage));
 
         // register DICOM type adapters
-        this.vitalizer.registerCustomConfigTypeAdapter(AttributesFormat.class, new AttributeFormatTypeAdapter());
-        this.vitalizer.registerCustomConfigTypeAdapter(Code.class, new CodeTypeAdapter());
-        this.vitalizer.registerCustomConfigTypeAdapter(Device.class, new DeviceReferenceByNameTypeAdapter());
-        this.vitalizer.registerCustomConfigTypeAdapter(Issuer.class, new IssuerTypeAdapter());
-        this.vitalizer.registerCustomConfigTypeAdapter(ValueSelector.class, new ValueSelectorTypeAdapter());
-        this.vitalizer.registerCustomConfigTypeAdapter(Property.class, new PropertyTypeAdapter());
+        this.vitalizer.registerCustomConfigTypeAdapter(AttributesFormat.class, new AttributeFormatTypeAdapter().getDecorated());
+        this.vitalizer.registerCustomConfigTypeAdapter(Code.class, new CodeTypeAdapter().getDecorated());
+        this.vitalizer.registerCustomConfigTypeAdapter(Device.class, new DeviceReferenceByNameTypeAdapter().getDecorated());
+        this.vitalizer.registerCustomConfigTypeAdapter(Issuer.class, new IssuerTypeAdapter().getDecorated());
+        this.vitalizer.registerCustomConfigTypeAdapter(ValueSelector.class, new ValueSelectorTypeAdapter().getDecorated());
+        this.vitalizer.registerCustomConfigTypeAdapter(Property.class, new PropertyTypeAdapter().getDecorated());
 
         // register audit log type adapters
-        this.vitalizer.registerCustomConfigTypeAdapter(EventTypeCode.class, new AuditSimpleTypeAdapters.EventTypeCodeAdapter());
-        this.vitalizer.registerCustomConfigTypeAdapter(EventID.class, new AuditSimpleTypeAdapters.EventIDTypeAdapter());
-        this.vitalizer.registerCustomConfigTypeAdapter(RoleIDCode.class, new AuditSimpleTypeAdapters.RoleIDCodeTypeAdapter());
+        this.vitalizer.registerCustomConfigTypeAdapter(EventTypeCode.class, new AuditSimpleTypeAdapters.EventTypeCodeAdapter().getDecorated());
+        this.vitalizer.registerCustomConfigTypeAdapter(EventID.class, new AuditSimpleTypeAdapters.EventIDTypeAdapter().getDecorated());
+        this.vitalizer.registerCustomConfigTypeAdapter(RoleIDCode.class, new AuditSimpleTypeAdapters.RoleIDCodeTypeAdapter().getDecorated());
 
         // register DicomConfiguration context
         this.vitalizer.registerContext(DicomConfiguration.class, this);
@@ -177,6 +177,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         public String getAeTitle() {
             return aeTitle;
         }
+
         public void setAeTitle(String aeTitle) {
             this.aeTitle = aeTitle;
         }
@@ -192,21 +193,21 @@ public class CommonDicomConfiguration implements DicomConfiguration {
                 objectClasses = "dicomDevicesRoot"
         )
         @ConfigurableProperty(name = "dicomDevicesRoot")
-        Map<String,Device> devices;
+        Map<String, Device> devices;
 
         @LDAP(
                 overriddenName = "Unique AE Titles Registry",
                 objectClasses = "dicomUniqueAETitlesRegistryRoot"
         )
         @ConfigurableProperty(name = "dicomUniqueAETitlesRegistryRoot")
-        Map<String,AETitleItem> uniqueAETitleRegistry;
+        Map<String, AETitleItem> uniqueAETitleRegistry;
 
         @LDAP(
                 overriddenName = "Unique HL7 Application Names Registry",
                 objectClasses = "hl7UniqueApplicationNamesRegistryRoot"
         )
         @ConfigurableProperty(name = "hl7UniqueApplicationNamesRegistryRoot")
-        Map<String,HL7UniqueAppRegistryItem> hl7UniqueApplicationNamesRegistry;
+        Map<String, HL7UniqueAppRegistryItem> hl7UniqueApplicationNamesRegistry;
 
 
     }

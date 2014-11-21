@@ -42,7 +42,9 @@ package org.dcm4che3.conf.dicom.adapters;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.BeanVitalizer;
+import org.dcm4che3.conf.core.adapters.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.adapters.DefaultConfigTypeAdapters;
+import org.dcm4che3.conf.core.adapters.NullToNullDecorator;
 import org.dcm4che3.util.Property;
 
 public class PropertyTypeAdapter extends DefaultConfigTypeAdapters.CommonAbstractTypeAdapter<Property> {
@@ -54,12 +56,12 @@ public class PropertyTypeAdapter extends DefaultConfigTypeAdapters.CommonAbstrac
 
     @Override
     public Property fromConfigNode(String configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
-        return configNode == null ? null : new Property(configNode);
+        return new Property(configNode);
     }
 
     @Override
     public String toConfigNode(Property object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
-        return object == null ? null : object.toString();
+        return object.toString();
     }
 
 }

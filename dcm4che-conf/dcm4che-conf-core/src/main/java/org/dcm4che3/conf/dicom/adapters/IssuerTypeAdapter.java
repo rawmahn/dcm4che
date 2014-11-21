@@ -55,12 +55,12 @@ public class IssuerTypeAdapter extends DefaultConfigTypeAdapters.CommonAbstractT
 
     @Override
     public Issuer fromConfigNode(String configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
-        return configNode == null ? null : new Issuer(configNode);
+        return new Issuer(configNode);
     }
 
     @Override
     public String toConfigNode(Issuer object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationUnserializableException {
-        return object == null ? null : object.toString();
+        return object.toString();
     }
 
 }
