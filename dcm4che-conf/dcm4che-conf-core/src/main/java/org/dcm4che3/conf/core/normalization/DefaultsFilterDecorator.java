@@ -114,7 +114,7 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
                 Collection collection = (Collection) childNode;
 
                 for (Object object : collection) {
-                    applyDefaults(object, property.getPseudoPropertyForCollectionElement().getRawClass());
+                    applyDefaults(object, property.getPseudoPropertyForConfigClassCollectionElement().getRawClass());
                 }
 
                 continue;
@@ -126,7 +126,7 @@ public class DefaultsFilterDecorator extends DelegatingConfiguration {
                 Map<String, Object> collection = (Map<String, Object>) childNode;
 
                 for (Object object : collection.values())
-                    applyDefaults(object, property.getPseudoPropertyForCollectionElement().getRawClass());
+                    applyDefaults(object, property.getPseudoPropertyForConfigClassCollectionElement().getRawClass());
 
                 continue;
             }

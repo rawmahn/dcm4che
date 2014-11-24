@@ -43,7 +43,7 @@ public @interface LDAP {
      *  OPT3 : TRUE
      * }
      *
-     * The array must contain property names that correspond to enum values in the right order.
+     * The array must contain property names that correspond to enum values in the right order and the enum representation MUST be ordinal for this property.
      */
     String[] booleanBasedEnumStorageOptions() default {};
 

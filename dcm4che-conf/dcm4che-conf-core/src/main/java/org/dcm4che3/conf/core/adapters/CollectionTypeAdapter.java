@@ -86,7 +86,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
 
         if (configNode == null) return null;
 
-        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
+        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForCollectionElement();
 
         ConfigTypeAdapter elementAdapter;
         if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())
@@ -107,7 +107,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
 
         if (object == null) return null;
 
-        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
+        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForCollectionElement();
 
         ConfigTypeAdapter elementAdapter;
         if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())
@@ -130,7 +130,7 @@ public class CollectionTypeAdapter<T extends Collection> implements ConfigTypeAd
 
         metadata.put("type", "array");
 
-        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
+        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForCollectionElement();
 
         ConfigTypeAdapter elementAdapter;
         if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())

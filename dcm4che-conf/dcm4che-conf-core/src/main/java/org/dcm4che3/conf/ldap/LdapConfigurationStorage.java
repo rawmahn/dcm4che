@@ -40,7 +40,6 @@
 package org.dcm4che3.conf.ldap;
 
 import org.dcm4che3.conf.api.ConfigurationException;
-import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.api.LDAP;
 import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
@@ -112,7 +111,7 @@ public class LdapConfigurationStorage implements Configuration {
         String dn = LdapConfigUtils.refToLdapDN(path, this);
 
         try {
-            return LdapConfigUtils.readNode(this, dn, configurableClass);
+            return LdapConfigNodeReader.readNode(this, dn, configurableClass);
         } catch (NamingException e) {
             throw new ConfigurationException("Cannot read node from ldap :" + path, e);
         }
@@ -132,7 +131,7 @@ public class LdapConfigurationStorage implements Configuration {
             else
                 subDn = dn;
 
-            Map ext = (Map) LdapConfigUtils.readNode(this, subDn, aClass);
+            Map ext = (Map) LdapConfigNodeReader.readNode(this, subDn, aClass);
             if (ext == null || ext.isEmpty()) continue;
 
             exts.put(aClass.getSimpleName(), ext);

@@ -85,7 +85,7 @@ public class AttributeCoercions
     }
 
     public void add(AttributeCoercions acs) {
-         for (AttributeCoercion ac : acs.list)
+        for (AttributeCoercion ac : acs.list)
              add(ac);
     }
 

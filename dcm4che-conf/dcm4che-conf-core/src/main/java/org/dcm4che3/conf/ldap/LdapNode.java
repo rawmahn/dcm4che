@@ -139,7 +139,7 @@ public class LdapNode {
 
                     // now if it is a conf obj, not primitive or custom representation, go deeper
                     if (property.isMapOfConfObjects() && entry.getValue() instanceof Map) {
-                        elementNode.populate((Map<String, Object>) entry.getValue(), property.getPseudoPropertyForCollectionElement().getRawClass());
+                        elementNode.populate((Map<String, Object>) entry.getValue(), property.getPseudoPropertyForConfigClassCollectionElement().getRawClass());
                         continue;
                     }
 
@@ -160,7 +160,7 @@ public class LdapNode {
                     LdapNode thisParent = makeLdapCollectionNode(property);
                     for (Map<String, Object> o : ((Collection<Map<String, Object>>) propertyConfigNode)) {
                         LdapNode elementNode = thisParent.makeLdapElementNode(property, (String) o.get(LdapConfigUtils.getDistinguishingFieldForCollectionElement(property)));
-                        elementNode.populate(o, property.getPseudoPropertyForCollectionElement().getRawClass());
+                        elementNode.populate(o, property.getPseudoPropertyForConfigClassCollectionElement().getRawClass());
                     }
                     continue;
                 }
@@ -204,7 +204,6 @@ public class LdapNode {
 
                 for (Object o : collection) {
                     String attrVal = o.toString();
-
                     // handle refs
                     if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences())
                         attrVal = LdapConfigUtils.refToLdapDN(attrVal, getLdapConfigurationStorage());
@@ -237,7 +236,7 @@ public class LdapNode {
 
     private List<String> getObjectClasses(AnnotatedConfigurableProperty property) {
 
-        AnnotatedConfigurableProperty elementAnno = property.getPseudoPropertyForCollectionElement();
+        AnnotatedConfigurableProperty elementAnno = property.getPseudoPropertyForConfigClassCollectionElement();
         if (elementAnno != null) {
             LDAP annotation = elementAnno.getAnnotation(LDAP.class);
             if (annotation != null) return new ArrayList<String>(Arrays.asList(annotation.objectClasses()));

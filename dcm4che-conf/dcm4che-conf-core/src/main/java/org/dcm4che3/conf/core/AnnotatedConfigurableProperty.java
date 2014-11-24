@@ -67,9 +67,24 @@ public class AnnotatedConfigurableProperty {
         setType(type);
     }
 
+
+
+    public AnnotatedConfigurableProperty clone(){
+
+        AnnotatedConfigurableProperty property = new AnnotatedConfigurableProperty();
+        property.setAnnotations(getAnnotations());
+        property.setType(getType());
+        property.setName(getName());
+        return property;
+    }
+
     public boolean isArrayOfConfObjects() {
         return getRawClass().isArray() &&
                         getRawClass().getComponentType().getAnnotation(ConfigurableClass.class) != null;
+    }
+
+    public Map<Type, Annotation> getAnnotations() {
+        return annotations;
     }
 
     public boolean isCollectionOfConfObjects() {
@@ -85,15 +100,16 @@ public class AnnotatedConfigurableProperty {
     public AnnotatedConfigurableProperty getPseudoPropertyForGenericsParamater(int genericParameterIndex) {
 
         Type typeForGenericsParameter = getTypeForGenericsParameter(genericParameterIndex);
-        AnnotatedConfigurableProperty pseudoProperty = new AnnotatedConfigurableProperty(typeForGenericsParameter);
-        return pseudoProperty;
+        AnnotatedConfigurableProperty clone = clone();
+        clone.setType(typeForGenericsParameter);
+        return clone;
     }
 
     /**
      * get type of generic/component for collection/Array, Value type for map
      * @return
      */
-    public AnnotatedConfigurableProperty getPseudoPropertyForCollectionElement() {
+    public AnnotatedConfigurableProperty getPseudoPropertyForConfigClassCollectionElement() {
 
         Type type;
         if (isMapOfConfObjects())
@@ -105,10 +121,31 @@ public class AnnotatedConfigurableProperty {
         return null;
             //throw new IllegalArgumentException("This property is not a collection/array/map - "+getType());
 
-        AnnotatedConfigurableProperty pseudoProperty = new AnnotatedConfigurableProperty(type);
-        return pseudoProperty;
+        AnnotatedConfigurableProperty clone = clone();
+        clone.setType(type);
+        return clone;
     }
 
+    /**
+     * get type of generic/component for collection/Array, Value type for map
+     * @return
+     */
+    public AnnotatedConfigurableProperty getPseudoPropertyForCollectionElement() {
+
+        Type type;
+        if (Map.class.isAssignableFrom(getRawClass()))
+            type = getTypeForGenericsParameter(1); else
+        if (Collection.class.isAssignableFrom(getRawClass()) )
+            type = getTypeForGenericsParameter(0); else
+        if (getRawClass().isArray())
+            type = getRawClass().getComponentType(); else
+            return null;
+        //throw new IllegalArgumentException("This property is not a collection/array/map - "+getType());
+
+        AnnotatedConfigurableProperty clone = clone();
+        clone.setType(type);
+        return clone;
+    }
 
     public Class getRawClass() {
         Class clazz;

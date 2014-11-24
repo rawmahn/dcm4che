@@ -94,7 +94,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         if (Collection.class.isAssignableFrom(configNode.getClass())) {
             Collection l = ((Collection) configNode);
             Object arr = Array.newInstance(componentType, l.size());
-            AnnotatedConfigurableProperty componentPseudoProperty = new AnnotatedConfigurableProperty(componentType);
+            AnnotatedConfigurableProperty componentPseudoProperty = property.getPseudoPropertyForCollectionElement();
             ConfigTypeAdapter elementTypeAdapter = vitalizer.lookupTypeAdapter(componentPseudoProperty);
             int i = 0;
             for (Object el : l) {
@@ -125,7 +125,8 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
             return Base64.toBase64((byte[]) object);
 
         Class wrapperClass = PRIMITIVE_TO_WRAPPER.get(componentType);
-        AnnotatedConfigurableProperty componentPseudoProperty = new AnnotatedConfigurableProperty(componentType);
+        AnnotatedConfigurableProperty componentPseudoProperty = property.getPseudoPropertyForCollectionElement();
+
         ConfigTypeAdapter elementTypeAdapter = vitalizer.lookupTypeAdapter(componentPseudoProperty);
 
         ArrayList list = new ArrayList();
@@ -150,8 +151,8 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
 
         metadata.put("type", "array");
 
-        Class<?> componentType = ((Class) property.getType()).getComponentType();
-        AnnotatedConfigurableProperty componentPseudoProperty = new AnnotatedConfigurableProperty(componentType);
+
+        AnnotatedConfigurableProperty componentPseudoProperty = property.getPseudoPropertyForCollectionElement();
         metadata.put("items", vitalizer.lookupTypeAdapter(componentPseudoProperty).getSchema(componentPseudoProperty, vitalizer));
 
         return metadata;
@@ -160,8 +161,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     @Override
     public Object normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
-        Class<?> componentType = ((Class) property.getType()).getComponentType();
-        ConfigTypeAdapter elemAdapter = vitalizer.lookupTypeAdapter(new AnnotatedConfigurableProperty(componentType));
+        ConfigTypeAdapter elemAdapter = vitalizer.lookupTypeAdapter(property.getPseudoPropertyForCollectionElement());
 
         // always create an empty collection
         Collection c = new ArrayList();
