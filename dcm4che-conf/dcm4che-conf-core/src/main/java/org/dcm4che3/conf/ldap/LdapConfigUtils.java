@@ -359,6 +359,7 @@ public class LdapConfigUtils {
 
     static Object readNode(LdapConfigurationStorage ldapConfigurationStorage, String dn, Class configurableClass) throws ConfigurationException, NamingException {
         ArrayList<String> objectClasses = extractObjectClasses(configurableClass);
+        boolean isAnyContents = false;
 
         Attributes attributes;
         try {
@@ -369,10 +370,6 @@ public class LdapConfigUtils {
 
         Map<String, Object> configNode = new HashMap<String, Object>();
         for (AnnotatedConfigurableProperty property : ConfigIterators.getAllConfigurableFieldsAndSetterParameters(configurableClass)) {
-
-
-            //TODO:use storedAsReference three times below
-
             // map
             if (property.isMapOfConfObjects()) {
                 String subDn = getSubDn(dn, property);
@@ -381,6 +378,8 @@ public class LdapConfigUtils {
                 try {
                     NamingEnumeration<SearchResult> enumeration = searchForCollectionElements(ldapConfigurationStorage, subDn, property);
                     while (enumeration.hasMore()) {
+                        isAnyContents = true;
+
                         SearchResult res = enumeration.next();
                         String distField = getDistinguishingFieldForCollectionElement(property);
                         Attributes resAttributes = res.getAttributes();
@@ -409,11 +408,14 @@ public class LdapConfigUtils {
                 // custom rep?
                 if (property.getAnnotation(LDAP.class).storedAsReference()) {
                     if (attributes != null) {
+                        isAnyContents = true;
                         configNode.put(property.getAnnotatedName(),attributes.get(getLDAPPropertyName(property)).get());
                     }
                 } else {
                     String subDn = getSubDn(dn, property);
-                    configNode.put(property.getAnnotatedName(), readNode(ldapConfigurationStorage, subDn, property.getRawClass()));
+                    Object value = readNode(ldapConfigurationStorage, subDn, property.getRawClass());
+                    if (value != null) isAnyContents = true;
+                    configNode.put(property.getAnnotatedName(), value);
                 }
 
                 continue;
@@ -432,11 +434,11 @@ public class LdapConfigUtils {
                     NamingEnumeration<SearchResult> enumeration = searchForCollectionElements(ldapConfigurationStorage, subDn, property);
                     ArrayList<Object> list = new ArrayList<Object>();
                     while (enumeration.hasMore()) {
+                        isAnyContents = true;
                         SearchResult next = enumeration.next();
                         // check if it is a primitive or a custom representation, e.g a ref
                         list.add(readNode(ldapConfigurationStorage, next.getName() + "," + dn, elemClass));
                     }
-
                     configNode.put(property.getAnnotatedName(), list);
                 } catch (NameNotFoundException e) {
                     //noop
@@ -453,13 +455,15 @@ public class LdapConfigUtils {
                 ArrayList<Object> list = new ArrayList<Object>();
 
                 // special case with references
-                for (int i = 0; i < attribute.size(); i++)
+                for (int i = 0; i < attribute.size(); i++) {
+                    isAnyContents = true;
                     if (property.getAnnotation(ConfigurableProperty.class).collectionOfReferences() &&
                             property.getPseudoPropertyForCollectionElement().getRawClass().equals(Connection.class)) {
                         list.add(connectionLdapDnToRef((String) attribute.get(i), ldapConfigurationStorage));
                     } else {
                         list.add(attribute.get(i));
                     }
+                }
                 configNode.put(property.getAnnotatedName(), list);
                 continue;
             }
@@ -479,6 +483,8 @@ public class LdapConfigUtils {
         } else if (configurableClass.equals(HL7Application.class)) {
             ldapConfigurationStorage.fillExtension(dn, configNode, "hl7AppExtensions");
         }
+
+        if (!isAnyContents) return null;
 
         return configNode;
     }
