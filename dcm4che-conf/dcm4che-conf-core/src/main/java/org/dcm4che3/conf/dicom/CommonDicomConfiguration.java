@@ -86,9 +86,9 @@ public class CommonDicomConfiguration implements DicomConfiguration {
      */
     private ThreadLocal<Map<String, Device>> currentlyLoadedDevicesLocal = new ThreadLocal<Map<String, Device>>();
 
-    public CommonDicomConfiguration(Configuration configurationStorage, BeanVitalizer vitalizer, Collection<Class<? extends DeviceExtension>> deviceExtensionClasses, Collection<Class<? extends AEExtension>> aeExtensionClasses) {
+    public CommonDicomConfiguration(Configuration configurationStorage, Collection<Class<? extends DeviceExtension>> deviceExtensionClasses, Collection<Class<? extends AEExtension>> aeExtensionClasses) {
         this.config = configurationStorage;
-        this.vitalizer = vitalizer;
+        this.vitalizer = new BeanVitalizer();
         this.deviceExtensionClasses = deviceExtensionClasses;
         this.aeExtensionClasses = aeExtensionClasses;
 

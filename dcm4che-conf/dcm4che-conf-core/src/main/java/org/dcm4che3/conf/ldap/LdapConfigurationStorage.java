@@ -97,7 +97,10 @@ public class LdapConfigurationStorage implements Configuration {
 
     @Override
     public Map<String, Object> getConfigurationRoot() throws ConfigurationException {
-        return new HashMap<String, Object>();
+        Object root = getConfigurationNode("/dicomConfigurationRoot", null);
+        HashMap<String, Object> map = new HashMap<String, Object>();
+        map.put("dicomConfigurationRoot", root);
+        return map;
     }
 
     @Override
@@ -177,7 +180,7 @@ public class LdapConfigurationStorage implements Configuration {
             ldapNode.getAttributes().put(objectClass);
 
             try {
-                getLdapCtx().createSubcontext(ldapNode.getDn(), ldapNode.getAttributes());
+                storeAttributes(ldapNode);
             } catch (NameAlreadyBoundException alreadyBoundE) {
 
                 // Append objectClass
@@ -189,8 +192,7 @@ public class LdapConfigurationStorage implements Configuration {
 
                 ldapNode.getAttributes().put(existingObjectClasses);
 
-                // replace attributes
-                getLdapCtx().modifyAttributes(ldapNode.getDn(), DirContext.REPLACE_ATTRIBUTE, ldapNode.getAttributes());
+                replaceAttributes(ldapNode);
             }
         }
 
@@ -215,6 +217,14 @@ public class LdapConfigurationStorage implements Configuration {
 
         // descent recursively
         for (LdapNode child : ldapNode.getChildren()) mergeIn(child);
+    }
+
+    private void storeAttributes(LdapNode ldapNode) throws NamingException {
+        getLdapCtx().createSubcontext(ldapNode.getDn(), ldapNode.getAttributes());
+    }
+
+    private void replaceAttributes(LdapNode ldapNode) throws NamingException {
+        getLdapCtx().modifyAttributes(ldapNode.getDn(), DirContext.REPLACE_ATTRIBUTE, ldapNode.getAttributes());
     }
 
     @Override
