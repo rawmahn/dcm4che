@@ -40,21 +40,139 @@ package org.dcm4che3.sample.cdi.conf.ldap;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
+import org.dcm4che3.conf.core.Configuration;
+import org.dcm4che3.conf.core.normalization.DefaultsFilterDecorator;
+import org.dcm4che3.conf.core.storage.CachedRootNodeConfiguration;
 import org.dcm4che3.conf.core.storage.SingleJsonFileConfigurationStorage;
-import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
+import org.dcm4che3.conf.dicom.CommonDicomConfigurationWithHL7;
+import org.dcm4che3.conf.ldap.LdapConfigurationStorage;
 import org.dcm4che3.net.AEExtension;
 import org.dcm4che3.net.DeviceExtension;
+import org.dcm4che3.net.hl7.HL7ApplicationExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Disposes;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
-import java.util.ArrayList;
+import javax.inject.Inject;
+import java.util.*;
 
 public class CommonDicomConfigurationFactory {
 
+    private static Logger LOG = LoggerFactory
+            .getLogger(CommonDicomConfigurationFactory.class);
+
+    public enum ConfigType {
+        JSON_FILE,
+        PREFERENCES,
+        LDAP
+    }
+
+
+    @Inject
+    Instance<DeviceExtension> deviceExtensionInstance;
+
+    @Inject
+    Instance<HL7ApplicationExtension> hl7ExtensionInstance;
+
+    @Inject
+    Instance<AEExtension> aeExtensionsInstance;
+
+
     @Produces @ApplicationScoped
-    public DicomConfiguration dicomConfiguration() throws ConfigurationException {
-        return new CommonDicomConfiguration(new SingleJsonFileConfigurationStorage("abc.json"),new ArrayList<Class<? extends DeviceExtension>>(),new ArrayList<Class<? extends AEExtension>>() );
+    public DicomConfiguration getDicomConfiguration() throws ConfigurationException {
+        String configTypeStr = getPropertyWithNotice("org.dcm4che.conf.storage", "json_file");
+        ConfigType configType = ConfigType.valueOf(configTypeStr.toUpperCase().trim());
+
+        switch (configType) {
+
+            case JSON_FILE:
+                String fileName = getPropertyWithNotice("org.dcm4che.conf.filename", "configuration.json");;
+                return createDicomConfiguration(new SingleJsonFileConfigurationStorage(fileName));
+
+            case LDAP:
+                Hashtable<String,String> ldapProps = new Hashtable<String, String>();
+                ldapProps.put("java.naming.provider.url", getPropertyWithNotice("org.dcm4che.conf.ldap.url", "ldap://localhost:389/dc=example,dc=com"));
+                ldapProps.put("java.naming.security.principal", getPropertyWithNotice("org.dcm4che.conf.ldap.principal", "cn=Directory Manager"));
+                ldapProps.put("java.naming.security.credentials", getPropertyWithNotice("org.dcm4che.conf.ldap.credentials", "1", true));
+                ldapProps.put("java.naming.factory.initial", "com.sun.jndi.ldap.LdapCtxFactory");
+                ldapProps.put("java.naming.ldap.attributes.binary", "dicomVendorData");
+                return createDicomConfiguration(new LdapConfigurationStorage(ldapProps, getAllExtensions()));
+
+            default:
+            case PREFERENCES:
+                throw new RuntimeException("Not implemented");
+        }
+    }
+
+    String getPropertyWithNotice(String propertyName, String defaultValue) {
+        return getPropertyWithNotice(propertyName, defaultValue, false);
+    }
+
+    String getPropertyWithNotice(String propertyName, String defaultValue, boolean hideValue) {
+
+        if (System.getProperty(propertyName) == null) {
+            LOG.warn("Dcm4che configuration storage init: " + "property '{}' not found. Using default value '{}'", propertyName, defaultValue);
+        } else {
+            LOG.info("Initializing dcm4che configuration storage " + "({} = {})", propertyName, hideValue ? "***" : defaultValue);
+        }
+        return System.getProperty(propertyName, defaultValue);
+    }
+
+    private List<Class<?>> getAllExtensions() {
+
+        List<Class<?>> list = new ArrayList<Class<?>>();
+
+        list.addAll(getExtensionClasses(deviceExtensionInstance));
+        list.addAll(getExtensionClasses(aeExtensionsInstance));
+        list.addAll(getExtensionClasses(hl7ExtensionInstance));
+
+        return list;
+    }
+
+    private CommonDicomConfigurationWithHL7 createDicomConfiguration(Configuration configurationStorage) {
+
+        ArrayList<Class<? extends DeviceExtension>> deviceExtensionClasses = getExtensionClasses(deviceExtensionInstance);
+        ArrayList<Class<? extends AEExtension>> aeExtensionClasses = getExtensionClasses(aeExtensionsInstance);
+        ArrayList<Class<? extends HL7ApplicationExtension>> hl7ApplicationExtensionClasses = getExtensionClasses(hl7ExtensionInstance);
+
+        LOG.info("Dcm4che configuration device extensions: {}", deviceExtensionClasses);
+        LOG.info("Dcm4che configuration AE extensions: {}", deviceExtensionClasses);
+        LOG.info("Dcm4che configuration HL7 extensions: {}", deviceExtensionClasses);
+
+        return new CommonDicomConfigurationWithHL7(
+                decorate(configurationStorage),
+                deviceExtensionClasses,
+                aeExtensionClasses,
+                hl7ApplicationExtensionClasses
+        );
+    }
+
+
+
+    private Configuration decorate(Configuration configurationStorage) {
+        // caching
+        boolean cached = Boolean.valueOf(getPropertyWithNotice("org.dcm4che.configuration.cached", "false"));
+        if (cached) configurationStorage = new CachedRootNodeConfiguration(configurationStorage);
+
+        // defaults
+        configurationStorage = new DefaultsFilterDecorator(configurationStorage);
+
+        return configurationStorage;
+    }
+
+    private <T> ArrayList<Class<? extends T>> getExtensionClasses(Instance<T> instance) {
+        ArrayList<Class<? extends T>> classes = new ArrayList<Class<? extends T>>();
+
+        Iterator<T> iterator = instance.iterator();
+        while (iterator.hasNext()) {
+            Class<? extends T> aClass = (Class<? extends T>) iterator.next().getClass();
+            classes.add(aClass);
+        }
+
+        return classes;
     }
 
     public void dispose(@Disposes DicomConfiguration conf) {

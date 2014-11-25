@@ -194,7 +194,7 @@ public class Device implements Serializable {
     private TimeZone timeZoneOfDevice;
 
 
-    //TODO:x509!!
+    //TODO: finalize and store x509 cretificates !!
     private final LinkedHashMap<String, X509Certificate[]> authorizedNodeCertificates =
             new LinkedHashMap<String, X509Certificate[]>();
     private final LinkedHashMap<String, X509Certificate[]> thisNodeCertificates =

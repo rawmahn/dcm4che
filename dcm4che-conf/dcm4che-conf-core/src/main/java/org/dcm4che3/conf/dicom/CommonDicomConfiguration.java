@@ -444,7 +444,11 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public <T> T getDicomConfigurationExtension(Class<T> clazz) {
-        throw new RuntimeException("Not implemented yet");
+        try {
+            return (T) this;
+        } catch (ClassCastException e) {
+            throw new IllegalArgumentException("Cannot find a configuration extension for class "+clazz.getName());
+        }
     }
 }
 
