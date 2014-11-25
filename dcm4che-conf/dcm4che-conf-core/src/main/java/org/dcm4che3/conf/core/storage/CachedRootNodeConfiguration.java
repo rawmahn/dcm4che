@@ -37,64 +37,76 @@
  *
  *  ***** END LICENSE BLOCK *****
  */
-package org.dcm4che3.conf.core.normalization;
+package org.dcm4che3.conf.core.storage;
 
+import org.dcm4che3.conf.core.DelegatingConfiguration;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
-import org.dcm4che3.conf.core.DelegatingConfiguration;
+import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 
 import java.util.Iterator;
 import java.util.Map;
 
 /**
- * All properties' values are validated against the <code>javax.validation</code> annotations.
- * If there is no value for property, and no default is specified, validation exception is raised.
- *
- * @author Roman K
+ * Created by aprvf on 29/09/2014.
  */
-public class NormalizingDecorator extends DelegatingConfiguration {
+
+public class CachedRootNodeConfiguration extends DelegatingConfiguration {
 
 
-    @Override
-    public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
-        // TODO: normalize
-        super.persistNode(path, configNode, configurableClass);
+    protected Map<String, Object> configurationRoot = null;
+
+    public CachedRootNodeConfiguration(Configuration delegate) {
+        super(delegate);
     }
 
 
     @Override
+    public Map<String, Object> getConfigurationRoot() throws ConfigurationException {
+        if (configurationRoot == null)
+            configurationRoot = delegate.getConfigurationRoot();
+        return configurationRoot;
+    }
+
+    /**
+     * Return cached node
+     *
+     *
+     * @param path
+     * @param configurableClass
+     * @return
+     * @throws ConfigurationException
+     */
+    @Override
     public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
-        // TODO: normalize
-        return super.getConfigurationNode(path, configurableClass);
+        return ConfigNodeUtil.getNode(getConfigurationRoot(), path);
+    }
+
+    @Override
+    public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
+        ConfigNodeUtil.replaceNode(getConfigurationRoot(), path, configNode);
+        delegate.persistNode(path, configNode, configurableClass);
+    }
+
+    @Override
+    public void refreshNode(String path) throws ConfigurationException {
+        ConfigNodeUtil.replaceNode(getConfigurationRoot(), path, delegate.getConfigurationNode(path, null));
+    }
+
+    @Override
+    public boolean nodeExists(String path) throws ConfigurationException {
+        return ConfigNodeUtil.nodeExists(getConfigurationRoot(), path);
+    }
+
+    @Override
+    public void removeNode(String path) throws ConfigurationException {
+        delegate.removeNode(path);
+        ConfigNodeUtil.removeNode(getConfigurationRoot(), path);
     }
 
     @Override
     public Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException {
-
-        final Iterator found = super.search(liteXPathExpression);
-        return new Iterator() {
-
-            @Override
-            public boolean hasNext() {
-                return found.hasNext();
-            }
-
-            @Override
-            public Object next() {
-                // TODO: normalize
-                return found.next();
-            }
-
-            @Override
-            public void remove() {
-                found.remove();
-            }
-        };
-
-    }
-
-    public NormalizingDecorator(Configuration delegate) {
-        super(delegate);
+        return ConfigNodeUtil.search(getConfigurationRoot(), liteXPathExpression);
     }
 
 }

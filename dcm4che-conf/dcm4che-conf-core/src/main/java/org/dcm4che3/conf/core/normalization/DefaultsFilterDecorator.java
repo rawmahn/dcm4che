@@ -43,7 +43,7 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
-import org.dcm4che3.conf.core.impl.DelegatingConfiguration;
+import org.dcm4che3.conf.core.DelegatingConfiguration;
 import org.dcm4che3.conf.core.util.ConfigIterators;
 
 import java.util.Collection;

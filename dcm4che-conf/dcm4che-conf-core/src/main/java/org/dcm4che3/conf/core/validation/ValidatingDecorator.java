@@ -41,7 +41,7 @@ package org.dcm4che3.conf.core.validation;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
-import org.dcm4che3.conf.core.impl.DelegatingConfiguration;
+import org.dcm4che3.conf.core.DelegatingConfiguration;
 
 import java.util.Map;
 

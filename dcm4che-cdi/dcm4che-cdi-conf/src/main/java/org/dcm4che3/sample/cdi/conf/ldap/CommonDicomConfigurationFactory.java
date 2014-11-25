@@ -36,55 +36,28 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-package org.dcm4che3.camel.test;
+package org.dcm4che3.sample.cdi.conf.ldap;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.main.Main;
-import org.dcm4che3.camel.DicomDeviceComponent;
-import org.dcm4che3.camel.DicomMessage;
+import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
 import org.dcm4che3.conf.core.storage.SingleJsonFileConfigurationStorage;
 import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
-import org.dcm4che3.net.Commands;
-import org.dcm4che3.net.Device;
-import org.dcm4che3.net.Dimse;
-import org.dcm4che3.net.Status;
-import org.dcm4che3.net.service.DicomServiceException;
+import org.dcm4che3.net.AEExtension;
+import org.dcm4che3.net.DeviceExtension;
 
-/**
- * @author Gunter Zeilinger <gunterze@gmail.com>
- *
- */
-public class EchoSCP implements Processor {
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Disposes;
+import javax.enterprise.inject.Produces;
+import java.util.ArrayList;
 
-    public static void main(String[] args) throws Exception {
-        DicomConfiguration dicomConf = new CommonDicomConfiguration(new SingleJsonFileConfigurationStorage("config.json"));
-        Device device = dicomConf.findDevice(args[0]);
-        Main main = new Main();
-        main.bind("dicomDevice", new DicomDeviceComponent(device));
-        main.addRouteBuilder(new RouteBuilder(){
+public class CommonDicomConfigurationFactory {
 
-            @Override
-            public void configure() throws Exception {
-                from("dicomDevice:dicom?sopClasses=1.2.840.10008.1.1").bean(EchoSCP.class);
-            }});
-        main.enableHangupSupport();
-        System.out.println("Starting Camel. Use ctrl + c to terminate the JVM.\n");
-        main.run();
+    @Produces @ApplicationScoped
+    public DicomConfiguration dicomConfiguration() throws ConfigurationException {
+        return new CommonDicomConfiguration(new SingleJsonFileConfigurationStorage("abc.json"),new ArrayList<Class<? extends DeviceExtension>>(),new ArrayList<Class<? extends AEExtension>>() );
     }
 
-    @Override
-    public void process(Exchange exchange) throws Exception {
-        DicomMessage in = exchange.getIn(DicomMessage.class);
-        Dimse dimse = in.getHeader("dimse", Dimse.class);
-        if (dimse != Dimse.C_ECHO_RQ)
-            throw new DicomServiceException(Status.UnrecognizedOperation);
-        DicomMessage out = new DicomMessage(
-                Dimse.C_ECHO_RSP,
-                Commands.mkEchoRSP(in.getCommand(), Status.Success));
-        exchange.setOut(out);
+    public void dispose(@Disposes DicomConfiguration conf) {
+        conf.close();
     }
-
 }

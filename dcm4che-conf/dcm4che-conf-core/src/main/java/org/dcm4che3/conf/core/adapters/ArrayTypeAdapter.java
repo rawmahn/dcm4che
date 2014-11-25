@@ -161,6 +161,10 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     @Override
     public Object normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
 
+        // byte[] is a special case
+        if (((Class) property.getType()).getComponentType().equals(byte.class))
+            return configNode;
+
         ConfigTypeAdapter elemAdapter = vitalizer.lookupTypeAdapter(property.getPseudoPropertyForCollectionElement());
 
         // always create an empty collection
