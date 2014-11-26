@@ -36,7 +36,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-package org.dcm4che3.sample.cdi.conf.ldap;
+package org.dcm4che3.cdi.conf;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.api.DicomConfiguration;
@@ -114,7 +114,7 @@ public class CommonDicomConfigurationFactory {
     String getPropertyWithNotice(String propertyName, String defaultValue, boolean hideValue) {
 
         if (System.getProperty(propertyName) == null) {
-            LOG.warn("Dcm4che configuration storage init: " + "property '{}' not found. Using default value '{}'", propertyName, defaultValue);
+            LOG.warn("Configuration storage init: system property '{}' not found. Using default value '{}'", propertyName, defaultValue);
         } else {
             LOG.info("Initializing dcm4che configuration storage " + "({} = {})", propertyName, hideValue ? "***" : defaultValue);
         }
@@ -139,8 +139,8 @@ public class CommonDicomConfigurationFactory {
         ArrayList<Class<? extends HL7ApplicationExtension>> hl7ApplicationExtensionClasses = getExtensionClasses(hl7ExtensionInstance);
 
         LOG.info("Dcm4che configuration device extensions: {}", deviceExtensionClasses);
-        LOG.info("Dcm4che configuration AE extensions: {}", deviceExtensionClasses);
-        LOG.info("Dcm4che configuration HL7 extensions: {}", deviceExtensionClasses);
+        LOG.info("Dcm4che configuration AE extensions: {}", aeExtensionClasses);
+        LOG.info("Dcm4che configuration HL7 extensions: {}", hl7ApplicationExtensionClasses);
 
         return new CommonDicomConfigurationWithHL7(
                 decorate(configurationStorage),

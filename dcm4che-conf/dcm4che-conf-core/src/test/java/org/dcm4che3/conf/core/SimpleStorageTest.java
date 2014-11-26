@@ -39,16 +39,18 @@
  */
 package org.dcm4che3.conf.core;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.dcm4che3.conf.core.misc.DeepEqualsDiffer;
-import org.junit.Assert;
-import org.dcm4che3.conf.core.storage.SingleJsonFileConfigurationStorage;
 import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.core.misc.DeepEqualsDiffer;
+import org.dcm4che3.conf.core.storage.SingleJsonFileConfigurationStorage;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * @author Roman K
@@ -106,7 +108,6 @@ public class SimpleStorageTest {
     public void testSpecialSymbols() throws ConfigurationException {
         Configuration xCfg = getConfigurationStorage();
 
-        ObjectMapper om = new ObjectMapper();
         // serialize to confignode
 
 
