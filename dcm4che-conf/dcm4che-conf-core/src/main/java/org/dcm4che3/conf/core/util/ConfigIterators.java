@@ -107,6 +107,7 @@ public class ConfigIterators {
             AnnotatedSetter annotatedSetter = new AnnotatedSetter();
             annotatedSetter.setParameters(new ArrayList<AnnotatedConfigurableProperty>());
 
+            
             Annotation[][] parameterAnnotations = m.getParameterAnnotations();
             Type[] genericParameterTypes = m.getGenericParameterTypes();
 
