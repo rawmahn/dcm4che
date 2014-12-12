@@ -41,18 +41,69 @@ package org.dcm4che3.conf.dicom;
 
 import org.dcm4che3.conf.core.util.PathPattern;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
+ * Single source for all the DicomConfiguration-related xpaths
+ *
  * @author Roman K
  */
-public class DicomPath {
-    public static final PathPattern DeviceNameByAEName =
-            new PathPattern("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='(?<aeName>.*)']]/dicomDeviceName");
-    public static final PathPattern allDevicesPattern =
-            new PathPattern("dicomConfigurationRoot/dicomDevicesRoot/*/dicomDeviceName");
-    public static final PathPattern allAETitlesPattern =
-            new PathPattern("dicomConfigurationRoot/dicomDevicesRoot/*/dicomNetworkAE/*/dicomAETitle");
-    public static final PathPattern deviceNameByHL7AppNamePattern =
-            new PathPattern("dicomConfigurationRoot/dicomDevicesRoot/*[deviceExtensions/HL7DeviceExtension/hl7Apps/*[hl7ApplicationName='(?<hl7AppName>.*)']]/dicomDeviceName");
-    public static final PathPattern allHL7AppsPattern =
-            new PathPattern("dicomConfigurationRoot/dicomDevicesRoot/*/deviceExtensions/HL7DeviceExtension/hl7Apps/*/hl7ApplicationName");
+public enum DicomPath {
+
+    DeviceNameByAEName,
+    AllDeviceNames,
+    AllAETitles,
+    DeviceNameByHL7AppName,
+    AllHL7AppNames,
+    UniqueAETByName,
+    ConfigRoot,
+    DeviceByName,
+    AEExtension,
+    DeviceExtension,
+    HL7AppExtension,
+    UniqueHL7AppByName;
+
+    public static final Map<DicomPath, String> PATHS = new HashMap<DicomPath, String>();
+    public static final Map<DicomPath, PathPattern> PATH_PATTERNS = new HashMap<DicomPath, PathPattern>();
+
+    static {
+        PATHS.put(/**********/ConfigRoot, "/dicomConfigurationRoot");
+        PATHS.put(/*********/AllAETitles, "/dicomConfigurationRoot/dicomDevicesRoot/*/dicomNetworkAE/*/dicomAETitle");
+        PATHS.put(/**/DeviceNameByAEName, "/dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='(?<aeName>.*)']]/dicomDeviceName");
+        PATHS.put(/******/AllDeviceNames, "/dicomConfigurationRoot/dicomDevicesRoot/*/dicomDeviceName");
+        PATHS.put(/******/AllHL7AppNames, "/dicomConfigurationRoot/dicomDevicesRoot/*/deviceExtensions/HL7DeviceExtension/hl7Apps/*/hl7ApplicationName");
+        PATHS.put(DeviceNameByHL7AppName, "/dicomConfigurationRoot/dicomDevicesRoot/*[deviceExtensions/HL7DeviceExtension/hl7Apps/*[hl7ApplicationName='(?<hl7AppName>.*)']]/dicomDeviceName");
+        PATHS.put(/********/DeviceByName, "/dicomConfigurationRoot/dicomDevicesRoot[@name='(?<deviceName>.*)']");
+        PATHS.put(/*********/AEExtension, "/dicomConfigurationRoot/dicomDevicesRoot[@name='(?<deviceName>.*)']/dicomNetworkAE[@name='(?<aeName>.*)']/aeExtensions/(?<extensionName>.*)");
+        PATHS.put(/*****/DeviceExtension, "/dicomConfigurationRoot/dicomDevicesRoot[@name='(?<deviceName>.*)']/deviceExtensions/(?<extensionName>.*)");
+        PATHS.put(/*****/HL7AppExtension, "/dicomConfigurationRoot/dicomDevicesRoot[@name='(?<deviceName>.*)']/deviceExtensions/HL7DeviceExtension/hl7Apps[@name='(?<hl7AppName>.*)']/hl7AppExtensions/(?<extensionName>.*)");
+        PATHS.put(/*****/UniqueAETByName, "/dicomConfigurationRoot/dicomUniqueAETitlesRegistryRoot[@name='(?<aeName>.*)']");
+        PATHS.put(/**/UniqueHL7AppByName, "/dicomConfigurationRoot/hl7UniqueApplicationNamesRegistryRoot[@name='(?<hl7AppName>.*)']");
+
+        for (Map.Entry<DicomPath, String> entry : PATHS.entrySet()) {
+            PATH_PATTERNS.put(entry.getKey(), new PathPattern(entry.getValue()));
+        }
+    }
+
+    /**
+     * Starts chaining
+     *
+     * @param paramName
+     * @param value
+     * @return
+     */
+    public PathPattern.PathCreator set(String paramName, String value) {
+        return PATH_PATTERNS.get(this).set(paramName, value);
+    }
+
+    /**
+     * Gets path as is
+     *
+     * @return
+     */
+    public String path() {
+        return PATHS.get(this);
+    }
+
 }

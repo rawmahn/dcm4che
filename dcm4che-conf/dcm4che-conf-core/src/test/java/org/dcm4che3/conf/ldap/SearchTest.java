@@ -60,27 +60,31 @@ public class SearchTest {
 
 
         // arc device is there
-        Iterator search = storage.search(DicomPath.DeviceNameByAEName.createPath().setParam("aeName", "DCM4CHEE").path());
+        Iterator search = storage.search(DicomPath.DeviceNameByAEName.set("aeName", "DCM4CHEE").path());
         Assert.assertEquals("dcm4chee-arc", search.next());
 
+        // arc device is there
+        search = storage.search(DicomPath.DeviceNameByAEName.set("aeName", "MPPSSCP").path());
+        Assert.assertEquals("mppsscp", search.next());
+
         // its 14 devices
-        search = storage.search(DicomPath.allDevicesPattern.createPath().path());
+        search = storage.search(DicomPath.AllDeviceNames.path());
         ArrayList<String> names = new ArrayList<String>();
         while (search.hasNext())
             names.add((String) search.next());
         Assert.assertEquals(14,names.size());
 
         // 12 aes
-        search = storage.search(DicomPath.allAETitlesPattern.createPath().path());
+        search = storage.search(DicomPath.AllAETitles.path());
         names = new ArrayList<String>();
         while (search.hasNext())
             names.add((String) search.next());
         Assert.assertEquals(12,names.size());
 
         // 1 hl7 app
-        search = storage.search(DicomPath.deviceNameByHL7AppNamePattern.createPath().setParam("hl7AppName", "HL7RCV^DCM4CHEE").path());
+        search = storage.search(DicomPath.DeviceNameByHL7AppName.set("hl7AppName", "HL7RCV^DCM4CHEE").path());
         Assert.assertEquals("hl7rcv",search.next());
-        search = storage.search(DicomPath.allHL7AppsPattern.createPath().path());
+        search = storage.search(DicomPath.AllHL7AppNames.path());
         search.next();
         search.next();
         Assert.assertFalse(search.hasNext());

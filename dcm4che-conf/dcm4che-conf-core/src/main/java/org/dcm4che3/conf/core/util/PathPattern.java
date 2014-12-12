@@ -63,8 +63,13 @@ public class PathPattern {
      * @return
      */
     public PathCreator set(String paramName, String value) {
-        return createPath().setParam(paramName, value);
+        return createPath().set(paramName, value);
     }
+
+    public String path() {
+        return pattern;
+    }
+
 
     public PathCreator createPath() {
         return new PathCreator();
@@ -97,7 +102,8 @@ public class PathPattern {
             res = pattern;
         }
 
-        public PathCreator setParam(String paramName, String value) {
+        public PathCreator set(String paramName, String value) {
+            if (!res.contains(paramName)) throw new IllegalArgumentException("No parameter "+paramName+" in path "+res);
             res = res.replace("(?<"+paramName+">.*)", value.replace("'", "&apos;"));
             return this;
         }
