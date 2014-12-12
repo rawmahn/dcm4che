@@ -41,12 +41,14 @@ package org.dcm4che3.conf.core;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.misc.DeepEqualsDiffer;
+import org.dcm4che3.conf.core.storage.CachedRootNodeConfiguration;
 import org.dcm4che3.conf.core.storage.SingleJsonFileConfigurationStorage;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -60,6 +62,15 @@ public class SimpleStorageTest {
 
     public static Configuration getConfigurationStorage() {
         return new SingleJsonFileConfigurationStorage("target/tst.json");
+    }
+
+    public static Configuration getMockDicomConfStorage() {
+        URL resource = Thread.currentThread().getContextClassLoader().getResource("mockConfig.json");
+        String path = resource.getPath();
+        SingleJsonFileConfigurationStorage storage = new SingleJsonFileConfigurationStorage(path);
+        return new CachedRootNodeConfiguration(
+                storage
+        );
     }
 
     @Test

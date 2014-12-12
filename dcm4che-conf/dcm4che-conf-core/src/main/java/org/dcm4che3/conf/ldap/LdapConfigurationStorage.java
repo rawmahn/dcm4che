@@ -68,6 +68,7 @@ public class LdapConfigurationStorage implements Configuration {
             int end = e.lastIndexOf('/');
             env_.put("java.naming.provider.url", e.substring(0, end));
             this.baseDN = e.substring(end + 1);
+            //TODO: what happens when LDAP goes down and up again while app is running?
             this.ldapCtx = new InitialDirContext(env_);
         } catch (Exception e) {
             throw new ConfigurationException(e);
@@ -149,7 +150,7 @@ public class LdapConfigurationStorage implements Configuration {
 
     @Override
     public Class getConfigurationNodeClass(String path) throws ConfigurationException, ClassNotFoundException {
-        throw new RuntimeException("Not implemented yet");
+        throw new RuntimeException("Not implemented");
     }
 
     @Override
@@ -239,8 +240,7 @@ public class LdapConfigurationStorage implements Configuration {
 
     @Override
     public void refreshNode(String path) throws ConfigurationException {
-        throw new RuntimeException("Not implemented yet");
-
+        // noop, there is no cache
     }
 
     @Override

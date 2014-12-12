@@ -37,23 +37,73 @@
  *
  *  ***** END LICENSE BLOCK *****
  */
-package org.dcm4che3.conf.dicom;
+package org.dcm4che3.conf.core.util;
 
-import org.dcm4che3.data.Issuer;
-import org.dcm4che3.net.Device;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * Created by aprvf on 24/10/2014.
+ * Helper class that allows to safely set parameters for xpath patterns (by proper escaping) and to retrieve them from an escaped form
+ * ex: dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='(?<aeName>.*)']]/dicomDeviceName
  */
-public class DicomTests {
+public class PathPattern {
 
+    String pattern;
+    private Pattern compiledPattern;
 
-    public Device getDevice() {
-        final Device device = new Device("aDevice");
-        device.setIssuerOfPatientID(new Issuer("1.2", "0.0.1", "1.2.3.4"));
-        device.setKeyStoreKeyPin("23");
-        return device;
+    public PathPattern(String pattern) {
+        this.pattern = pattern;
+        this.compiledPattern = Pattern.compile(pattern);
     }
 
+    /**
+     * quick-start chaining
+     * @param paramName
+     * @param value
+     * @return
+     */
+    public PathCreator set(String paramName, String value) {
+        return createPath().setParam(paramName, value);
+    }
 
+    public PathCreator createPath() {
+        return new PathCreator();
+    }
+
+    public PathParser parse(String path) {
+
+        return new PathParser(path);
+    }
+
+    public class PathParser {
+        private final Matcher matcher;
+
+        public PathParser(String path) {
+            matcher = compiledPattern.matcher(path);
+            if (!matcher.matches()) throw new IllegalArgumentException("Path " + path + " is invalid");
+        }
+
+        public String getParam(String paramName) {
+            String str = matcher.group(paramName);
+            return str.replace("&apos;", "'");
+        }
+    }
+
+    public class PathCreator {
+
+        String res;
+
+        public PathCreator() {
+            res = pattern;
+        }
+
+        public PathCreator setParam(String paramName, String value) {
+            res = res.replace("(?<"+paramName+">.*)", value.replace("'", "&apos;"));
+            return this;
+        }
+
+        public String path() {
+            return res;
+        }
+    }
 }

@@ -140,7 +140,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public boolean configurationExists() throws ConfigurationException {
-        return config.nodeExists("dicomConfigurationRoot");
+        return config.nodeExists("/dicomConfigurationRoot");
     }
 
     @Override
@@ -246,7 +246,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     @Override
     public ApplicationEntity findApplicationEntity(String aet) throws ConfigurationException {
 
-        Iterator search = config.search("dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='" + aet + "']]/dicomDeviceName");
+        Iterator search = config.search(DicomPath.DeviceNameByAEName.set("aeName", aet).path());
 
         try {
             String deviceNameNode = (String) search.next();
@@ -338,7 +338,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
 
     @Override
     public String[] listDeviceNames() throws ConfigurationException {
-        Iterator search = config.search("dicomConfigurationRoot/dicomDeviceRoot/*/dicomDeviceName");
+        Iterator search = config.search("dicomConfigurationRoot/dicomDevicesRoot/*/dicomDeviceName");
         List<String> deviceNames = null;
         try {
             deviceNames = new ArrayList<String>();
@@ -354,7 +354,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
     public String[] listRegisteredAETitles() throws ConfigurationException {
         List<String> aeNames = new ArrayList<String>();
         try {
-            Iterator search = config.search("dicomConfigurationRoot/dicomDeviceRoot/*/dicomNetworkAE/dicomAETitle");
+            Iterator search = config.search("dicomConfigurationRoot/dicomDevicesRoot/*/dicomNetworkAE/*/dicomAETitle");
             while (search.hasNext())
                 aeNames.add((String) search.next());
         } catch (Exception e) {
@@ -447,7 +447,7 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         try {
             return (T) this;
         } catch (ClassCastException e) {
-            throw new IllegalArgumentException("Cannot find a configuration extension for class "+clazz.getName());
+            throw new IllegalArgumentException("Cannot find a configuration extension for class " + clazz.getName());
         }
     }
 }

@@ -37,21 +37,54 @@
  *
  *  ***** END LICENSE BLOCK *****
  */
-package org.dcm4che3.conf.core;
+package org.dcm4che3.conf.ldap;
 
+import org.dcm4che3.conf.api.ConfigurationException;
+import org.dcm4che3.conf.core.Configuration;
+import org.dcm4che3.conf.core.SimpleStorageTest;
+import org.dcm4che3.conf.dicom.DicomPath;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * @author Roman K
  */
-@RunWith(JUnit4.class)
-public class AllRoundTests {
+public class SearchTest {
 
     @Test
-    public void loadVitalizeSerializeSave() {
+    public void searchTest() throws ConfigurationException {
+        Configuration storage = SimpleStorageTest.getMockDicomConfStorage();
+
+
+        // arc device is there
+        Iterator search = storage.search(DicomPath.DeviceNameByAEName.createPath().setParam("aeName", "DCM4CHEE").path());
+        Assert.assertEquals("dcm4chee-arc", search.next());
+
+        // its 14 devices
+        search = storage.search(DicomPath.allDevicesPattern.createPath().path());
+        ArrayList<String> names = new ArrayList<String>();
+        while (search.hasNext())
+            names.add((String) search.next());
+        Assert.assertEquals(14,names.size());
+
+        // 12 aes
+        search = storage.search(DicomPath.allAETitlesPattern.createPath().path());
+        names = new ArrayList<String>();
+        while (search.hasNext())
+            names.add((String) search.next());
+        Assert.assertEquals(12,names.size());
+
+        // 1 hl7 app
+        search = storage.search(DicomPath.deviceNameByHL7AppNamePattern.createPath().setParam("hl7AppName", "HL7RCV^DCM4CHEE").path());
+        Assert.assertEquals("hl7rcv",search.next());
+        search = storage.search(DicomPath.allHL7AppsPattern.createPath().path());
+        search.next();
+        search.next();
+        Assert.assertFalse(search.hasNext());
+
 
     }
-
 }
