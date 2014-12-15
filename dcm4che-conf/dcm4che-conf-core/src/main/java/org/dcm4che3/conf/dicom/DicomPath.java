@@ -97,6 +97,11 @@ public enum DicomPath {
         return PATH_PATTERNS.get(this).set(paramName, value);
     }
 
+
+    public PathPattern.PathParser parse(String path) {
+        return PATH_PATTERNS.get(this).parse(path);
+    }
+
     /**
      * Gets path as is
      *

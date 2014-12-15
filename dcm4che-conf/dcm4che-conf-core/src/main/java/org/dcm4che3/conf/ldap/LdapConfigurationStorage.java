@@ -42,7 +42,9 @@ package org.dcm4che3.conf.ldap;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.api.LDAP;
+import org.dcm4che3.conf.core.util.PathPattern;
 import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
+import org.dcm4che3.conf.dicom.DicomPath;
 
 import javax.naming.*;
 import javax.naming.directory.*;
@@ -155,6 +157,8 @@ public class LdapConfigurationStorage implements Configuration {
 
     @Override
     public boolean nodeExists(String path) throws ConfigurationException {
+
+
         throw new RuntimeException("Not implemented yet");
     }
 
@@ -261,7 +265,34 @@ public class LdapConfigurationStorage implements Configuration {
 
     @Override
     public Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException {
-        throw new RuntimeException("Not implemented yet");
+
+        DicomPath matchingPathType = null;
+        PathPattern.PathParser parser = null;
+        for (DicomPath pathType : DicomPath.values()) {
+            try {
+                parser = pathType.parse(liteXPathExpression);
+                // if we get here, right path has been found
+                matchingPathType = pathType;
+                break;
+            } catch (IllegalArgumentException e) {
+                // not this path, try others
+            }
+        }
+
+        if (parser == null)
+            throw new RuntimeException("Ldap config storage does not support this type of query (" + liteXPathExpression + ")");
+
+
+        switch (matchingPathType) {
+
+            case AllAETitles:
+
+                return null;
+
+            default:
+                return null;
+        }
+
     }
 
     public String getBaseDN() {
