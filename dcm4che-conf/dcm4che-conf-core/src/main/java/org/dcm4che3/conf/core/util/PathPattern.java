@@ -44,7 +44,7 @@ import java.util.regex.Pattern;
 
 /**
  * Helper class that allows to safely set parameters for xpath patterns (by proper escaping) and to retrieve them from an escaped form
- * ex: dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='(?<aeName>.*)']]/dicomDeviceName
+ * ex: dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE[@name='{aeName}']]/dicomDeviceName
  */
 public class PathPattern {
 
@@ -53,11 +53,53 @@ public class PathPattern {
 
     public PathPattern(String pattern) {
         this.pattern = pattern;
-        this.compiledPattern = Pattern.compile(pattern);
+        this.compiledPattern = Pattern.compile(getParseRegex(pattern));
+    }
+
+    /**
+     *
+     * Converts
+     * <pre>
+     * /dicomConfigurationRoot/dicomDevicesRoot[@name='{deviceName}']
+     * </pre>
+     * to
+     * <pre>
+     * \Q/dicomConfigurationRoot/dicomDevicesRoot[@name='\E(?&lt;deviceName&gt;.*)\Q']\E
+     * </pre>
+     * @param pattern
+     * @return
+     */
+    private String getParseRegex(String pattern) {
+        String p = pattern;
+        String res = "";
+        try {
+            while (p.indexOf("{") > -1) {
+
+                // quote before
+                String piece = p.substring(0, p.indexOf("{"));
+                if (!piece.equals(""))
+                    res += Pattern.quote(piece);
+                p = p.substring(p.indexOf("{") + 1);
+
+                // add group
+                String varName = p.substring(0, p.indexOf("}"));
+                res += "(?<" + varName + ">.*)";
+
+                p = p.substring(p.indexOf("}") + 1);
+            }
+            // add rest if any
+            if (!p.equals("")) {
+                res += Pattern.quote(p);
+            }
+        } catch (IndexOutOfBoundsException e) {
+            throw new IllegalArgumentException("Path pattern " + pattern + " is invalid", e);
+        }
+        return res;
     }
 
     /**
      * quick-start chaining
+     *
      * @param paramName
      * @param value
      * @return
@@ -103,8 +145,9 @@ public class PathPattern {
         }
 
         public PathCreator set(String paramName, String value) {
-            if (!res.contains(paramName)) throw new IllegalArgumentException("No parameter "+paramName+" in path "+res);
-            res = res.replace("(?<"+paramName+">.*)", value.replace("'", "&apos;"));
+            if (!res.contains(paramName))
+                throw new IllegalArgumentException("No parameter " + paramName + " in path " + res);
+            res = res.replace("{" + paramName + "}", value.replace("'", "&apos;"));
             return this;
         }
 

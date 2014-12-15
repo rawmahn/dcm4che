@@ -67,6 +67,8 @@ public class SimpleStorageTest {
         if (System.getProperty("org.dcm4che.conf.filename") == null)
             System.setProperty("org.dcm4che.conf.filename", "target/config.json");
 
+
+
         DicomConfigurationBuilder builder = DicomConfigurationBuilder.newConfigurationBuilder(System.getProperties());
         builder.registerDeviceExtension(HL7DeviceExtension.class);
         return builder.build().getConfigurationStorage();
@@ -98,8 +100,6 @@ public class SimpleStorageTest {
         p3.put("p2", p2);
 
         xCfg.persistNode("/", p3, null);
-
-        xCfg = getConfigurationStorage();
 
         DeepEqualsDiffer.assertDeepEquals("Stored config node must be equal to the one loaded", p3, xCfg.getConfigurationNode("/", null ));
 

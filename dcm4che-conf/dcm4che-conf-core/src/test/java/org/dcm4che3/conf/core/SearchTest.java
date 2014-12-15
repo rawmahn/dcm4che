@@ -37,7 +37,7 @@
  *
  *  ***** END LICENSE BLOCK *****
  */
-package org.dcm4che3.conf.ldap;
+package org.dcm4che3.conf.core;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
@@ -56,7 +56,20 @@ public class SearchTest {
 
     @Test
     public void searchTest() throws ConfigurationException {
-        Configuration storage = SimpleStorageTest.getMockDicomConfStorage();
+        Configuration storage;
+        if (System.getProperty("org.dcm4che.conf.storage") == null) {
+            storage = SimpleStorageTest.getMockDicomConfStorage();
+        } else {
+            storage = SimpleStorageTest.getConfigurationStorage();
+            System.out.println("ldap");
+        }
+        searchTestForStorage(storage);
+    }
+
+
+
+    public void searchTestForStorage(Configuration storage) throws ConfigurationException {
+
 
 
         // arc device is there
