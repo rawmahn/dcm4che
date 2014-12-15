@@ -46,9 +46,13 @@ import org.dcm4che3.conf.core.util.PathPattern;
 import org.dcm4che3.conf.dicom.CommonDicomConfiguration;
 import org.dcm4che3.conf.dicom.DicomPath;
 
-import javax.naming.*;
+import javax.naming.NameClassPair;
+import javax.naming.NameNotFoundException;
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
 import javax.naming.directory.*;
 import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 import java.util.*;
 
 
@@ -64,7 +68,7 @@ public class LdapConfigurationStorage implements Configuration {
 
     public LdapConfigurationStorage(Hashtable<?, ?> env)
             throws ConfigurationException {
-         try {
+        try {
             Hashtable env_ = (Hashtable) env.clone();
             String e = (String) env.get("java.naming.provider.url");
             int end = e.lastIndexOf('/');
@@ -283,14 +287,36 @@ public class LdapConfigurationStorage implements Configuration {
             throw new RuntimeException("Ldap config storage does not support this type of query (" + liteXPathExpression + ")");
 
 
-        switch (matchingPathType) {
+        String devicesDn = LdapConfigUtils.refToLdapDN("/dicomConfigurationRoot/dicomDevicesRoot", this);
 
-            case AllAETitles:
+        try {
+            switch (matchingPathType) {
 
-                return null;
+                case DeviceNameByAEName:
 
-            default:
-                return null;
+                    String aeName = parser.getParam("aeName");
+
+                    SearchControls ctls = new SearchControls();
+                    ctls.setSearchScope(1);
+                    ctls.setReturningObjFlag(false);
+                    ctls.setCountLimit(1);
+                    NamingEnumeration<SearchResult> search = getLdapCtx().search(devicesDn, "(&(objectclass=dicomNetworkAE)(dicomAETitle=" + aeName + "))", ctls);
+
+                    while (search.hasMore()) {
+                        String nameInNamespace = search.next().getNameInNamespace();
+
+                        List<Rdn> rdns = new LdapName(nameInNamespace).getRdns();
+
+                        System.out.println(rdns.get(1).getValue());
+                    }
+
+                    return null;
+
+                default:
+                    return null;
+            }
+        } catch (NamingException e) {
+            throw new ConfigurationException(e);
         }
 
     }

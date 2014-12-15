@@ -130,6 +130,10 @@ public class CommonDicomConfiguration implements DicomConfiguration {
         }
     }
 
+    public Configuration getConfigurationStorage() {
+        return config;
+    }
+
     protected HashMap<String, Object> createInitialConfigRootNode() {
         HashMap<String, Object> rootNode = new HashMap<String, Object>();
         rootNode.put("dicomDevicesRoot", new HashMap<String, Object>());

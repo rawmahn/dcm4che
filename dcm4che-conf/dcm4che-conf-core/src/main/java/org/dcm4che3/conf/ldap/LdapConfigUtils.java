@@ -311,7 +311,7 @@ public class LdapConfigUtils {
 
     }
 
-    private static List<Rdn> getNonBaseRdns(String dn, String baseDN) throws InvalidNameException {
+    public static List<Rdn> getNonBaseRdns(String dn, String baseDN) throws InvalidNameException {
         LdapName baseDnName = new LdapName(baseDN);
         LdapName name = new LdapName(dn);
 
@@ -334,10 +334,6 @@ public class LdapConfigUtils {
     private static String escapeStringFromLdap(Object value) {
 
         return escapeApos(value.toString()).replace("\\,", ",");
-    }
-
-    static String LdapDNToRef(String ldapDn) {
-        return ldapDn;
     }
 
     static Class<?> getExtensionClassBySimpleName(LdapConfigurationStorage configurationStorage, String extensionSimpleName) throws ClassNotFoundException {

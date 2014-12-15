@@ -43,6 +43,8 @@ import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.misc.DeepEqualsDiffer;
 import org.dcm4che3.conf.core.storage.CachedRootNodeConfiguration;
 import org.dcm4che3.conf.core.storage.SingleJsonFileConfigurationStorage;
+import org.dcm4che3.conf.dicom.DicomConfigurationBuilder;
+import org.dcm4che3.net.hl7.HL7DeviceExtension;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,8 +62,14 @@ import java.util.Map;
 @RunWith(JUnit4.class)
 public class SimpleStorageTest {
 
-    public static Configuration getConfigurationStorage() {
-        return new SingleJsonFileConfigurationStorage("target/tst.json");
+    public static Configuration getConfigurationStorage() throws ConfigurationException {
+
+        if (System.getProperty("org.dcm4che.conf.filename") == null)
+            System.setProperty("org.dcm4che.conf.filename", "target/config.json");
+
+        DicomConfigurationBuilder builder = DicomConfigurationBuilder.newConfigurationBuilder(System.getProperties());
+        builder.registerDeviceExtension(HL7DeviceExtension.class);
+        return builder.build().getConfigurationStorage();
     }
 
     public static Configuration getMockDicomConfStorage() {
