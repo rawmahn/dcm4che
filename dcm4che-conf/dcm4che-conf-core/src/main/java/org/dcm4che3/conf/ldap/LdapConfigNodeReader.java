@@ -72,7 +72,9 @@ public class LdapConfigNodeReader {
         try {
             attributes = ldapConfigurationStorage.getLdapCtx().getAttributes(dn);
         } catch (NameNotFoundException noname) {
-            attributes = null;
+            // when multiple nested properties have noContainerNode=true, it could happen that
+            // attributes = null;
+            return null;
         }
 
         Map<String, Object> configNode = new HashMap<String, Object>();

@@ -377,8 +377,14 @@ public class LdapConfigUtils {
         String childObjClass;
         if (elemProperty == null)
             childObjClass = property.getAnnotation(LDAP.class).mapEntryObjectClass();
-        else
-            childObjClass = extractObjectClasses(elemProperty.getRawClass()).get(0);
+        else {
+            // make sure its not a custom rep
+            String customEntryClass = elemProperty.getAnnotation(LDAP.class).mapEntryObjectClass();
+            if (!customEntryClass.equals(""))
+                childObjClass = customEntryClass;
+            else
+                childObjClass = extractObjectClasses(elemProperty.getRawClass()).get(0);
+        }
 
         try {
             enumeration = searchSubcontextWithClass(ldapConfigurationStorage, childObjClass, dn);
