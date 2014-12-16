@@ -141,7 +141,7 @@ public class SimpleStorageTest {
 
         Map<String, Object> p1 = new HashMap<String, Object>();
         p1.put("dicomDevicesRoot", p2);
-        p1.put("Unique AE Titles Registry", "I am cool");
+        p1.put("Unique AE Titles Registry", "I am a cool AppEntity");
 
         Map<String, Object> p3 = new HashMap<String, Object>();
         p3.put("dicomConfigurationRoot", p1);

@@ -37,7 +37,7 @@
  *
  *  ***** END LICENSE BLOCK *****
  */
-package org.dcm4che3.conf.core;
+package org.dcm4che3.conf.dicom;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
@@ -61,7 +61,6 @@ public class SearchTest {
             storage = SimpleStorageTest.getMockDicomConfStorage();
         } else {
             storage = SimpleStorageTest.getConfigurationStorage();
-            System.out.println("ldap");
         }
         searchTestForStorage(storage);
     }
@@ -92,16 +91,14 @@ public class SearchTest {
         names = new ArrayList<String>();
         while (search.hasNext())
             names.add((String) search.next());
+        Assert.assertTrue(names.contains("DCM4CHEE"));
         Assert.assertEquals(12,names.size());
 
-        // 1 hl7 app
+        // hl7 app
         search = storage.search(DicomPath.DeviceNameByHL7AppName.set("hl7AppName", "HL7RCV^DCM4CHEE").path());
         Assert.assertEquals("hl7rcv",search.next());
         search = storage.search(DicomPath.AllHL7AppNames.path());
-        search.next();
-        search.next();
-        Assert.assertFalse(search.hasNext());
-
+        Assert.assertTrue(search.next().equals("HL7RCV^DCM4CHEE") || search.next().equals("HL7RCV^DCM4CHEE"));
 
     }
 }

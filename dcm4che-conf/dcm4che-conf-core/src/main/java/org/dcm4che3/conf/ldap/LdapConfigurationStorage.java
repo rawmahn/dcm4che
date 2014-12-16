@@ -284,7 +284,7 @@ public class LdapConfigurationStorage implements Configuration {
         for (DicomPath pathType : DicomPath.values()) {
             try {
                 parser = pathType.parse(liteXPathExpression);
-                // if we get here, right path has been found
+                // if we get here, then the corresponding path has been found
                 matchingPathType = pathType;
                 break;
             } catch (IllegalArgumentException e) {
@@ -299,35 +299,83 @@ public class LdapConfigurationStorage implements Configuration {
         String devicesDn = LdapConfigUtils.refToLdapDN("/dicomConfigurationRoot/dicomDevicesRoot", this);
 
         try {
+            SearchControls ctls;
+            NamingEnumeration<SearchResult> search;
+
             switch (matchingPathType) {
 
                 case DeviceNameByAEName:
 
                     String aeName = parser.getParam("aeName");
 
-                    SearchControls ctls = new SearchControls();
-                    ctls.setSearchScope(1);
+                    ctls = new SearchControls();
+                    ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
                     ctls.setReturningObjFlag(false);
                     ctls.setCountLimit(1);
-                    NamingEnumeration<SearchResult> search = getLdapCtx().search(devicesDn, "(&(objectclass=dicomNetworkAE)(dicomAETitle=" + aeName + "))", ctls);
+                    search = getLdapCtx().search(devicesDn, "(&(objectclass=dicomNetworkAE)(dicomAETitle=" + Rdn.escapeValue(aeName) + "))", ctls);
 
-                    while (search.hasMore()) {
-                        String nameInNamespace = search.next().getNameInNamespace();
+                    return createSearchIteratorFromNamingEnumeration(search, 2);
 
-                        List<Rdn> rdns = new LdapName(nameInNamespace).getRdns();
+                case AllDeviceNames:
 
-                        System.out.println(rdns.get(1).getValue());
-                    }
+                    ctls = new SearchControls();
+                    ctls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
+                    ctls.setReturningObjFlag(false);
 
-                    return null;
+                    search = getLdapCtx().search(devicesDn, "objectclass=dicomDevice", ctls);
+
+                    return createSearchIteratorFromNamingEnumeration(search, 2);
+
+                case AllAETitles:
+
+                    ctls = new SearchControls();
+                    ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+                    ctls.setReturningObjFlag(false);
+
+                    search = getLdapCtx().search(devicesDn, "objectclass=dcmNetworkAE", ctls);
+
+                    return createSearchIteratorFromNamingEnumeration(search, 3);
+
+
+                case AllHL7AppNames:
+                    ctls = new SearchControls();
+                    ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+                    ctls.setReturningObjFlag(false);
+
+                    search = getLdapCtx().search(devicesDn, "objectclass=hl7Application", ctls);
+
+                    return createSearchIteratorFromNamingEnumeration(search, 3);
+
+
+                case DeviceNameByHL7AppName:
+
+                    String hl7AppName = parser.getParam("hl7AppName");
+
+                    ctls = new SearchControls();
+                    ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+                    ctls.setReturningObjFlag(false);
+
+                    search = getLdapCtx().search(devicesDn, "(&(objectclass=hl7Application)(hl7ApplicationName=" + Rdn.escapeValue(hl7AppName) + "))", ctls);
+
+                    return createSearchIteratorFromNamingEnumeration(search, 2);
 
                 default:
                     return null;
             }
-        } catch (NamingException e) {
-            throw new ConfigurationException(e);
+        } catch (Exception e) {
+            throw new ConfigurationException("Failed to perform LDAP search for query "+liteXPathExpression,e);
         }
 
+    }
+
+    private Iterator createSearchIteratorFromNamingEnumeration(NamingEnumeration<SearchResult> search, int valIndex) throws NamingException {
+        List<String> searchRes = new ArrayList<String>();
+        while (search.hasMore()) {
+            String nameInNamespace = search.next().getNameInNamespace();
+            List<Rdn> rdns = LdapConfigUtils.getNonBaseRdns(nameInNamespace, baseDN);
+            searchRes.add((String) rdns.get(valIndex).getValue());
+        }
+        return searchRes.iterator();
     }
 
     public String getBaseDN() {
