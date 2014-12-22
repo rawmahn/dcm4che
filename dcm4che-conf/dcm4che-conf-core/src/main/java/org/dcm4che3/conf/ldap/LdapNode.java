@@ -215,6 +215,15 @@ public class LdapNode {
                 continue;
             }
 
+
+            // reference
+            if (property.getAnnotation(ConfigurableProperty.class).isReference()) {
+                String ref = LdapConfigUtils.refToLdapDN(propertyConfigNode.toString(), getLdapConfigurationStorage());
+                getAttributes().put(LdapConfigUtils.getLDAPPropertyName(property), ref);
+                continue;
+            }
+
+
             // regular attribute
             if (propertyConfigNode instanceof Boolean)
                 getAttributes().put(LdapConfigUtils.getLDAPPropertyName(property), (Boolean) propertyConfigNode ? "TRUE" : "FALSE");
@@ -239,12 +248,7 @@ public class LdapNode {
         AnnotatedConfigurableProperty elementAnno = property.getPseudoPropertyForConfigClassCollectionElement();
         if (elementAnno != null) {
             LDAP annotation = elementAnno.getAnnotation(LDAP.class);
-            if (annotation != null)
-                // just in case this is a custom representation, but it was treated as a collection of conf objects
-                if (annotation.objectClasses().length==0)
-                    return Arrays.asList(annotation.mapEntryObjectClass());
-                else
-                    return new ArrayList<String>(Arrays.asList(annotation.objectClasses()));
+            if (annotation != null) return new ArrayList<String>(Arrays.asList(annotation.objectClasses()));
         }
 
         LDAP propAnno = property.getAnnotation(LDAP.class);
