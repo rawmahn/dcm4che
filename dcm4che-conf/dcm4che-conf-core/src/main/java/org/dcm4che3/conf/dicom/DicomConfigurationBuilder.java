@@ -40,9 +40,10 @@ package org.dcm4che3.conf.dicom;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.Configuration;
-import org.dcm4che3.conf.dicom.filters.DicomDefaultsAndNullFilterDecorator;
+import org.dcm4che3.conf.core.normalization.DefaultsAndNullFilterDecorator;
 import org.dcm4che3.conf.core.storage.CachedRootNodeConfiguration;
 import org.dcm4che3.conf.core.storage.SingleJsonFileConfigurationStorage;
+import org.dcm4che3.conf.dicom.util.DicomNodeTraverser;
 import org.dcm4che3.conf.ldap.LdapConfigurationStorage;
 import org.dcm4che3.net.AEExtension;
 import org.dcm4che3.net.DeviceExtension;
@@ -204,10 +205,10 @@ public class DicomConfigurationBuilder {
                 : Boolean.valueOf(getPropertyWithNotice(props, "org.dcm4che.conf.cached", "false")))
             configurationStorage = new CachedRootNodeConfiguration(configurationStorage, props);
 
-        configurationStorage = new DicomDefaultsAndNullFilterDecorator(configurationStorage, allExtensions,
+        configurationStorage = new DefaultsAndNullFilterDecorator(configurationStorage,
                 persistDefaults != null
                     ? persistDefaults
-                    : Boolean.valueOf(getPropertyWithNotice(props, "org.dcm4che.conf.persistDefaults", "false")));
+                    : Boolean.valueOf(getPropertyWithNotice(props, "org.dcm4che.conf.persistDefaults", "false")), new DicomNodeTraverser(allExtensions));
 
         return configurationStorage;
     }

@@ -46,6 +46,7 @@ import org.dcm4che3.conf.core.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.DelegatingConfiguration;
 import org.dcm4che3.conf.core.util.ConfigIterators;
+import org.dcm4che3.conf.core.util.NodeTraverser;
 
 import java.util.*;
 
@@ -55,17 +56,19 @@ import java.util.*;
 public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
 
     private boolean persistDefaults;
+    private NodeTraverser nodeTraverser;
     private BeanVitalizer dummyVitalizer = new BeanVitalizer();
 
-    public DefaultsAndNullFilterDecorator(Configuration delegate, boolean persistDefaults) {
+    public DefaultsAndNullFilterDecorator(Configuration delegate, boolean persistDefaults, NodeTraverser nodeTraverser) {
         super(delegate);
         this.persistDefaults = persistDefaults;
+        this.nodeTraverser = nodeTraverser;
     }
 
     @Override
     public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
 
-        EntryFilter filterDefaults = new EntryFilter() {
+        NodeTraverser.EntryFilter filterDefaults = new NodeTraverser.EntryFilter() {
             @Override
             public boolean applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
 
@@ -81,7 +84,7 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
 
         // filter out defaults
         if (configurableClass != null && !persistDefaults)
-            traverseTree(configNode,configurableClass,filterDefaults);
+            nodeTraverser.traverseTree(configNode,configurableClass,filterDefaults);
 
         super.persistNode(path, configNode, configurableClass);
     }
@@ -90,7 +93,7 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
     @Override
     public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
 
-        EntryFilter applyDefaults = new EntryFilter() {
+        NodeTraverser.EntryFilter applyDefaults = new NodeTraverser.EntryFilter() {
             @Override
             public boolean applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
 
@@ -113,60 +116,8 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
         // fill in default values for properties that are null and have defaults
         Map<String, Object> node = (Map<String, Object>) super.getConfigurationNode(path, configurableClass);
         if (configurableClass != null && node != null)
-            traverseTree(node, configurableClass, applyDefaults);
+            nodeTraverser.traverseTree(node, configurableClass, applyDefaults);
         return node;
-    }
-
-
-    public interface EntryFilter {
-        boolean applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
-    };
-
-    protected void traverseTree(Object node, Class nodeClass, EntryFilter filter) throws ConfigurationException {
-
-        // if because of any reason this is not a map (e.g. a reference or a custom adapter for a configurableclass),
-        // we don't care about defaults
-        if (!(node instanceof Map)) return;
-
-        Map<String, Object> containerNode = (Map<String, Object>) node;
-
-        List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(nodeClass);
-        for (AnnotatedConfigurableProperty property : properties) {
-            Object childNode = containerNode.get(property.getAnnotatedName());
-
-            if (filter.applyFilter(containerNode, property)) continue;
-
-
-            // if the property is a configclass
-            if (property.isConfObject()) {
-                traverseTree(childNode, property.getRawClass(), filter);
-                continue;
-            }
-
-            // collection, where a generics parameter is a configurable class or it is an array with comp type of configurableClass
-            if (property.isCollectionOfConfObjects() || property.isArrayOfConfObjects()) {
-
-                Collection collection = (Collection) childNode;
-
-                for (Object object : collection) {
-                    traverseTree(object, property.getPseudoPropertyForConfigClassCollectionElement().getRawClass(), filter);
-                }
-
-                continue;
-            }
-
-            // map, where a value generics parameter is a configurable class
-            if (property.isMapOfConfObjects()) {
-
-                Map<String, Object> collection = (Map<String, Object>) childNode;
-
-                for (Object object : collection.values())
-                    traverseTree(object, property.getPseudoPropertyForConfigClassCollectionElement().getRawClass(), filter);
-
-                continue;
-            }
-
-        }
     }
 
 

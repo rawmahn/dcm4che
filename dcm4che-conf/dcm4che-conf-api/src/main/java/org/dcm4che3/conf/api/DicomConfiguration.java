@@ -52,10 +52,11 @@ public interface DicomConfiguration extends Closeable {
 
     boolean configurationExists() throws ConfigurationException;
 
+    @Deprecated
     boolean purgeConfiguration() throws ConfigurationException;
-
+    @Deprecated
     boolean registerAETitle(String aet) throws ConfigurationException;
-
+    @Deprecated
     void unregisterAETitle(String aet) throws ConfigurationException;
 
     ApplicationEntity findApplicationEntity(String aet) throws ConfigurationException;

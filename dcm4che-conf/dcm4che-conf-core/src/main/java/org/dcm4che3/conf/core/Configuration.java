@@ -43,6 +43,7 @@ import org.dcm4che3.conf.api.ConfigurationException;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Denotes a configuration source. Can be used by BeanVitalizer that creates POJOs, or configuration administration app that provides UI to edit configuration.
@@ -131,4 +132,14 @@ public interface Configuration {
      * @param liteXPathExpression Must be absolute path, no double slashes, no @attributes (only [attr=val] or [attr<>val])
      */
     Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException;
+
+    /**
+     * Acquires a pessimistic lock on the full storage
+     */
+    void lockStorage();
+    /**
+     * Releases the pessimistic lock on the full storage
+     */
+    void unlockStorage();
+    
 }
