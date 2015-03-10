@@ -366,6 +366,17 @@ public class LdapConfigurationStorage implements Configuration {
 
     }
 
+
+    @Override
+    public void lockStorage() {
+        // TODO
+    }
+
+    @Override
+    public void unlockStorage() {
+        // TODO
+    }
+
     private Iterator createSearchIteratorFromNamingEnumeration(NamingEnumeration<SearchResult> search, int valIndex) throws NamingException {
         List<String> searchRes = new ArrayList<String>();
         while (search.hasMore()) {

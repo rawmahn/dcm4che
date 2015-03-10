@@ -41,14 +41,8 @@ package org.dcm4che3.conf.core.util;
 
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.AnnotatedConfigurableProperty;
-import org.dcm4che3.conf.core.BeanVitalizer;
-import org.dcm4che3.conf.core.Configuration;
-import org.dcm4che3.conf.core.DelegatingConfiguration;
-import org.dcm4che3.conf.core.api.ConfigurableProperty;
-import org.dcm4che3.conf.core.util.ConfigIterators;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -58,14 +52,108 @@ import java.util.Map;
 public class NodeTraverser{
 
     public interface EntryFilter {
-        boolean applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+        void applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+
+        void onNodeBegin(Object node, Class property) throws ConfigurationException;
+        void onNodeEnd(Object node, Class property) throws ConfigurationException;
+
+        void onListBegin(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+        void onListElementBegin(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+        void onListElementEnd(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+        void onListEnd(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+
+        void onMapBegin(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+        void onMapEntryBegin(String key) throws ConfigurationException;
+        void onMapEntryEnd(String key) throws ConfigurationException;
+        void onMapEnd(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+
+        void onSubNodeBegin(AnnotatedConfigurableProperty property);
+        void onSubNodeEnd(AnnotatedConfigurableProperty property);
+
+        void applyRefNodeFilter(Object node, Class nodeClass);
     };
+    
+    public static class NoopFilter implements EntryFilter {
+        @Override
+        public void applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+
+        }
+
+        @Override
+        public void onNodeBegin(Object node, Class property) throws ConfigurationException {
+
+        }
+
+        @Override
+        public void onNodeEnd(Object node, Class property) throws ConfigurationException {
+
+        }
+
+        @Override
+        public void onListBegin(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+
+        }
+
+        @Override
+        public void onListElementBegin(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+
+        }
+
+        @Override
+        public void onListElementEnd(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+
+        }
+
+        @Override
+        public void onListEnd(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+
+        }
+
+        @Override
+        public void onMapBegin(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+
+        }
+
+        @Override
+        public void onMapEntryBegin(String key) throws ConfigurationException {
+
+        }
+
+        @Override
+        public void onMapEntryEnd(String key) throws ConfigurationException {
+
+        }
+
+        @Override
+        public void onMapEnd(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+
+        }
+
+        @Override
+        public void onSubNodeBegin(AnnotatedConfigurableProperty property) {
+
+        }
+
+        @Override
+        public void onSubNodeEnd(AnnotatedConfigurableProperty property) {
+
+        }
+
+        @Override
+        public void applyRefNodeFilter(Object node, Class nodeClass) {
+
+        }
+    }
 
     public void traverseTree(Object node, Class nodeClass, EntryFilter filter) throws ConfigurationException {
 
         // if because of any reason this is not a map (e.g. a reference or a custom adapter for a configurableclass),
-        // we don't care about defaults
-        if (!(node instanceof Map)) return;
+        if (!(node instanceof Map)) {
+            filter.applyRefNodeFilter(node, nodeClass);            
+            return;
+        }
+
+        filter.onNodeBegin(node, nodeClass);
 
         Map<String, Object> containerNode = (Map<String, Object>) node;
 
@@ -73,12 +161,12 @@ public class NodeTraverser{
         for (AnnotatedConfigurableProperty property : properties) {
             Object childNode = containerNode.get(property.getAnnotatedName());
 
-            if (filter.applyFilter(containerNode, property)) continue;
-
 
             // if the property is a configclass
             if (property.isConfObject()) {
+                filter.onSubNodeBegin(property);
                 traverseTree(childNode, property.getRawClass(), filter);
+                filter.onSubNodeEnd(property);
                 continue;
             }
 
@@ -99,13 +187,25 @@ public class NodeTraverser{
 
                 Map<String, Object> collection = (Map<String, Object>) childNode;
 
-                for (Object object : collection.values())
-                    traverseTree(object, property.getPseudoPropertyForConfigClassCollectionElement().getRawClass(), filter);
+                filter.onMapBegin(containerNode,property);
+                
+                for (Map.Entry<String, Object> entry : collection.entrySet()) {
+                    filter.onMapEntryBegin(entry.getKey());   
+                    traverseTree(entry.getValue(), property.getPseudoPropertyForConfigClassCollectionElement().getRawClass(), filter);
+                    filter.onMapEntryEnd(entry.getKey());
+                }
+
+                filter.onMapEnd(containerNode, property);
 
                 continue;
             }
 
+            // otherwise
+            filter.applyFilter(containerNode, property);
+
         }
+        
+        filter.onNodeEnd(node,nodeClass);
     }
 
 }

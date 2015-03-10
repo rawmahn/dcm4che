@@ -176,13 +176,13 @@ public class AnnotatedConfigurableProperty {
         return name;
     }
 
-    public String getAnnotatedName() throws ConfigurationException {
+    public String getAnnotatedName() {
 
         String name = getAnnotation(ConfigurableProperty.class).name();
         if (!name.equals("")) return name;
         name = this.name;
         if (name != null) return name;
-        throw new ConfigurationException("Property name not specified");
+        throw new RuntimeException("Property name not specified");
 
     }
 

@@ -51,4 +51,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface ConfigurableClass {
+
+    String NO_LOCK_PROP = "-";
+    String optimisticLockPropertyName() default NO_LOCK_PROP;
 }

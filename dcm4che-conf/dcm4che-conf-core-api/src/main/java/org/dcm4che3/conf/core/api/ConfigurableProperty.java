@@ -117,7 +117,12 @@ public @interface ConfigurableProperty {
          * Non-required properties could be put into a "advanced..." tab to simplify the view.
          * This tag indicates that the property is should never be hidden from the user with such technique.
          */
-        PRIMARY
+        PRIMARY,
+
+        /**
+         * Indicates that the property is used for optimistic locking
+         */
+        OPTIMISTIC_LOCK_IGNORE
     }
 
     /**

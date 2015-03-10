@@ -68,17 +68,15 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
     @Override
     public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
 
-        NodeTraverser.EntryFilter filterDefaults = new NodeTraverser.EntryFilter() {
+        NodeTraverser.EntryFilter filterDefaults = new NodeTraverser.NoopFilter() {
             @Override
-            public boolean applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+            public void applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
 
                 // if the value for a property equals to default, filter it out
                 if (property.getAnnotation(ConfigurableProperty.class).defaultValue().equals(String.valueOf(containerNode.get(property.getAnnotatedName())))
                         || containerNode.get(property.getAnnotatedName()) == null) {
                     containerNode.remove(property.getAnnotatedName());
-                    return true;
                 }
-                return false;
             }
         };
 
@@ -93,9 +91,9 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
     @Override
     public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
 
-        NodeTraverser.EntryFilter applyDefaults = new NodeTraverser.EntryFilter() {
+        NodeTraverser.EntryFilter applyDefaults = new NodeTraverser.NoopFilter() {
             @Override
-            public boolean applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+            public void applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
 
                 // if no value for this property, see if there is default and set it
                 if (!containerNode.containsKey(property.getAnnotatedName())) {
@@ -106,10 +104,7 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
                     } else {
                         containerNode.put(property.getAnnotatedName(), null);
                     }
-
-                    return true;
                 }
-                return false;
             }
         };
 
