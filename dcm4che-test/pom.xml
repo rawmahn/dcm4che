@@ -49,10 +49,6 @@
     <packaging>jar</packaging>
     <name>dcm4che-test</name>
     <description>dcm4che testing framework</description>
-    <properties>
-        <dcm4chee-arc-conf.version>4.4.0-SNAPSHOT</dcm4chee-arc-conf.version>
-        <dcm4chee-storage-conf.version>2.0.0-SNAPSHOT</dcm4chee-storage-conf.version>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>org.dcm4che</groupId>
@@ -157,16 +153,6 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-jackson-provider</artifactId>
             <version>3.0.10.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>org.dcm4che.dcm4chee-arc</groupId>
-            <artifactId>dcm4chee-arc-conf</artifactId>
-            <version>${dcm4chee-arc-conf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.dcm4che.dcm4chee-storage</groupId>
-            <artifactId>dcm4chee-storage-conf</artifactId>
-            <version>${dcm4chee-storage-conf.version}</version>
         </dependency>
         <dependency>
             <groupId>org.dcm4che</groupId>

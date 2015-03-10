@@ -13,10 +13,6 @@ import org.dcm4che3.net.audit.AuditRecordRepository;
 import org.dcm4che3.net.hl7.HL7DeviceExtension;
 import org.dcm4che3.net.imageio.ImageReaderExtension;
 import org.dcm4che3.net.imageio.ImageWriterExtension;
-import org.dcm4chee.archive.conf.ArchiveAEExtension;
-import org.dcm4chee.archive.conf.ArchiveDeviceExtension;
-import org.dcm4chee.archive.conf.ArchiveHL7ApplicationExtension;
-import org.dcm4chee.storage.conf.StorageDeviceExtension;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 
 import javax.ws.rs.*;
@@ -25,7 +21,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.util.Iterator;
 import java.util.Map;
@@ -50,10 +45,46 @@ public class RemoteDicomConfigFactory {
             builder.registerDeviceExtension(ImageReaderExtension.class);
             builder.registerDeviceExtension(ImageWriterExtension.class);
 
-            builder.registerDeviceExtension(ArchiveDeviceExtension.class);
-            builder.registerDeviceExtension(StorageDeviceExtension.class);
-            builder.registerAEExtension(ArchiveAEExtension.class);
-            builder.registerHL7ApplicationExtension(ArchiveHL7ApplicationExtension.class);
+
+            // Workaround to avoid dependencies to config classes from the framework.
+            // Dependencies should be loaded by the test projects
+
+            String[] deviceExtensionStrs =
+                    {"org.dcm4chee.archive.conf.ArchiveDeviceExtension",
+                            "org.dcm4chee.storage.conf.StorageDeviceExtension"};
+
+            String[] aeExtensionStrs =
+                    {"org.dcm4chee.archive.conf.ArchiveAEExtension"};
+
+            String[] hl7ExtensionStrs =
+                    {"org.dcm4chee.archive.conf.ArchiveHL7ApplicationExtension"};
+
+            for (String deviceExtensionStr : deviceExtensionStrs) {
+                try {
+                    Class aClass = Class.forName(deviceExtensionStr);
+                    builder.registerDeviceExtension(aClass);
+                } catch (ClassNotFoundException e) {
+                    //well, then we don't use it
+                }
+            }
+
+            for (String aeExtensionStr : aeExtensionStrs) {
+                try {
+                    Class aClass = Class.forName(aeExtensionStr);
+                    builder.registerAEExtension(aClass);
+                } catch (ClassNotFoundException e) {
+                    //well, then we don't use it
+                }
+            }
+
+            for (String hl7ExtensionStr : hl7ExtensionStrs) {
+                try {
+                    Class aClass = Class.forName(hl7ExtensionStr);
+                    builder.registerHL7ApplicationExtension(aClass);
+                } catch (ClassNotFoundException e) {
+                    //well, then we don't use it
+                }
+            }
 
             return builder.build();
         } catch (ConfigurationException e) {
