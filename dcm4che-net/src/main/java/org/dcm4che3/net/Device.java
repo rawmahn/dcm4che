@@ -75,11 +75,15 @@ import org.dcm4che3.util.StringUtils;
 @LDAP(
         objectClasses = {"dcmDevice", "dicomDevice"},
         distinguishingField = "dicomDeviceName")
-@ConfigurableClass
+@ConfigurableClass(optimisticLockPropertyName = "oLock")
 public class Device implements Serializable {
 
     private static final long serialVersionUID = -5816872456184522866L;
 
+    
+    @ConfigurableProperty(tags = Tag.OPTIMISTIC_LOCK_IGNORE)
+    private String oLock;     
+    
     @ConfigurableProperty(name = "dicomDeviceName", label = "Device name", tags = Tag.PRIMARY)
     private String deviceName;
 
@@ -231,7 +235,13 @@ public class Device implements Serializable {
         setDeviceName(name);
     }
 
+    public String getoLock() {
+        return oLock;
+    }
 
+    public void setoLock(String oLock) {
+        this.oLock = oLock;
+    }
 
     private void checkNotEmpty(String name, String val) {
         if (val != null && val.isEmpty())

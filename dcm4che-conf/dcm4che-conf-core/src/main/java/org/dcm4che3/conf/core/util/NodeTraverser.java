@@ -49,43 +49,53 @@ import java.util.Map;
 /**
  *
  */
-public class NodeTraverser{
+public class NodeTraverser {
 
     public interface EntryFilter {
-        void applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+        void onPrimitiveNode(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
 
-        void onNodeBegin(Object node, Class property) throws ConfigurationException;
-        void onNodeEnd(Object node, Class property) throws ConfigurationException;
+        void onNodeBegin(Map<String, Object> node, Class property) throws ConfigurationException;
+
+        void onNodeEnd(Map<String, Object> node, Class property) throws ConfigurationException;
 
         void onListBegin(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
-        void onListElementBegin(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
-        void onListElementEnd(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+
+        void onListElementBegin() throws ConfigurationException;
+
+        void onListElementEnd() throws ConfigurationException;
+
         void onListEnd(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
 
         void onMapBegin(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
+
         void onMapEntryBegin(String key) throws ConfigurationException;
+
         void onMapEntryEnd(String key) throws ConfigurationException;
+
         void onMapEnd(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException;
 
         void onSubNodeBegin(AnnotatedConfigurableProperty property);
+
         void onSubNodeEnd(AnnotatedConfigurableProperty property);
 
         void applyRefNodeFilter(Object node, Class nodeClass);
-    };
-    
+    }
+
+    ;
+
     public static class NoopFilter implements EntryFilter {
         @Override
-        public void applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        public void onPrimitiveNode(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
 
         }
 
         @Override
-        public void onNodeBegin(Object node, Class property) throws ConfigurationException {
+        public void onNodeBegin(Map<String, Object> node, Class property) throws ConfigurationException {
 
         }
 
         @Override
-        public void onNodeEnd(Object node, Class property) throws ConfigurationException {
+        public void onNodeEnd(Map<String, Object> node, Class property) throws ConfigurationException {
 
         }
 
@@ -95,12 +105,12 @@ public class NodeTraverser{
         }
 
         @Override
-        public void onListElementBegin(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        public void onListElementBegin() throws ConfigurationException {
 
         }
 
         @Override
-        public void onListElementEnd(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        public void onListElementEnd() throws ConfigurationException {
 
         }
 
@@ -149,13 +159,14 @@ public class NodeTraverser{
 
         // if because of any reason this is not a map (e.g. a reference or a custom adapter for a configurableclass),
         if (!(node instanceof Map)) {
-            filter.applyRefNodeFilter(node, nodeClass);            
+            if (node != null)
+                filter.applyRefNodeFilter(node, nodeClass);
             return;
         }
 
-        filter.onNodeBegin(node, nodeClass);
 
         Map<String, Object> containerNode = (Map<String, Object>) node;
+        filter.onNodeBegin(containerNode, nodeClass);
 
         List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(nodeClass);
         for (AnnotatedConfigurableProperty property : properties) {
@@ -175,9 +186,14 @@ public class NodeTraverser{
 
                 Collection collection = (Collection) childNode;
 
-                for (Object object : collection) {
-                    traverseTree(object, property.getPseudoPropertyForConfigClassCollectionElement().getRawClass(), filter);
-                }
+                filter.onListBegin(containerNode, property);
+                if (collection != null)
+                    for (Object object : collection) {
+                        filter.onListElementBegin();
+                        traverseTree(object, property.getPseudoPropertyForConfigClassCollectionElement().getRawClass(), filter);
+                        filter.onListElementEnd();
+                    }
+                filter.onListEnd(containerNode, property);
 
                 continue;
             }
@@ -187,13 +203,14 @@ public class NodeTraverser{
 
                 Map<String, Object> collection = (Map<String, Object>) childNode;
 
-                filter.onMapBegin(containerNode,property);
-                
-                for (Map.Entry<String, Object> entry : collection.entrySet()) {
-                    filter.onMapEntryBegin(entry.getKey());   
-                    traverseTree(entry.getValue(), property.getPseudoPropertyForConfigClassCollectionElement().getRawClass(), filter);
-                    filter.onMapEntryEnd(entry.getKey());
-                }
+                filter.onMapBegin(containerNode, property);
+
+                if (collection != null)
+                    for (Map.Entry<String, Object> entry : collection.entrySet()) {
+                        filter.onMapEntryBegin(entry.getKey());
+                        traverseTree(entry.getValue(), property.getPseudoPropertyForConfigClassCollectionElement().getRawClass(), filter);
+                        filter.onMapEntryEnd(entry.getKey());
+                    }
 
                 filter.onMapEnd(containerNode, property);
 
@@ -201,11 +218,11 @@ public class NodeTraverser{
             }
 
             // otherwise
-            filter.applyFilter(containerNode, property);
+            filter.onPrimitiveNode(containerNode, property);
 
         }
-        
-        filter.onNodeEnd(node,nodeClass);
+
+        filter.onNodeEnd(containerNode, nodeClass);
     }
 
 }

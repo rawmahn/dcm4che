@@ -404,7 +404,7 @@ public class CommonDicomConfiguration implements DicomConfigurationManager {
         config.persistNode(deviceRef(device.getDeviceName()), deviceConfigNode, Device.class);
     }
 
-    protected Map<String, Object> createDeviceConfigNode(Device device) throws ConfigurationException {
+    public Map<String, Object> createDeviceConfigNode(Device device) throws ConfigurationException {
 
         final Map<String, Object> deviceConfigNode = vitalizer.createConfigNodeFromInstance(device, Device.class);
 

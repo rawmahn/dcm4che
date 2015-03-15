@@ -120,7 +120,7 @@ public @interface ConfigurableProperty {
         PRIMARY,
 
         /**
-         * Indicates that the property is used for optimistic locking
+         * Indicates that the property should be ignored for optimistic locking, i.e. changing the property won't affect the versions/hashes
          */
         OPTIMISTIC_LOCK_IGNORE
     }

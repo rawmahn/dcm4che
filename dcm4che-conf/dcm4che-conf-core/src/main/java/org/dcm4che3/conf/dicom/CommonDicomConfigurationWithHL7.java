@@ -167,7 +167,7 @@ public class CommonDicomConfigurationWithHL7 extends CommonDicomConfiguration im
     }
 
     @Override
-    protected Map<String, Object> createDeviceConfigNode(Device device) throws ConfigurationException {
+    public Map<String, Object> createDeviceConfigNode(Device device) throws ConfigurationException {
 
         Map<String, Object> deviceConfigNode = super.createDeviceConfigNode(device);
 

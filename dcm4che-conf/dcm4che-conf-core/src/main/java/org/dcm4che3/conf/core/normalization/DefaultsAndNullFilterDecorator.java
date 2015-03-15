@@ -70,7 +70,7 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
 
         NodeTraverser.EntryFilter filterDefaults = new NodeTraverser.NoopFilter() {
             @Override
-            public void applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+            public void onPrimitiveNode(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
 
                 // if the value for a property equals to default, filter it out
                 if (property.getAnnotation(ConfigurableProperty.class).defaultValue().equals(String.valueOf(containerNode.get(property.getAnnotatedName())))
@@ -93,7 +93,7 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
 
         NodeTraverser.EntryFilter applyDefaults = new NodeTraverser.NoopFilter() {
             @Override
-            public void applyFilter(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+            public void onPrimitiveNode(Map<String, Object> containerNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
 
                 // if no value for this property, see if there is default and set it
                 if (!containerNode.containsKey(property.getAnnotatedName())) {
