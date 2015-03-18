@@ -57,10 +57,16 @@ import java.util.Map;
  */
 public class SingleJsonFileConfigurationStorage implements Configuration {
 
+    boolean readOnly;
     String fileName;
     private ObjectMapper objectMapper = new ObjectMapper();
 
     public SingleJsonFileConfigurationStorage(String fileName) {
+        this(false, fileName);
+    }
+
+    public SingleJsonFileConfigurationStorage(boolean readOnly, String fileName) {
+        this.readOnly = readOnly;
         this.fileName = fileName;
     }
 
@@ -94,6 +100,9 @@ public class SingleJsonFileConfigurationStorage implements Configuration {
 
     @Override
     public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
+        
+        if (readOnly) return;
+        
         Map<String, Object> configurationRoot = getConfigurationRoot();
 
 //        if (configurableClass != null)
@@ -121,6 +130,8 @@ public class SingleJsonFileConfigurationStorage implements Configuration {
     @Override
     public void removeNode(String path) throws ConfigurationException {
 
+        if (readOnly) return;
+        
         Map<String, Object> configurationRoot = getConfigurationRoot();
         ConfigNodeUtil.removeNode(configurationRoot, path);
         persistNode("/", configurationRoot, null);

@@ -124,5 +124,10 @@ public enum DicomPath {
     public String path() {
         return PATHS.get(this);
     }
+    
+    
+    public PathPattern getPattern() {
+        return PATH_PATTERNS.get(this);
+    }
 
 }

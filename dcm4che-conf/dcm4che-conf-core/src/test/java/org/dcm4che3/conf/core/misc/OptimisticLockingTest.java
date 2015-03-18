@@ -1,22 +1,34 @@
 package org.dcm4che3.conf.core.misc;
 
 
+import junit.framework.AssertionFailedError;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.dcm4che3.conf.api.ConfigurationException;
 import org.dcm4che3.conf.core.BeanVitalizer;
+import org.dcm4che3.conf.core.Configuration;
+import org.dcm4che3.conf.core.SimpleStorageTest;
 import org.dcm4che3.conf.core.VitalizerTest;
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
+import org.dcm4che3.conf.core.normalization.OLockExtractingFilter;
 import org.dcm4che3.conf.core.normalization.OLockHashCalcFilter;
+import org.dcm4che3.conf.core.normalization.OptimisticLockingDecorator;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.conf.core.util.NodeTraverser;
+import org.dcm4che3.conf.core.util.PathPattern;
+import org.dcm4che3.conf.dicom.DicomPath;
+import org.dcm4che3.conf.dicom.util.DicomNodeTraverser;
+import org.dcm4che3.net.Device;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -224,5 +236,82 @@ public class OptimisticLockingTest {
         Assert.assertArrayEquals(h00, h000);
 
 
+    }
+
+
+    @Test
+    public void testConnectionOlockHash() throws ConfigurationException, IOException {
+
+        Configuration mockDicomConfStorage = SimpleStorageTest.getMockDicomConfStorage();
+        Map<String,Object> configurationNode1 = (Map<String, Object>) mockDicomConfStorage.getConfigurationNode(DicomPath.DeviceByName.set("deviceName", "dcmqrscp").path(), Device.class);
+
+        new DicomNodeTraverser(new ArrayList<Class<?>>()).traverseTree(configurationNode1, Device.class, new OLockHashCalcFilter());
+
+        Assert.assertEquals("BA7C7621709912234F89C4D9BD96A3DD5FB29417", ConfigNodeUtil.getNode(configurationNode1,"/dicomConnection[cn='dicom']/oLock"));
+        
+        // extract in '_old_olock' in node being persisted
+        new DicomNodeTraverser(new ArrayList<Class<?>>()).traverseTree(configurationNode1, Device.class, new OLockExtractingFilter("_old_olock"));
+        new DicomNodeTraverser(new ArrayList<Class<?>>()).traverseTree(configurationNode1, Device.class, new OLockHashCalcFilter());
+
+        Assert.assertEquals("BA7C7621709912234F89C4D9BD96A3DD5FB29417", ConfigNodeUtil.getNode(configurationNode1,"/dicomConnection[cn='dicom']/oLock"));
+
+        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(System.out, configurationNode1);
+
+    }
+    
+    @Test
+    public void testDeco() throws ConfigurationException, IOException {
+
+        Configuration mockDicomConfStorage = SimpleStorageTest.getMockDicomConfStorage();
+        
+        List<PathPattern> paths = new ArrayList<PathPattern>();
+        paths.add(DicomPath.DeviceByName.getPattern());
+        Configuration lockedConfig = new OptimisticLockingDecorator(mockDicomConfStorage, paths, new ArrayList<Class<?>>());
+
+        // imitate 3 users simultaneously getting the same node
+
+        Map<String,Object> configurationNode1 = (Map<String, Object>) lockedConfig.getConfigurationNode(DicomPath.DeviceByName.set("deviceName", "dcmqrscp").path(), Device.class);
+        Map<String,Object> configurationNode2 = (Map<String, Object>) lockedConfig.getConfigurationNode(DicomPath.DeviceByName.set("deviceName", "dcmqrscp").path(), Device.class);
+        Map<String,Object> configurationNode3 = (Map<String, Object>) lockedConfig.getConfigurationNode(DicomPath.DeviceByName.set("deviceName", "dcmqrscp").path(), Device.class);
+
+        // imitate simultaneous changes
+
+        ConfigNodeUtil.replaceNode(configurationNode1,"/dicomNetworkAE/DCMQRSCP/dicomAssociationAcceptor", false);
+        ConfigNodeUtil.replaceNode(configurationNode2,"/dicomNetworkAE/DCMQRSCP/dicomAssociationInitiator", false);
+        ConfigNodeUtil.replaceNode(configurationNode3,"/dicomConnection[cn='dicom']/dcmIdleTimeout", 100);
+        
+        // persist some changes from 1st user
+        lockedConfig.persistNode(DicomPath.DeviceByName.set("deviceName", "dcmqrscp").path(), configurationNode1, Device.class);
+
+        // persist some conflicting changes from 2nd user - should fail
+        try {
+            lockedConfig.persistNode(DicomPath.DeviceByName.set("deviceName", "dcmqrscp").path(), configurationNode2, Device.class);
+            throw new AssertionFailedError("Should have failed!");
+        } catch (Exception e) {
+            // its ok
+        }
+
+        // persist some non-conflicting changes from 3rd user - should be fine
+        lockedConfig.persistNode(DicomPath.DeviceByName.set("deviceName", "dcmqrscp").path(), configurationNode3, Device.class);
+
+        
+        
+        // assert the changes that were supposed to be persisted
+        Map<String,Object> newNode = (Map<String, Object>) lockedConfig.getConfigurationNode(DicomPath.DeviceByName.set("deviceName", "dcmqrscp").path(), Device.class);
+
+        Assert.assertEquals(
+                100,
+                ConfigNodeUtil.getNode(newNode, "/dicomConnection[cn='dicom']/dcmIdleTimeout"));
+
+        Assert.assertEquals(
+                false,
+                ConfigNodeUtil.getNode(newNode, "/dicomNetworkAE/DCMQRSCP/dicomAssociationAcceptor"));
+
+        Assert.assertEquals(
+                true,
+                ConfigNodeUtil.getNode(newNode, "/dicomNetworkAE/DCMQRSCP/dicomAssociationInitiator"));
+
+        //new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(System.out, newNode);
+        
     }
 }

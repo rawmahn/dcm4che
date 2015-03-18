@@ -83,7 +83,7 @@ public class SimpleStorageTest {
     public static Configuration getMockDicomConfStorage() {
         URL resource = Thread.currentThread().getContextClassLoader().getResource("mockConfig.json");
         String path = resource.getPath();
-        SingleJsonFileConfigurationStorage storage = new SingleJsonFileConfigurationStorage(path);
+        SingleJsonFileConfigurationStorage storage = new SingleJsonFileConfigurationStorage(true,path);
         return new CachedRootNodeConfiguration(storage);
     }
 

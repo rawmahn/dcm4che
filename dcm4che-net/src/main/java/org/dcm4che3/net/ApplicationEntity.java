@@ -74,7 +74,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @LDAP(objectClasses = {"dcmNetworkAE","dicomNetworkAE"}, distinguishingField = "dicomAETitle")
-@ConfigurableClass
+@ConfigurableClass(optimisticLockPropertyName = "oLock")
 public class ApplicationEntity implements Serializable {
 
     private static final long serialVersionUID = 3883790997057469573L;
@@ -83,6 +83,9 @@ public class ApplicationEntity implements Serializable {
             LoggerFactory.getLogger(ApplicationEntity.class);
 
     private Device device;
+    
+    @ConfigurableProperty(tags = Tag.OPTIMISTIC_LOCK_IGNORE)
+    String oLock;
 
     @ConfigurableProperty(name="dicomAETitle" , tags = Tag.PRIMARY)
     private String AETitle;
@@ -151,6 +154,13 @@ public class ApplicationEntity implements Serializable {
         setAETitle(aeTitle);
     }
 
+    public String getoLock() {
+        return oLock;
+    }
+
+    public void setoLock(String oLock) {
+        this.oLock = oLock;
+    }
 
     public void setTransferCapabilities(Collection<TransferCapability> transferCapabilities) {
         scpTCs.clear();

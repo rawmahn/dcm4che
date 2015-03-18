@@ -90,12 +90,12 @@ public class NodeTraverser {
         }
 
         @Override
-        public void onNodeBegin(Map<String, Object> node, Class property) throws ConfigurationException {
+        public void onNodeBegin(Map<String, Object> node, Class clazz) throws ConfigurationException {
 
         }
 
         @Override
-        public void onNodeEnd(Map<String, Object> node, Class property) throws ConfigurationException {
+        public void onNodeEnd(Map<String, Object> node, Class clazz) throws ConfigurationException {
 
         }
 

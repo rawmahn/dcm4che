@@ -86,7 +86,7 @@ import org.slf4j.LoggerFactory;
  * @author Gunter Zeilinger <gunterze@gmail.com>
  */
 @LDAP(objectClasses = {"dicomNetworkConnection", "dcmNetworkConnection"})
-@ConfigurableClass
+@ConfigurableClass(optimisticLockPropertyName = "oLock")
 public class Connection implements Serializable {
 
     private static final long serialVersionUID = -7814748788035232055L;
@@ -126,6 +126,9 @@ public class Connection implements Serializable {
 
     private Device device;
 
+    @ConfigurableProperty(tags = Tag.OPTIMISTIC_LOCK_IGNORE)
+    private String oLock;
+    
     @ConfigurableProperty(name = "cn", label = "Name", tags = Tag.PRIMARY)
     private String commonName;
 
@@ -240,6 +243,14 @@ public class Connection implements Serializable {
     }
 
     public Connection() {
+    }
+
+    public String getoLock() {
+        return oLock;
+    }
+
+    public void setoLock(String oLock) {
+        this.oLock = oLock;
     }
 
     public Connection(String commonName, String hostname) {
