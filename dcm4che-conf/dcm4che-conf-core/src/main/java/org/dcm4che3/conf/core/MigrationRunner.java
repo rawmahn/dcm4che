@@ -19,7 +19,12 @@ public class MigrationRunner {
         this.migrationScripts = migrationScripts;
     }
 
-    public void performMigration() throws ConfigurationException {
+    /**
+     * Performs migration with all registered scripts according to fromVersion and toVersion annotations
+     * @return The latest metadata of the configuration storage after the migration
+     * @throws ConfigurationException
+     */
+    public ConfigurationMetadata performMigration() throws ConfigurationException {
 
         BeanVitalizer beanVitalizer = new BeanVitalizer();
 
@@ -58,14 +63,19 @@ public class MigrationRunner {
 
             // migrate from current version
             for (MigrationScript script : migrateInThisIteration) {
+                System.out.println("Running migration script " + script.getClass());
                 script.migrate(configuration);
             }
 
             // bump version
-            configMetadata.setVersion(toVersion);
-            configuration.persistNode(metadataPath, beanVitalizer.createConfigNodeFromInstance(configMetadata), ConfigurationMetadata.class);
+            if (toVersion != null) {
+                configMetadata.setVersion(toVersion);
+                configuration.persistNode(metadataPath, beanVitalizer.createConfigNodeFromInstance(configMetadata), ConfigurationMetadata.class);
+            }
 
         } while (migrateInThisIteration.size() > 0);
+
+        return configMetadata;
     }
 
 
