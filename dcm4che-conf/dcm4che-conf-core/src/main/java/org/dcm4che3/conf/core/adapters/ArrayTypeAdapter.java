@@ -131,6 +131,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         ConfigTypeAdapter elementTypeAdapter = vitalizer.lookupTypeAdapter(componentPseudoProperty);
 
         ArrayList list = new ArrayList();
+
         for (int i = 0; i < Array.getLength(object); i++) {
             Object el = elementTypeAdapter.toConfigNode(Array.get(object, i), componentPseudoProperty, vitalizer);
             list.add(wrapperClass != null ? wrapperClass.cast(el) : el);
