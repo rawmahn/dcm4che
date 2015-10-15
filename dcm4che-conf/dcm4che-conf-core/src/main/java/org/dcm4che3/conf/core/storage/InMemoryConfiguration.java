@@ -55,7 +55,6 @@ public class InMemoryConfiguration implements Configuration {
 
     private final Map<String, Object> root;
 
-
     public InMemoryConfiguration() {
         this.root = new HashMap<String, Object>();
     }
@@ -71,7 +70,7 @@ public class InMemoryConfiguration implements Configuration {
 
     @Override
     public Object getConfigurationNode(String path, Class configurableClass) throws ConfigurationException {
-        return ConfigNodeUtil.getNode(root, path);
+        return ConfigNodeUtil.deepCloneNode(ConfigNodeUtil.getNode(root, path));
     }
 
     @Override
@@ -86,7 +85,7 @@ public class InMemoryConfiguration implements Configuration {
     @Override
     public void persistNode(String path, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
         if (!path.equals("/"))
-            ConfigNodeUtil.replaceNode(getConfigurationRoot(), path, configNode);
+            ConfigNodeUtil.replaceNode(getConfigurationRoot(), path, ConfigNodeUtil.deepCloneNode(configNode));
         else {
             root.clear();
             root.putAll(configNode);
@@ -100,7 +99,23 @@ public class InMemoryConfiguration implements Configuration {
 
     @Override
     public Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException {
-        return ConfigNodeUtil.search(root, liteXPathExpression);
+        final Iterator search = ConfigNodeUtil.search(root, liteXPathExpression);
+        return new Iterator() {
+            @Override
+            public boolean hasNext() {
+                return search.hasNext();
+            }
+
+            @Override
+            public Object next() {
+                return ConfigNodeUtil.deepCloneNode(search.next());
+            }
+
+            @Override
+            public void remove() {
+                // noop
+            }
+        };
     }
 
     @Override

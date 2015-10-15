@@ -49,6 +49,7 @@ import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.ConfigurableProperty.ConfigurablePropertyType;
 import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
+import org.dcm4che3.conf.core.olock.OLockCopyFilter;
 import org.dcm4che3.conf.core.olock.OLockHashCalcFilter;
 import org.dcm4che3.conf.core.olock.OptimisticLockingConfiguration;
 import org.dcm4che3.conf.core.util.ConfigNodeTraverser;
@@ -199,7 +200,8 @@ public class OptimisticLockingTest extends OptimisticLockingConfiguration {
         ConfigNodeTraverser.traverseMapNode(oldNode, new OLockHashCalcFilter());
 
         // consistent?
-        Assert.assertEquals("VIegnOfZrq1ZdZqHMUhnJBBIG0Q=", oldNode.get("#hash"));
+        String originalHash = "VIegnOfZrq1ZdZqHMUhnJBBIG0Q=";
+        Assert.assertEquals(originalHash, oldNode.get("#hash"));
 
         // remember old hash, change smth, check
         party1.setGuests(party1.getGuests() + 1);
@@ -237,6 +239,20 @@ public class OptimisticLockingTest extends OptimisticLockingConfiguration {
         Assert.assertEquals("map entry hash should not change",
                 ConfigNodeUtil.getNode(newNode, "/parties/p1[@name='#hash']"),
                 ConfigNodeUtil.getNode(nodeWithMapChanged, "/parties/aNewOldParty[@name='#hash']"));
+
+
+
+        // try recalc
+        ConfigNodeTraverser.traverseMapNode(oldNode, new OLockHashCalcFilter());
+        Assert.assertEquals(originalHash, oldNode.get("#hash"));
+
+        // try calculating hashes when old hash is there
+
+        ConfigNodeTraverser.traverseMapNode(oldNode, new OLockCopyFilter("#old_hash"));
+        ConfigNodeTraverser.traverseMapNode(oldNode, new OLockHashCalcFilter("#old_hash"));
+        Assert.assertEquals(originalHash, oldNode.get("#hash"));
+
+
 
     }
     

@@ -67,8 +67,7 @@ public class OptimisticLockingConfiguration extends DelegatingConfiguration {
                 Map<String, Object> nodeBeingPersisted = (Map<String, Object>) ConfigNodeUtil.deepCloneNode(configNode);
 
                 // get existing node from storage
-                Map<String, Object> nodeInStorage = null;
-                nodeInStorage = (Map<String, Object>) delegate.getConfigurationNode(path, configurableClass);
+                Map<String, Object> nodeInStorage = (Map<String, Object>) getConfigurationNode(path, configurableClass);
 
                 // if there is nothing in storage - just persist and leave
                 if (nodeInStorage == null) {
@@ -77,12 +76,6 @@ public class OptimisticLockingConfiguration extends DelegatingConfiguration {
                     delegate.persistNode(path, nodeBeingPersisted, configurableClass);
                     return;
                 }
-
-                // copy hash fields from nodeBeingPersisted to nodeInStorage, so the calc algorithm knows where to store hashes
-                ConfigNodeTraverser.dualTraverseMapNodes(nodeBeingPersisted, nodeInStorage, new HashMarkingCopyFilter());
-
-                // calculate hashes in node from storage
-                ConfigNodeTraverser.traverseMapNode(nodeInStorage, new OLockHashCalcFilter());
 
                 // save old hashes in node being persisted
                 ConfigNodeTraverser.traverseMapNode(nodeBeingPersisted, new OLockCopyFilter("#old_hash"));
