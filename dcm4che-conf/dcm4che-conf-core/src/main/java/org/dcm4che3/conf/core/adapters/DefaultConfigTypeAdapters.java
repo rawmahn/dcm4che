@@ -45,7 +45,7 @@ import org.dcm4che3.conf.core.api.ConfigurationUnserializableException;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
-import org.dcm4che3.conf.core.olock.OptimisticLockingConfiguration;
+import org.dcm4che3.conf.core.olock.HashBasedOptimisticLockingConfiguration;
 import org.dcm4che3.conf.core.validation.ValidationException;
 
 import java.lang.reflect.InvocationTargetException;
@@ -74,7 +74,7 @@ public class DefaultConfigTypeAdapters {
         Object node;
         if (property.isOlockHash()) {
             // olock prop name is constant
-            node = configNode.get(OptimisticLockingConfiguration.OLOCK_HASH_KEY);
+            node = configNode.get(HashBasedOptimisticLockingConfiguration.OLOCK_HASH_KEY);
         } else {
             // determine node name and get the property
             String nodeName = property.getAnnotatedName();
@@ -91,7 +91,7 @@ public class DefaultConfigTypeAdapters {
 
     public static void delegateChildToConfigNode(Object object, Map<String, Object> parentNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         // special case - olock prop name is constant
-        String nodeName = !property.isOlockHash() ? property.getAnnotatedName() : OptimisticLockingConfiguration.OLOCK_HASH_KEY;
+        String nodeName = !property.isOlockHash() ? property.getAnnotatedName() : HashBasedOptimisticLockingConfiguration.OLOCK_HASH_KEY;
 
         ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
         Object value = adapter.toConfigNode(object, property, vitalizer);

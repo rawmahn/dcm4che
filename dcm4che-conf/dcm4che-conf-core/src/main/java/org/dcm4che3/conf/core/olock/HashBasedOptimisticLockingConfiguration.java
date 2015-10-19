@@ -23,11 +23,11 @@ import java.util.Map;
  *  If one deletes a node that is a root of olock, and another changes that node, it is NOT considered a conflict, regardless of operation order the node will be just deleted.
  *  this holds for case of a subnode, or a map
  *  </li><li>
- *  For collections, if one modifies an element that is an olocked node, and another deletes it (or adds to that collection so the elements are shifter),
+ *  For collections, if one modifies an element that is an olocked node, and another deletes it (or adds to that collection so the elements are shifted),
  *  there will (most likely) be optimistic lock exceptions. With certain probability, the hashes of different collection elements will be equals,
- *  but in that case it should not matter since those would be equal elements.
+ *  but in that case it should not matter since those would be identical (equal) elements.
  *  </li><li>
- *  The ultimate case where algorithm might produce an unexpected result is when there is a collection of not-olocked elements that in turn have some olocked properties.
+ *  A foreseen case where algorithm might produce an unexpected result is when there is a collection of not-olocked elements that in turn have some olocked properties.
  *  Then the scenario above could change a different element from the one that the user intended to modify. Therefore such collections
  *  are PROHIBITED by design (TODO:make validation)
  *  </li>
@@ -37,9 +37,9 @@ import java.util.Map;
  * @author Roman K
  */
 @SuppressWarnings("unchecked")
-public class OptimisticLockingConfiguration extends DelegatingConfiguration {
+public class HashBasedOptimisticLockingConfiguration extends DelegatingConfiguration {
 
-    private static final Logger log = LoggerFactory.getLogger(OptimisticLockingConfiguration.class);
+    private static final Logger log = LoggerFactory.getLogger(HashBasedOptimisticLockingConfiguration.class);
 
     public static final String OLOCK_HASH_KEY = "#hash";
     public static final String NOT_CALCULATED_YET = "not-calculated-yet";
@@ -51,7 +51,7 @@ public class OptimisticLockingConfiguration extends DelegatingConfiguration {
      * @param allExtensionClasses
      * @param mergeBatchRunner    a batchrunner that is used by persistNode to execute read/write op to ensure consistency
      */
-    public OptimisticLockingConfiguration(Configuration delegate, List<Class> allExtensionClasses, BatchRunner mergeBatchRunner) {
+    public HashBasedOptimisticLockingConfiguration(Configuration delegate, List<Class> allExtensionClasses, BatchRunner mergeBatchRunner) {
         super(delegate);
 
         this.mergeBatchRunner = mergeBatchRunner;

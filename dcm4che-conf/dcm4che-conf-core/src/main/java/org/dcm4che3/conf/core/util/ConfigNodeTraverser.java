@@ -239,7 +239,7 @@ public class ConfigNodeTraverser {
 
 
     /**
-     * Inserts hash fields with null values into the node from storage at appropriate places
+     * Traverses with in-depth search and applies dual filter.
      *
      * @param node1
      * @param node2
@@ -249,22 +249,23 @@ public class ConfigNodeTraverser {
         filter.beforeNode(node1, node2);
 
         if (node1 != null && node2 != null)
-            for (Map.Entry<String, Object> objectEntry : node1.entrySet()) {
+            for (Map.Entry<String, Object> objectEntry : node1.entrySet())
+                if (node2.containsKey(objectEntry.getKey())) {
 
-                filter.beforeNodeProperty(objectEntry.getKey());
+                    filter.beforeNodeProperty(objectEntry.getKey());
 
-                Object node1El = objectEntry.getValue();
-                Object node2El = node2.get(objectEntry.getKey());
-                dualTraverseProperty(node1El, node2El, filter);
+                    Object node1El = objectEntry.getValue();
+                    Object node2El = node2.get(objectEntry.getKey());
+                    dualTraverseProperty(node1El, node2El, filter);
 
-                filter.afterNodeProperty(objectEntry.getKey());
-            }
+                    filter.afterNodeProperty(objectEntry.getKey());
+                }
 
         filter.afterNode(node1, node2);
     }
 
     private static void dualTraverseProperty(Object node1El, Object node2El, ADualNodeFilter filter) {
-        if (node2El == null) return;
+        if (node2El == null && node1El == null) return;
 
         if (node1El instanceof Collection) {
 
@@ -275,7 +276,7 @@ public class ConfigNodeTraverser {
 
             int i = 0;
 
-            while (node1i.hasNext()) {
+            while (node1i.hasNext() && node2i.hasNext()) {
 
                 filter.beforeCollectionElement(i);
 

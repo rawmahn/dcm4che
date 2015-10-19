@@ -61,7 +61,7 @@ import java.util.Map;
  */
 public class OLockHashCalcFilter extends ConfigNodeTraverser.AConfigNodeFilter {
 
-    Logger log = LoggerFactory.getLogger(OptimisticLockingConfiguration.class);
+    Logger log = LoggerFactory.getLogger(HashBasedOptimisticLockingConfiguration.class);
 
     final Deque<byte[]> stack = new ArrayDeque<byte[]>();
     private String ignoredKey;
@@ -126,7 +126,7 @@ public class OLockHashCalcFilter extends ConfigNodeTraverser.AConfigNodeFilter {
     }
 
     private boolean doIgnore(String key) {
-        return OptimisticLockingConfiguration.OLOCK_HASH_KEY.equals(key) || ignoredKey != null && ignoredKey.equals(key);
+        return HashBasedOptimisticLockingConfiguration.OLOCK_HASH_KEY.equals(key) || ignoredKey != null && ignoredKey.equals(key);
     }
 
 
@@ -141,8 +141,8 @@ public class OLockHashCalcFilter extends ConfigNodeTraverser.AConfigNodeFilter {
         byte[] pop = stack.pop();
 
         // if this node is olock'd, save hash, otherwise addup to what will be consumed by the parent
-        if (node.containsKey(OptimisticLockingConfiguration.OLOCK_HASH_KEY))
-            node.put(OptimisticLockingConfiguration.OLOCK_HASH_KEY, hashToString(pop));
+        if (node.containsKey(HashBasedOptimisticLockingConfiguration.OLOCK_HASH_KEY))
+            node.put(HashBasedOptimisticLockingConfiguration.OLOCK_HASH_KEY, hashToString(pop));
         else
             addHash(stack.peek(), getHash(hashToString(pop)));
     }

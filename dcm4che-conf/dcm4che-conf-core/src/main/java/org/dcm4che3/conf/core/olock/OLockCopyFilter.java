@@ -59,7 +59,7 @@ public class OLockCopyFilter extends ConfigNodeTraverser.AConfigNodeFilter{
 
     @Override
     public void afterNode(Map<String, Object> node) {
-        if (node.containsKey(OptimisticLockingConfiguration.OLOCK_HASH_KEY))
-            node.put(oLockPropertyName, node.get(OptimisticLockingConfiguration.OLOCK_HASH_KEY));
+        if (node.containsKey(HashBasedOptimisticLockingConfiguration.OLOCK_HASH_KEY))
+            node.put(oLockPropertyName, node.get(HashBasedOptimisticLockingConfiguration.OLOCK_HASH_KEY));
     }
 }

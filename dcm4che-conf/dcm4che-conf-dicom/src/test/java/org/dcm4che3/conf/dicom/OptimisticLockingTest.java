@@ -51,7 +51,7 @@ import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 import org.dcm4che3.conf.core.olock.OLockCopyFilter;
 import org.dcm4che3.conf.core.olock.OLockHashCalcFilter;
-import org.dcm4che3.conf.core.olock.OptimisticLockingConfiguration;
+import org.dcm4che3.conf.core.olock.HashBasedOptimisticLockingConfiguration;
 import org.dcm4che3.conf.core.util.ConfigNodeTraverser;
 import org.dcm4che3.conf.core.util.ConfigNodeUtil;
 import org.dcm4che3.net.Device;
@@ -66,7 +66,7 @@ import java.util.Map;
 /**
  * @author Roman K
  */
-public class OptimisticLockingTest extends OptimisticLockingConfiguration {
+public class OptimisticLockingTest extends HashBasedOptimisticLockingConfiguration {
 
 
     public OptimisticLockingTest() {
@@ -286,7 +286,7 @@ public class OptimisticLockingTest extends OptimisticLockingConfiguration {
 
 
 
-        Configuration lockedConfig = new OptimisticLockingConfiguration(mockDicomConfStorage, new ArrayList<Class>(), mockDicomConfStorage);
+        Configuration lockedConfig = new HashBasedOptimisticLockingConfiguration(mockDicomConfStorage, new ArrayList<Class>(), mockDicomConfStorage);
 
         // imitate 3 users simultaneously getting the same node
 
