@@ -9,6 +9,8 @@ import java.util.Map;
  * @author Roman K
  */
 public interface BeanVitalizer {
+    String makeReference(Object target);
+
     void setReferenceTypeAdapter(ConfigTypeAdapter referenceTypeAdapter);
 
     ConfigTypeAdapter getReferenceTypeAdapter();

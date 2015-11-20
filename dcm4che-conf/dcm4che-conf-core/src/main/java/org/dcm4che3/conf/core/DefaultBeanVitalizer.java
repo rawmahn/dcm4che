@@ -62,6 +62,23 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
 
     private ArrayTypeAdapter arrayTypeAdapter = new ArrayTypeAdapter();
 
+
+    /**
+     * Needed for avoiding infinite loops and 'optimistic' reference resolution (when we create the target instance before we actually find it during deserialization)
+     */
+    private final ThreadLocal<Map<String, Object>> currentlyLoadedReferableLocal = new ThreadLocal<Map<String, Object>>();
+
+
+    /**
+     * Returns a persistable reference representation for a given object which is a target of a reference
+     * @param target
+     * @return
+     */
+    @Override
+    public String makeReference(Object target) {
+        return null;
+    }
+
     @Override
     public void setReferenceTypeAdapter(ConfigTypeAdapter referenceTypeAdapter) {
         this.referenceTypeAdapter = referenceTypeAdapter;
@@ -79,7 +96,8 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         return instance;
     }
 
-    /** Creates a new instance
+    /** Creates a new instance.
+     * If the class is referencable, checks the threadlocal for an existing instance, registers the newly created instance if not
      *
      * @param clazz
      * @param <T>
@@ -110,7 +128,20 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
      */
     @Override
     public <T> void configureInstance(T object, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
-        new ReflectiveAdapter<T>(object).fromConfigNode(configNode, new AnnotatedConfigurableProperty(configurableClass), this, null);
+
+        boolean doCleanUpReferableLocal = false;
+
+        // init reference threadlocal for this run if it's the first call (subsequent recursive calls will re-use the threadLocal)
+        if (currentlyLoadedReferableLocal.get() == null) {
+            currentlyLoadedReferableLocal.set(new HashMap<String, Object>());
+            doCleanUpReferableLocal = true;
+        }
+        try {
+            new ReflectiveAdapter<T>(object).fromConfigNode(configNode, new AnnotatedConfigurableProperty(configurableClass), this, null);
+        } finally {
+            if (doCleanUpReferableLocal)
+                currentlyLoadedReferableLocal.remove();
+        }
     }
 
     /**

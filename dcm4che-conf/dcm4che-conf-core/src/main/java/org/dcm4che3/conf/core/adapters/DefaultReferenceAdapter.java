@@ -39,29 +39,98 @@
  */
 package org.dcm4che3.conf.core.adapters;
 
+import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.ConfigurationUnserializableException;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
-import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
+import org.dcm4che3.conf.core.api.internal.*;
 import org.dcm4che3.conf.core.api.Configuration;
-import org.dcm4che3.conf.core.api.internal.ConfigurationManager;
+import org.dcm4che3.conf.core.util.ConfigNodeUtil;
+import org.dcm4che3.conf.core.util.PathPattern;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Default de/referencer.
  *
- * @param <T>
  */
-public class DefaultReferenceAdapter<T> extends DefaultConfigTypeAdapters.CommonAbstractTypeAdapter<T> {
+public class DefaultReferenceAdapter implements ConfigTypeAdapter {
+
+    // generic uuid-based reference
+    PathPattern referencePath = new PathPattern("//*[_.uuid='{uuid}']");
+
+    private final Map metadata = new HashMap<String, String>();
 
     public DefaultReferenceAdapter(BeanVitalizer vitalizer, Configuration config) {
-        super("string");
-        metadata.put("class", "Reference");
-        //TODO: add regex..
-
+        metadata.put("type","string");
+        metadata.put("class","Reference");
     }
+
+    @Override
+    public Object fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer, Object parent) throws ConfigurationException {
+
+        String refStr = null;
+
+        try {
+            if (configNode instanceof String) {
+                // TODO: remove this around beginning 2016
+                // old deprecated style ref, for backwards-compatibility
+                refStr = (String) configNode;
+            } else  {
+                // new style
+                refStr = (String) ((Map) configNode).get(Configuration.REFERENCE_KEY);
+            }
+        } catch (RuntimeException e) {
+            // in case if it's not a map or is null or has no property
+            throw new IllegalArgumentException("Unexpected value for reference property " + property.getAnnotatedName() + ", value" + configNode);
+        }
+
+        // should work for both old style and UUID-based refs
+        Configuration config = vitalizer.getContext(ConfigurationManager.class).getConfigurationStorage();
+        Map<String, Object> referencedNode = (Map<String, Object>) config.getConfigurationNode(refStr, property.getRawClass());
+
+        if (referencedNode == null) {
+            if (property.isWeakReference())
+                return null;
+            else
+                throw new ConfigurationException("Referenced node '" + refStr + "' not found");
+        }
+
+        // now we assume there is always uuid
+        String uuid;
+        try {
+            uuid = (String) referencedNode.get(Configuration.UUID_KEY);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("A referable node MUST have a UUID. A node referenced by " + refStr+ " does not have UUID property.");
+        }
+
+        vitalizer.
+
+
+
+        return null;
+    }
+
+    @Override
+    public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+        Map<String, Object> node = Configuration.NodeFactory.emptyNode();
+
+        AnnotatedConfigurableProperty uuidPropertyForClass = ConfigIterators.getUUIDPropertyForClass(property.getRawClass());
+        String uuid;
+        try {
+            uuid = (String) PropertyUtils.getSimpleProperty(object, uuidPropertyForClass.getName());
+        } catch (Exception e) {
+            throw new ConfigurationException(e);
+        }
+        node.put(Configuration.REFERENCE_KEY, uuid);
+
+        if (property.isWeakReference())
+            node.put(Configuration.WEAK_REFERENCE_KEY, true);
+
+        return node;
+    }
+
 
     @Override
     public T fromConfigNode(String configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer, Object parent) throws ConfigurationException {
@@ -72,17 +141,13 @@ public class DefaultReferenceAdapter<T> extends DefaultConfigTypeAdapters.Common
         return (T) vitalizer.newConfiguredInstance(referencedNode, property.getRawClass());
     }
 
-    @Override
-    public String toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
-        throw new ConfigurationUnserializableException("No information about where to look for the reference");
-    }
-
 
     @Override
     public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
         Map<String, Object> schema = new HashMap<String, Object>();
-        schema.putAll(super.getSchema(property, vitalizer));
+        schema.putAll(metadata);
         schema.put("referencedClass", property.getRawClass().getSimpleName());
         return schema;
     }
+
 }

@@ -63,19 +63,7 @@ public @interface ConfigurableProperty {
      */
     String name() default "";
 
-    /**
-     * Label to show in configuration UIs. If empty empty string (default), the name will be used.
-     *
-     * @return
-     */
-    String label() default "";
 
-    /**
-     * Description to show in configuration UIs.
-     *
-     * @return
-     */
-    String description() default "";
 
     /**
      * Just a random string very unlikely to be equal to any user-specified default string (java does not allow to use null...)
@@ -113,7 +101,7 @@ public @interface ConfigurableProperty {
 
         /**
          * Same as {@link org.dcm4che3.conf.core.api.ConfigurableProperty.ConfigurablePropertyType#Reference}
-         * but applicable for Collections and Maps
+         * but applicable for Collections and Map values
          */
         CollectionOfReferences,
 
@@ -147,9 +135,31 @@ public @interface ConfigurableProperty {
      */
     ConfigurablePropertyType type() default ConfigurablePropertyType.Basic;
 
+    /**
+     * Only affects behavior for references.
+     * Indicates that the frameworks should not prevent removal of the target of this reference from the configuration.
+     * For a reference for which it was detected that the target does not exist anymore, the value gets automatically removed on occasion, i.e. will be set to 'null'
+     * @return
+     */
+    boolean weakReference() default false;
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     /// GUI ///////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Label to show in configuration UIs. If empty empty string (default), the name will be used.
+     *
+     * @return
+     */
+    String label() default "";
+
+    /**
+     * Description to show in configuration UIs.
+     *
+     * @return
+     */
+    String description() default "";
 
     enum Tag {
         /**

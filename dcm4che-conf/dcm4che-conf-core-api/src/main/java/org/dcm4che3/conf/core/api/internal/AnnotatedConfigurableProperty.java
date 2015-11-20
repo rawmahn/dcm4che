@@ -113,6 +113,10 @@ public class AnnotatedConfigurableProperty {
     public boolean isUuid() {
         return getAnnotation(ConfigurableProperty.class).type().equals(ConfigurablePropertyType.UUID);
     }
+
+    public boolean isWeakReference() {
+        return getAnnotation(ConfigurableProperty.class).weakReference();
+    }
     ////////////////////////////////////////////
 
     public AnnotatedConfigurableProperty clone(){
