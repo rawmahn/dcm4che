@@ -114,7 +114,7 @@ public class DicomConfigurationTest {
         device2.addApplicationEntity(ae3);
         config.persist(device2);
 
-        Assert.assertEquals("myAE1",config.findApplicationEntityByUUID(uuid1).getAETitle());
+        Assert.assertEquals("myAE1", config.findApplicationEntityByUUID(uuid1).getAETitle());
         Assert.assertEquals("myAE2",config.findApplicationEntityByUUID(uuid2).getAETitle());
         Assert.assertEquals("myAE3",config.findApplicationEntityByUUID(uuid3).getAETitle());
 
@@ -127,6 +127,12 @@ public class DicomConfigurationTest {
         } catch (ConfigurationNotFoundException e) {
             // noop
         }
+    }
+
+
+    @Test
+    public void testByAnyUUIDSearch() {
+        throw new RuntimeException("hey!");
     }
 
     private Device createDevice(String aeRenameTestDevice) {

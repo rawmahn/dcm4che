@@ -68,18 +68,6 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
      */
     private final ThreadLocal<Map<String, Object>> currentlyLoadedReferableLocal = new ThreadLocal<Map<String, Object>>();
 
-
-    /**
-     * Returns a persistable reference representation for a given object which is a target of a reference
-     * @param target
-     * @return
-     */
-    @Override
-    public String makeReference(Object target) {
-        return null;
-    }
-
-    @Override
     public void setReferenceTypeAdapter(ConfigTypeAdapter referenceTypeAdapter) {
         this.referenceTypeAdapter = referenceTypeAdapter;
     }
@@ -91,12 +79,25 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
 
     @Override
     public <T> T newConfiguredInstance(Map<String, Object> configNode, Class<T> clazz) throws ConfigurationException {
-        T instance = newInstance(clazz);
-        configureInstance(instance, configNode, clazz);
-        return instance;
+        boolean doCleanUpReferableLocal = false;
+
+        // init reference threadlocal for this run if it's the first call (subsequent recursive calls will re-use the threadLocal)
+        if (currentlyLoadedReferableLocal.get() == null) {
+            currentlyLoadedReferableLocal.set(new HashMap<String, Object>());
+            doCleanUpReferableLocal = true;
+        }
+        try {
+
+            return new ReflectiveAdapter<T>().fromConfigNode(configNode, new AnnotatedConfigurableProperty(clazz), this, null);
+
+        } finally {
+            if (doCleanUpReferableLocal)
+                currentlyLoadedReferableLocal.remove();
+        }
     }
 
-    /** Creates a new instance.
+    /**
+     * Creates a new instance.
      * If the class is referencable, checks the threadlocal for an existing instance, registers the newly created instance if not
      *
      * @param clazz
@@ -126,8 +127,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
      * @param configNode
      * @return
      */
-    @Override
-    public <T> void configureInstance(T object, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
+    private <T> void configureInstance(T object, Map<String, Object> configNode, Class configurableClass) throws ConfigurationException {
 
         boolean doCleanUpReferableLocal = false;
 
@@ -142,6 +142,23 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
             if (doCleanUpReferableLocal)
                 currentlyLoadedReferableLocal.remove();
         }
+    }
+
+    @Override
+    public <T> T getInstanceFromThreadLocalPoolByUUID(String uuid, Class<T> expectedClazz) {
+        if (currentlyLoadedReferableLocal.get() == null) return null;
+        try {
+            return (T) currentlyLoadedReferableLocal.get().get(uuid);
+        } catch (ClassCastException e) {
+            throw new IllegalArgumentException("Expected instance of class " + expectedClazz.getName()
+                    + " but the pool contained an instance of class " + currentlyLoadedReferableLocal.get().get(uuid).getClass().getName(), e);
+        }
+    }
+
+    @Override
+    public void registerInstanceInThreadLocalPool(String uuid, Object instance) {
+        if (currentlyLoadedReferableLocal.get() == null) return;
+        currentlyLoadedReferableLocal.get().put(uuid, instance);
     }
 
     /**
@@ -181,11 +198,11 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         if (typeAdapter != null) return typeAdapter;
 
         // check if it is a reference
-        if (property.getAnnotation(ConfigurableProperty.class)!=null && property.isReference())
+        if (property.getAnnotation(ConfigurableProperty.class) != null && property.isReference())
             return getReferenceTypeAdapter();
 
         // check if it is an extensions map
-        if (property.getAnnotation(ConfigurableProperty.class)!=null && property.isExtensionsProperty())
+        if (property.getAnnotation(ConfigurableProperty.class) != null && property.isExtensionsProperty())
             return new NullToNullDecorator(new ExtensionTypeAdaptor());
 
         // delegate to default otherwise

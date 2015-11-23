@@ -96,7 +96,7 @@ public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Obj
                     }
 
                 // proceed with deserialization
-                vitalizer.configureInstance(extension, (Map<String, Object>) entry.getValue(), extensionClass);
+                new ReflectiveAdapter(extension).fromConfigNode((Map<String, Object>) entry.getValue(), new AnnotatedConfigurableProperty(extensionClass), vitalizer, parent);
 
                 extensionsMap.put(extensionClass, extension);
 

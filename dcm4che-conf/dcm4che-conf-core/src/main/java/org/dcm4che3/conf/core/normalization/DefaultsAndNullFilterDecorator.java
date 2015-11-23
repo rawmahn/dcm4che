@@ -184,7 +184,6 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
         return new ArrayTypeAdapter().toConfigNode(defaultValueFromClass, property, vitalizer);
     }
 
-
     @Override
     public Iterator search(String liteXPathExpression) throws IllegalArgumentException, ConfigurationException {
         return super.search(liteXPathExpression);
