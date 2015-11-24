@@ -41,7 +41,11 @@
 package org.dcm4che3.conf.dicom;
 
 import org.dcm4che3.conf.api.ConfigurationNotFoundException;
+import org.dcm4che3.conf.core.api.ConfigurableClass;
+import org.dcm4che3.conf.core.api.ConfigurableClassExtension;
+import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.ConfigurationException;
+import org.dcm4che3.net.AEExtension;
 import org.dcm4che3.net.ApplicationEntity;
 import org.dcm4che3.net.Connection;
 import org.dcm4che3.net.Device;
@@ -115,8 +119,8 @@ public class DicomConfigurationTest {
         config.persist(device2);
 
         Assert.assertEquals("myAE1", config.findApplicationEntityByUUID(uuid1).getAETitle());
-        Assert.assertEquals("myAE2",config.findApplicationEntityByUUID(uuid2).getAETitle());
-        Assert.assertEquals("myAE3",config.findApplicationEntityByUUID(uuid3).getAETitle());
+        Assert.assertEquals("myAE2", config.findApplicationEntityByUUID(uuid2).getAETitle());
+        Assert.assertEquals("myAE3", config.findApplicationEntityByUUID(uuid3).getAETitle());
 
 //        Assert.assertEquals("CDE", config.findDeviceByUUID(devUUID).getDeviceName());
 
@@ -132,12 +136,208 @@ public class DicomConfigurationTest {
 
     @Test
     public void testByAnyUUIDSearch() {
-        throw new RuntimeException("hey!");
+
+        CommonDicomConfigurationWithHL7 config = SimpleStorageTest.createCommonDicomConfiguration();
+
+        config.purgeConfiguration();
+
+        Device device = new Device("ABC3");
+
+        String createdDeviceUUid = device.getUuid();
+
+        ApplicationEntity ae1 = new ApplicationEntity("myAE1");
+        ApplicationEntity ae2 = new ApplicationEntity("myAE2");
+
+        String uuid1 = ae1.getUuid();
+        String uuid2 = ae2.getUuid();
+
+        device.addApplicationEntity(ae1);
+        device.addApplicationEntity(ae2);
+        config.persist(device);
+
+        config.persist(new Device("ABC1"));
+        config.persist(new Device("ABC2"));
+        config.persist(new Device("ABC4"));
+
+        String foundDeviceUUID1 = (String) config.getConfigurationStorage().search(DicomPath.DeviceUUIDByAnyUUID.set("UUID", uuid1).path()).next();
+        String foundDeviceUUID2 = (String) config.getConfigurationStorage().search(DicomPath.DeviceUUIDByAnyUUID.set("UUID", uuid2).path()).next();
+
+        Assert.assertEquals(createdDeviceUUid, foundDeviceUUID1);
+        Assert.assertEquals(createdDeviceUUid, foundDeviceUUID2);
     }
 
-    // AE refs self
-    // AE refs Connection refs original AE
-    // Device refs self's AE refs self Connection refs self Device
+
+    @ConfigurableClass
+    public static class AEExtensionWithReferences extends AEExtension {
+
+        @ConfigurableProperty(type = ConfigurableProperty.ConfigurablePropertyType.Reference)
+        private ApplicationEntity anotherAERef;
+
+        @ConfigurableProperty(type = ConfigurableProperty.ConfigurablePropertyType.Reference)
+        private Device deviceRef;
+
+        public AEExtensionWithReferences() {
+        }
+
+        public AEExtensionWithReferences(ApplicationEntity anotherAERef) {
+            this.anotherAERef = anotherAERef;
+        }
+
+        public AEExtensionWithReferences(ApplicationEntity anotherAERef, Device deviceRef) {
+            this.anotherAERef = anotherAERef;
+            this.deviceRef = deviceRef;
+        }
+
+        public ApplicationEntity getAnotherAERef() {
+            return anotherAERef;
+        }
+
+        public void setAnotherAERef(ApplicationEntity anotherAERef) {
+            this.anotherAERef = anotherAERef;
+        }
+
+        public Device getDeviceRef() {
+            return deviceRef;
+        }
+
+        public void setDeviceRef(Device deviceRef) {
+            this.deviceRef = deviceRef;
+        }
+    }
+
+
+
+
+
+    @Test
+    public void testAECrossRef() {
+        CommonDicomConfigurationWithHL7 config = prepareTestConfigWithRefs();
+
+        Device theCoreDevice = new Device("TheCoreDevice");
+        ApplicationEntity ae1 = new ApplicationEntity("theFirstAE");
+        ApplicationEntity ae2 = new ApplicationEntity("theSecondAE");
+
+        ae1.addAEExtension(new AEExtensionWithReferences(ae2));
+        ae2.addAEExtension(new AEExtensionWithReferences(ae1));
+
+        theCoreDevice.addApplicationEntity(ae1);
+        theCoreDevice.addApplicationEntity(ae2);
+
+        config.persist(theCoreDevice);
+
+        Device loadedDevice = config.findDevice("TheCoreDevice");
+
+        Assert.assertEquals(
+                "TheCoreDevice",
+                loadedDevice
+                        .getApplicationEntity("theFirstAE")
+                        .getAEExtension(AEExtensionWithReferences.class)
+                        .getAnotherAERef()
+                        .getDevice()
+                        .getDeviceName()
+        );
+        Assert.assertEquals(
+                "TheCoreDevice",
+                loadedDevice
+                        .getApplicationEntity("theSecondAE")
+                        .getAEExtension(AEExtensionWithReferences.class)
+                        .getAnotherAERef()
+                        .getDevice()
+                        .getDeviceName()
+        );
+    }
+
+    private CommonDicomConfigurationWithHL7 prepareTestConfigWithRefs() {
+        List<ConfigurableClassExtension> list = new ArrayList<ConfigurableClassExtension>();
+        list.add(new AEExtensionWithReferences());
+
+        CommonDicomConfigurationWithHL7 config = SimpleStorageTest.createCommonDicomConfiguration(list);
+
+        config.purgeConfiguration();
+        return config;
+    }
+
+    @Test
+    public void testAEselfRef() {
+        CommonDicomConfigurationWithHL7 config = prepareTestConfigWithRefs();
+
+        Device theCoreDevice = new Device("TheCoreDevice");
+        ApplicationEntity ae1 = new ApplicationEntity("theFirstAE");
+        ae1.addAEExtension(new AEExtensionWithReferences(ae1));
+        theCoreDevice.addApplicationEntity(ae1);
+        config.persist(theCoreDevice);
+
+        Device loadedDevice = config.findDevice("TheCoreDevice");
+
+        Assert.assertEquals(
+                "TheCoreDevice",
+                loadedDevice
+                        .getApplicationEntity("theFirstAE")
+                        .getAEExtension(AEExtensionWithReferences.class)
+                        .getAnotherAERef()
+                        .getDevice()
+                        .getDeviceName()
+        );
+    }
+
+    @Test
+    public void testLongRefChain() {
+        CommonDicomConfigurationWithHL7 config = prepareTestConfigWithRefs();
+
+        Device theCoreDevice = new Device("TheCoreDevice");
+        Device theSecondDevice = new Device("TheSecondDevice");
+        ApplicationEntity ae5 = new ApplicationEntity("theThirdAE");
+        theSecondDevice.setDefaultAE(ae5);
+        theSecondDevice.addApplicationEntity(ae5);
+        config.persist(theSecondDevice);
+
+        ApplicationEntity ae1 = new ApplicationEntity("theFirstAE");
+        ApplicationEntity ae2 = new ApplicationEntity("theSecondAE");
+        ApplicationEntity ae3 = new ApplicationEntity("theThirdAE");
+
+        ae1.addAEExtension(new AEExtensionWithReferences(ae2));
+        ae2.addAEExtension(new AEExtensionWithReferences(ae3));
+        ae3.addAEExtension(new AEExtensionWithReferences(ae1,theSecondDevice));
+
+
+        theCoreDevice.addApplicationEntity(ae1);
+        theCoreDevice.addApplicationEntity(ae2);
+        theCoreDevice.addApplicationEntity(ae3);
+        config.persist(theCoreDevice);
+
+        Device loadedDevice = config.findDevice("TheCoreDevice");
+
+        Assert.assertEquals(
+                "TheCoreDevice",
+                loadedDevice
+                        .getApplicationEntity("theFirstAE")
+                        .getAEExtension(AEExtensionWithReferences.class)
+                        .getAnotherAERef()
+                        .getAEExtension(AEExtensionWithReferences.class)
+                        .getAnotherAERef()
+                        .getAEExtension(AEExtensionWithReferences.class)
+                        .getAnotherAERef()
+                        .getDevice()
+                        .getDeviceName()
+
+        );
+
+        Assert.assertEquals(
+                "TheSecondDevice",
+                loadedDevice
+                        .getApplicationEntity("theFirstAE")
+                        .getAEExtension(AEExtensionWithReferences.class)
+                        .getAnotherAERef()
+                        .getAEExtension(AEExtensionWithReferences.class)
+                        .getAnotherAERef()
+                        .getAEExtension(AEExtensionWithReferences.class)
+                        .getDeviceRef()
+                        .getDefaultAE()
+                        .getDevice()
+                        .getDeviceName()
+        );
+    }
+
 
     private Device createDevice(String aeRenameTestDevice) {
         Device testDevice = new Device(aeRenameTestDevice);

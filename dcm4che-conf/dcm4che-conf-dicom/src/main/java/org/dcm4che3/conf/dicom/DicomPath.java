@@ -57,23 +57,26 @@ public enum DicomPath {
     AllAETitles,
     DeviceNameByHL7AppName,
     AllHL7AppNames,
-    UniqueAETByName,
     ConfigRoot,
     DeviceByName,
-    AEExtension,
-    DeviceExtension,
-    HL7AppExtension,
+    TCGroups,
+    AllTCsOfAllAEsWithTCGroupExt,
+    DeviceNameByAEUUID,
+    DeviceNameByUUID,
+    DeviceUUIDByAnyUUID,
+
+
+    // obsolete/deprecated
+    UniqueAETByName,
     UniqueHL7AppByName,
     DeviceByNameRef,
     ConnectionByCnRef,
     ConnectionByHostRef,
     ConnectionByHostPortRef,
-    TCGroups,
-    AllTCsOfAllAEsWithTCGroupExt,
     AEByTitleRef,
-    DeviceNameByAEUUID,
-    DeviceNameByUUID,
-    DeviceUUIDByAnyUUID;
+    AEExtension,
+    DeviceExtension,
+    HL7AppExtension;
 
     public static final Map<DicomPath, String> PATHS = new HashMap<DicomPath, String>();
     public static final Map<DicomPath, PathPattern> PATH_PATTERNS = new HashMap<DicomPath, PathPattern>();
@@ -91,7 +94,8 @@ public enum DicomPath {
         PATHS.put(/*******/DeviceNameByAEUUID, "/dicomConfigurationRoot/dicomDevicesRoot/*[dicomNetworkAE/*[_.uuid='{aeUUID}']]/dicomDeviceName");
         PATHS.put(/*********/DeviceNameByUUID, "/dicomConfigurationRoot/dicomDevicesRoot/*[_.uuid='{deviceUUID}']/dicomDeviceName");
 
-        PATHS.put(/******/DeviceUUIDByAnyUUID, "/dicomConfigurationRoot/dicomDevicesRoot/*[//*[_.uuid='{UUID}']]/_.uuid");
+        // Get device UUID of a device that contains (or itself is) an object with the specified UUID
+        PATHS.put(/******/DeviceUUIDByAnyUUID, "/dicomConfigurationRoot/dicomDevicesRoot/*[.//_.uuid='{UUID}']/_.uuid");
 
         // single-result getNode (also can be used to store nodes)
         PATHS.put(/***************/ConfigRoot, "/dicomConfigurationRoot");

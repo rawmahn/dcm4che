@@ -70,9 +70,6 @@ public class DicomReferenceHandlerAdapter<T> extends DefaultReferenceAdapter {
 
         if (instanceFromPool != null) return instanceFromPool;
 
-        // create instance
-        Object instance = vitalizer.newInstance(property.getRawClass());
-
         // find corresponding corresponding device
         Configuration configuration = vitalizer.getContext(ConfigurationManager.class).getConfigurationStorage();
         Iterator deviceNameIterator = configuration.search(DicomPath.DeviceUUIDByAnyUUID.set("UUID", uuid).path());
@@ -84,6 +81,12 @@ public class DicomReferenceHandlerAdapter<T> extends DefaultReferenceAdapter {
         }
 
         Device device = vitalizer.getInstanceFromThreadLocalPoolByUUID(deviceUUID, Device.class);
+
+        // create instance and put it into the pool
+        // must be done after checking whether the device is in the pool since the instance might be that device itself
+        Object instance = vitalizer.newInstance(property.getRawClass());
+        vitalizer.registerInstanceInThreadLocalPool(uuid, instance);
+
 
         // is this device already there?
         // if yes, then this fresh instance will get populated later when the deserializer gets there (ReflectiveAdapter will find it in the pool)

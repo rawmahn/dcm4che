@@ -89,13 +89,27 @@ public @interface ConfigurableProperty {
 
     enum ConfigurablePropertyType {
         /**
+         * Basic property - default.
+         */
+        Basic,
+
+        /**
          * Referenceable UUID
          */
         UUID,
 
         /**
          * Specifies that the annotated field/property is not stored as a child node, but
-         * as a reference to another node instead
+         * as a reference to another node instead.
+         *
+         * <p>
+         *   <b>WARNING:</b>
+         *   Introducing references may lead to having circular reference chains.
+         *   This is allowed and properly handled by the framework.
+         *   However, one has to keep in mind, that due to the fact that circular references are allowed,
+         *   you might receive not fully initialized objects as arguments in setters for properties that are references.
+         *   Such objects will be populated later, but might have some (maybe all) fields uninitialized at the time the setter is called.
+         * </p>
          */
         Reference,
 
@@ -122,12 +136,8 @@ public @interface ConfigurableProperty {
          * <p/>
          * <p>There must be only single property of this type for a configurable class.</p>
          */
-        OptimisticLockingHash,
+        OptimisticLockingHash
 
-        /**
-         * Basic property - default.
-         */
-        Basic
     }
 
     /**
