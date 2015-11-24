@@ -135,6 +135,10 @@ public class DicomConfigurationTest {
         throw new RuntimeException("hey!");
     }
 
+    // AE refs self
+    // AE refs Connection refs original AE
+    // Device refs self's AE refs self Connection refs self Device
+
     private Device createDevice(String aeRenameTestDevice) {
         Device testDevice = new Device(aeRenameTestDevice);
         Connection connection = new Connection();
