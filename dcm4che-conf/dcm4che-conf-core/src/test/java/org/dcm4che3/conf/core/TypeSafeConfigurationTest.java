@@ -53,7 +53,7 @@ public class TypeSafeConfigurationTest {
     public void simple() {
         Assert.assertEquals(
                 new Path("dicomConfigurationRoot", "dicomDevicesRoot", "dcm4chee-arc").toSimpleEscapedXPath(),
-                "dicomConfigurationRoot/dicomDevicesRoot/dcm4chee-arc"
+                "/dicomConfigurationRoot/dicomDevicesRoot/dcm4chee-arc"
         );
 
     }

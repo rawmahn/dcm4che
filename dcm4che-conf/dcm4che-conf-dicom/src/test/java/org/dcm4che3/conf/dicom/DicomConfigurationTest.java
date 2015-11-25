@@ -45,6 +45,7 @@ import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableClassExtension;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.ConfigurationException;
+import org.dcm4che3.conf.dicom.configclasses.SomeDeviceExtension;
 import org.dcm4che3.net.AEExtension;
 import org.dcm4che3.net.ApplicationEntity;
 import org.dcm4che3.net.Connection;
@@ -133,7 +134,6 @@ public class DicomConfigurationTest {
         }
     }
 
-
     @Test
     public void testByAnyUUIDSearch() {
 
@@ -170,6 +170,7 @@ public class DicomConfigurationTest {
     @ConfigurableClass
     public static class AEExtensionWithReferences extends AEExtension {
 
+
         @ConfigurableProperty(type = ConfigurableProperty.ConfigurablePropertyType.Reference)
         private ApplicationEntity anotherAERef;
 
@@ -203,6 +204,45 @@ public class DicomConfigurationTest {
         public void setDeviceRef(Device deviceRef) {
             this.deviceRef = deviceRef;
         }
+
+    }
+
+
+    @Test
+    public void testAEReference() throws ConfigurationException {
+
+        CommonDicomConfigurationWithHL7 commonDicomConfiguration = SimpleStorageTest.createCommonDicomConfiguration();
+
+        commonDicomConfiguration.purgeConfiguration();
+
+        Device oneDeviceWithAE = new Device("oneDeviceWithAE");
+        ApplicationEntity myAE = new ApplicationEntity("myAE");
+        oneDeviceWithAE.addApplicationEntity(myAE);
+
+        SomeDeviceExtension someDeviceExtension = new SomeDeviceExtension();
+        someDeviceExtension.setReferencedEntity(myAE);
+        oneDeviceWithAE.addDeviceExtension(someDeviceExtension);
+
+        Device anotherDeviceWithRef = new Device("anotherDeviceWithRef");
+        SomeDeviceExtension ext = new SomeDeviceExtension();
+        ext.setReferencedEntity(myAE);
+        anotherDeviceWithRef.addDeviceExtension(ext);
+
+
+        commonDicomConfiguration.persist(anotherDeviceWithRef);
+        commonDicomConfiguration.persist(oneDeviceWithAE);
+
+        Device loaded = commonDicomConfiguration.findDevice("anotherDeviceWithRef");
+
+        Device loadedWithSelfRef = commonDicomConfiguration.findDevice("oneDeviceWithAE");
+
+        ApplicationEntity referencedEntity = loaded.getDeviceExtension(SomeDeviceExtension.class).getReferencedEntity();
+        Assert.assertEquals(referencedEntity.getAETitle(), "myAE");
+
+        ApplicationEntity referencedEntity1 = loadedWithSelfRef.getDeviceExtension(SomeDeviceExtension.class).getReferencedEntity();
+        Assert.assertEquals(referencedEntity1.getAETitle(), "myAE");
+
+
     }
 
 
