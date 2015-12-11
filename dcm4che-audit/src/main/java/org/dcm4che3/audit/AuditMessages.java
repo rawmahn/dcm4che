@@ -99,6 +99,7 @@ public class AuditMessages {
         return jc;
     }
 
+
     public static boolean isIP(String s) {
         return IP4.matcher(s).matches() || IP6.matcher(s).matches();
     }

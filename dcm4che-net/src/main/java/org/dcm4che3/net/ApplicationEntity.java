@@ -797,16 +797,23 @@ public class ApplicationEntity implements Serializable {
         return aeExt;
     }
 
-    public boolean supportsTransferCapability(
-            TransferCapability transferCapability, boolean onlyAbstractSyntax) {
+    /**
+     *
+     * @param transferCapability
+     * @param onlyAbstractSyntax if true, does not check the TS, and simply matches the SOP Class
+     * @return
+     */
+    public boolean supportsTransferCapability(TransferCapability transferCapability, boolean onlyAbstractSyntax) {
         TransferCapability matchingTC = this.getTransferCapabilityFor(
-                transferCapability.getSopClass(), transferCapability.getRole());
+                transferCapability.getSopClass(),
+                transferCapability.getRole()
+        );
+
         if (matchingTC == null)
             return false;
         else
             for (String ts : transferCapability.getTransferSyntaxes())
-                if (!matchingTC.containsTransferSyntax(ts)
-                        && !onlyAbstractSyntax)
+                if (!matchingTC.containsTransferSyntax(ts) && !onlyAbstractSyntax)
                     return false;
 
         return true;

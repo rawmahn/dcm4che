@@ -1401,12 +1401,27 @@ public class Device implements Serializable {
         return devExt;
     }
 
-    public Collection<ApplicationEntity> getAEsSupportingTransferCapability(
+    public Collection<ApplicationEntity> getAEs(
             TransferCapability transferCapability, boolean onlyAbstractSyntax) {
         ArrayList<ApplicationEntity> aes = new ArrayList<ApplicationEntity>();
         for (ApplicationEntity ae : this.getApplicationEntities()) {
             if (ae.supportsTransferCapability(transferCapability,
                     onlyAbstractSyntax))
+                aes.add(ae);
+        }
+        return aes;
+    }
+
+    /**
+     *
+     * @param transferCapability
+     * @param onlyAbstractSyntax if true, does not check the TS, and simply matches the SOP Class
+     * @return
+     */
+    public Collection<ApplicationEntity> getAEsSupportingTransferCapability(TransferCapability transferCapability, boolean onlyAbstractSyntax) {
+        ArrayList<ApplicationEntity> aes = new ArrayList<ApplicationEntity>();
+        for (ApplicationEntity ae : this.getApplicationEntities()) {
+            if (ae.supportsTransferCapability(transferCapability, onlyAbstractSyntax))
                 aes.add(ae);
         }
         return aes;
