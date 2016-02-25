@@ -43,6 +43,7 @@ package org.dcm4che3.conf.core.api;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -69,6 +70,13 @@ public class Path implements Serializable{
 
     public Path(List<String> pathItems) {
         this.pathItems = Collections.unmodifiableList(new ArrayList<String>(pathItems));
+    }
+
+    public Path(Iterator<String> stringIterator) {
+        ArrayList<String> strings = new ArrayList<String>();
+        while (stringIterator.hasNext())
+            strings.add(stringIterator.next());
+        this.pathItems = Collections.unmodifiableList(strings);
     }
 
     public List<String> getPathItems() {

@@ -5,11 +5,14 @@ import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.Path;
 import org.dcm4che3.conf.core.storage.InMemoryConfiguration;
 import org.dcm4che3.conf.core.storage.ReferenceIndexingDecorator;
+import org.dcm4che3.conf.core.util.PathPattern;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RefIndexingTest {
 
@@ -32,7 +35,12 @@ public class RefIndexingTest {
         SampleBigConf sampleBigConf = new SampleBigConf();
 
         sampleBigConf.child1 = new SampleReferableConfClass("UUID1");
-        sampleBigConf.childList.add(new SampleReferableConfClass("UUID2"));
+        sampleBigConf.child1.setMyName("Romeo");
+
+        SampleReferableConfClass uuid2obj = new SampleReferableConfClass("UUID2");
+        uuid2obj.setMyName("Juliet");
+
+        sampleBigConf.childList.add(uuid2obj);
         sampleBigConf.childList.add(new SampleReferableConfClass("UUID3"));
 
         sampleBigConf.childMap.put("first", new SampleReferableConfClass("UUID4"));
@@ -41,7 +49,14 @@ public class RefIndexingTest {
         configuration.persistNode("/confRoot/bigConf1", vitalizer.createConfigNodeFromInstance(sampleBigConf), null);
 
         // check if uuids are indexed
-        System.out.println(uuidToSimplePathCache.get("UUID1"));
+        Assert.assertEquals(5,uuidToSimplePathCache.size());
+
+        PathPattern pathPattern = new PathPattern(Configuration.REFERENCE_BY_UUID_PATTERN);
+
+        Assert.assertEquals("Romeo", ((Map)configuration.getConfigurationNode(pathPattern.set("uuid", "UUID1").path(), null)).get("myName"));
+
+        //TODO
+//        System.out.println(configuration.getConfigurationNode(pathPattern.set("uuid", "UUID2").path(), null));
 
 
     }
