@@ -3,10 +3,10 @@ package org.dcm4che3.conf.core.storage;
 import org.dcm4che3.conf.core.DelegatingConfiguration;
 import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurationException;
+import org.dcm4che3.conf.core.api.Path;
 import org.dcm4che3.conf.core.util.ConfigNodeTraverser;
 import org.dcm4che3.conf.core.util.PathPattern;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,10 +19,11 @@ public class ReferenceIndexingDecorator extends DelegatingConfiguration {
 
     static PathPattern referencePattern = new PathPattern(Configuration.REFERENCE_BY_UUID_PATTERN);
 
-    Map<String, Object> uuidToReferableIndex = Collections.synchronizedMap(new HashMap<String, Object>());
+    protected HashMap<String, Path> uuidToReferableIndex;
 
-    public ReferenceIndexingDecorator(Configuration delegate) {
+    public ReferenceIndexingDecorator(Configuration delegate, HashMap<String, Path> uuidToSimplePathCache) {
         super(delegate);
+        uuidToReferableIndex = uuidToSimplePathCache;
     }
 
     private void removeOldReferablesFromIndex(Object oldConfigurationNode) {
@@ -40,7 +41,7 @@ public class ReferenceIndexingDecorator extends DelegatingConfiguration {
             ConfigNodeTraverser.traverseMapNode(configNode, new ConfigNodeTraverser.AConfigNodeFilter() {
                 @Override
                 public void onPrimitiveNodeElement(Map<String, Object> containerNode, String key, Object value) {
-                    if (Configuration.UUID_KEY.equals(key)) uuidToReferableIndex.put((String) value, containerNode);
+                    if (Configuration.UUID_KEY.equals(key)) uuidToReferableIndex.put((String) value, new Path()/*TODO!*/);
                 }
             });
     }
