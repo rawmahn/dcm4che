@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import java.util.*;
 
 /**
+ *
+ *
  * @author rawmahn
  */
 public class DicomReferenceIndexingDecorator extends ReferenceIndexingDecorator {
@@ -37,9 +39,30 @@ public class DicomReferenceIndexingDecorator extends ReferenceIndexingDecorator 
             return handleDeviceNameByUUID(pp);
         }
 
-        //DeviceNameByAEUUID
+        pp = DicomPath.DeviceNameByAEUUID.parseIfMatches(liteXPathExpression);
+
+        if (pp != null) {
+            return handleDeviceNameByAEUUID(pp);
+        }
 
         return super.search(liteXPathExpression);
+    }
+
+    private Iterator handleDeviceNameByAEUUID(PathPattern.PathParser pp) {
+
+        String uuid = pp.getParam("aeUUID");
+
+        Path path = uuidToReferableIndex.get(uuid);
+
+        if (path == null)
+            return Collections.emptyList().iterator();
+
+        if (!validateDevicePath(path)) {
+            log.error("Unexpected path to device:" + path);
+            return Collections.emptyList().iterator();
+        }
+
+        return Collections.singletonList(getConfigurationNode(path.subPath(0, 3).toSimpleEscapedXPath() + "/dicomDeviceName", null)).iterator();
     }
 
     private Iterator handleDeviceNameByUUID(PathPattern.PathParser pp) {
