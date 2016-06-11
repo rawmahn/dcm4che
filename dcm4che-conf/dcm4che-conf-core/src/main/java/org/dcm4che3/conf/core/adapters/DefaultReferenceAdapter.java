@@ -54,7 +54,7 @@ import java.util.Map;
 public class DefaultReferenceAdapter implements ConfigTypeAdapter {
 
     // generic uuid-based reference
-    static PathPattern uuidReferencePath = new PathPattern(Configuration.REFERENCE_BY_UUID_PATTERN);
+    private static final PathPattern uuidReferencePath = new PathPattern(Configuration.REFERENCE_BY_UUID_PATTERN);
 
     private final Map metadata = new HashMap<String, String>();
 

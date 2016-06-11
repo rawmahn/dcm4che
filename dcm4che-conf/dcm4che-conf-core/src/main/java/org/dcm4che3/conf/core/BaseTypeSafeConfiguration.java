@@ -41,29 +41,54 @@
 package org.dcm4che3.conf.core;
 
 import org.dcm4che3.conf.core.api.Configuration;
+import org.dcm4che3.conf.core.api.LoadingContext;
 import org.dcm4che3.conf.core.api.Path;
 import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
+import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
+
+import java.util.Map;
 
 /**
  * @author Roman K
  */
+@SuppressWarnings("unchecked")
 public class BaseTypeSafeConfiguration implements TypeSafeConfiguration {
 
-    Configuration configurationStorage;
+    private final Configuration confStorage;
+    private final BeanVitalizer vitalizer;
 
-
-    @Override
-    public <T> T loadConfigurationObject(Path path, Class<T> clazz) {
-        return null;
+    public BaseTypeSafeConfiguration(Configuration configurationStorage, BeanVitalizer vitalizer) {
+        this.confStorage = configurationStorage;
+        this.vitalizer = vitalizer;
     }
 
     @Override
-    public <T> void saveConfigurationObject(Path path, T object, Class<T> clazz) {
-
+    public <T> T load(Path path, Class<T> clazz) {
+        return load(path, clazz, new BaseLoadingContext());
     }
 
     @Override
-    public void removeConfiguration(Path path) {
+    public <T> T load(Path path, Class<T> clazz, LoadingContext ctx) {
 
+        Object configurationNode = confStorage.getConfigurationNode(path.toString(), clazz);
+
+        if (configurationNode == null) {
+            return null;
+        }
+
+        return vitalizer.newConfiguredInstance((Map<String, Object>) configurationNode, clazz, ctx);
     }
+
+    @Override
+    public <T> void save(Path path, T object, Class<T> clazz) {
+        Map<String, Object> node = vitalizer.createConfigNodeFromInstance(object, clazz);
+        confStorage.persistNode(path.toString(), node, clazz);
+    }
+
+    @Override
+    public Configuration getLowLevelAccess() {
+        return confStorage;
+    }
+
+
 }

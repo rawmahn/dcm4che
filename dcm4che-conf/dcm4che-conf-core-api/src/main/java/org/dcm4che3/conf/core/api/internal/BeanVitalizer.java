@@ -1,6 +1,7 @@
 package org.dcm4che3.conf.core.api.internal;
 
 import org.dcm4che3.conf.core.api.ConfigurationException;
+import org.dcm4che3.conf.core.api.LoadingContext;
 
 import java.util.Map;
 
@@ -34,7 +35,11 @@ public interface BeanVitalizer {
      * @return
      * @throws ConfigurationException
      */
+    @Deprecated
     <T> T newConfiguredInstance(Map<String, Object> configNode, Class<T> clazz) throws ConfigurationException;
+
+    <T> T newConfiguredInstance(Map<String, Object> configurationNode, Class<T> clazz, LoadingContext ctx);
+
 
     /**
      * A factory to create an empty instance. Override e.g. to use CDI or whatever
@@ -78,4 +83,5 @@ public interface BeanVitalizer {
      * @param instance an object that corresponds to the uuid, which deserialization has started
      */
     void registerInstanceInThreadLocalPool(String uuid, Object instance);
+
 }

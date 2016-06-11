@@ -49,9 +49,10 @@ package org.dcm4che3.conf.core.api;
  */
 public interface TypeSafeConfiguration {
 
-    <T> T loadConfigurationObject(Path path, Class<T> clazz);
-    <T> void saveConfigurationObject(Path path, T object, Class<T> clazz);
+    <T> T load(Path path, Class<T> clazz);
+    <T> T load(Path path, Class<T> clazz, LoadingContext ctx);
 
-    void removeConfiguration(Path path);
+    <T> void save(Path path, T object, Class<T> clazz);
 
+    Configuration getLowLevelAccess();
 }

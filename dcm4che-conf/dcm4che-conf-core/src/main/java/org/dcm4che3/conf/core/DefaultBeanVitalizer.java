@@ -96,6 +96,14 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         }
     }
 
+    @Override
+    public <T> T newConfiguredInstance(Map<String, Object> configurationNode, Class<T> clazz, LoadingContext ctx) {
+        // TODO: use ctx for circ ref handling
+        // TODO: get rid of vitalizer in all adapters, use ctx
+        // TODO: add custom factories for objects (i.e. Groups tc )
+        return newConfiguredInstance(configurationNode, clazz);
+    }
+
     /**
      * Creates a new instance.
      *

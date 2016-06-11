@@ -73,7 +73,6 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
         this.providedConfObj = providedConfigurationObjectInstance;
     }
 
-
     @Override
     public T fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer, Object parent) throws ConfigurationException {
 
