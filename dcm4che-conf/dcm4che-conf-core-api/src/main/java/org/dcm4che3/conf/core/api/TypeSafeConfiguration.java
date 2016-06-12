@@ -40,6 +40,8 @@
 
 package org.dcm4che3.conf.core.api;
 
+import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
+
 /**
  * This API is work in progress, do not use it just yet.
  *
@@ -55,4 +57,8 @@ public interface TypeSafeConfiguration {
     <T> void save(Path path, T object, Class<T> clazz);
 
     Configuration getLowLevelAccess();
+
+    BeanVitalizer getVitalizer();
+
+    LoadingContext createLoadingContext();
 }

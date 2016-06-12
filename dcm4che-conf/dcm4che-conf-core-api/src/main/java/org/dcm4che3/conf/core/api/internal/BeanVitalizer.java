@@ -59,10 +59,7 @@ public interface BeanVitalizer {
      /* EXTENSIBILITY */
      /***************/
 
-
-    void registerContext(Class clazz, Object context);
-
-    <T> T getContext(Class<T> clazz);
+    //TODO: add factory registration
 
     /*****************/
      /* REFERENCES */

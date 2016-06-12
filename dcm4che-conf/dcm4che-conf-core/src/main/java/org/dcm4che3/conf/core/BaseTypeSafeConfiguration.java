@@ -57,14 +57,14 @@ public class BaseTypeSafeConfiguration implements TypeSafeConfiguration {
     private final Configuration confStorage;
     private final BeanVitalizer vitalizer;
 
-    public BaseTypeSafeConfiguration(Configuration configurationStorage, BeanVitalizer vitalizer) {
+    public BaseTypeSafeConfiguration(Configuration configurationStorage) {
         this.confStorage = configurationStorage;
-        this.vitalizer = vitalizer;
+        this.vitalizer = new DefaultBeanVitalizer();
     }
 
     @Override
     public <T> T load(Path path, Class<T> clazz) {
-        return load(path, clazz, new BaseLoadingContext());
+        return load(path, clazz, new BaseLoadingContext(vitalizer,this));
     }
 
     @Override
@@ -88,6 +88,11 @@ public class BaseTypeSafeConfiguration implements TypeSafeConfiguration {
     @Override
     public Configuration getLowLevelAccess() {
         return confStorage;
+    }
+
+    @Override
+    public BeanVitalizer getVitalizer() {
+        return vitalizer;
     }
 
 

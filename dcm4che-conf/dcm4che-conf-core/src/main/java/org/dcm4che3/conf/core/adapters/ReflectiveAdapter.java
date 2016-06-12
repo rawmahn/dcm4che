@@ -40,13 +40,9 @@
 package org.dcm4che3.conf.core.adapters;
 
 import org.apache.commons.beanutils.PropertyUtils;
-import org.dcm4che3.conf.core.api.Configuration;
+import org.dcm4che3.conf.core.api.*;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
-import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.ConfigurationUnserializableException;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
-import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
-import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.ConfigIterators;
 
 import java.util.HashMap;
@@ -74,7 +70,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
     }
 
     @Override
-    public T fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer, Object parent) throws ConfigurationException {
+    public T fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
         if (configNode == null) return null;
         Class<T> clazz = (Class<T>) property.getType();
@@ -86,14 +82,23 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
         // create instance or use provided when it was created for us
         if (providedConfObj != null)
             confObj = providedConfObj;
-        else
-            confObj = getRelevantConfigurableInstance(configNode, vitalizer, clazz);
+        else {
+
+            String uuid = null;
+            try {
+                uuid = (String) configNode.get(Configuration.UUID_KEY);
+            } catch (Exception e) {
+                throw new ConfigurationException("UUID is malformed: " + configNode.get(Configuration.UUID_KEY));
+            }
+
+            confObj = ctx.getRelevantConfigurableInstanceByUUID(uuid, clazz);
+        }
 
 
         // iterate and populate annotated fields
         for (AnnotatedConfigurableProperty fieldProperty : ConfigIterators.getAllConfigurableFields(clazz))
             try {
-                Object fieldValue = DefaultConfigTypeAdapters.delegateGetChildFromConfigNode(configNode, fieldProperty, vitalizer, confObj);
+                Object fieldValue = DefaultConfigTypeAdapters.delegateGetChildFromConfigNode(configNode, fieldProperty, ctx, confObj);
                 PropertyUtils.setSimpleProperty(confObj, fieldProperty.getName(), fieldValue);
             } catch (Exception e) {
                 throw new ConfigurationException("Error while reading configuration property '" + fieldProperty.getAnnotatedName() + "' (field " + fieldProperty.getName() + ") in class " + clazz.getSimpleName(), e);
@@ -106,7 +111,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
                 Object[] args = new Object[setter.getParameters().size()];
                 int i = 0;
                 for (AnnotatedConfigurableProperty paramProperty : setter.getParameters())
-                    args[i++] = DefaultConfigTypeAdapters.delegateGetChildFromConfigNode(configNode, paramProperty, vitalizer, confObj);
+                    args[i++] = DefaultConfigTypeAdapters.delegateGetChildFromConfigNode(configNode, paramProperty, ctx, confObj);
 
                 // invoke setter
                 setter.getMethod().invoke(confObj, args);
@@ -118,51 +123,9 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
         return confObj;
     }
 
-    /**
-     * Either
-     * <ul>
-     * <li> uses the existing instance with this UUID from the pool </li>
-     * <li> creates new instance </li>
-     * </ul>
-     */
-    private static <T> T getRelevantConfigurableInstance(Map<String, Object> configNode, BeanVitalizer vitalizer, Class<T> clazz) {
-
-        String uuid = null;
-        try {
-            uuid = (String) configNode.get(Configuration.UUID_KEY);
-        } catch (Exception e) {
-            throw new ConfigurationException("UUID is malformed: " + configNode.get(Configuration.UUID_KEY));
-        }
-
-        // try to get from the pool
-        if (uuid != null) {
-
-            T instanceFromThreadLocalPoolByUUID = vitalizer.getInstanceFromThreadLocalPoolByUUID(uuid, clazz);
-
-            if (instanceFromThreadLocalPoolByUUID != null)
-                return instanceFromThreadLocalPoolByUUID;
-        }
-
-        T confObj;
-        try {
-            confObj = vitalizer.newInstance(clazz);
-        } catch (Exception e) {
-            throw new ConfigurationException("Error while instantiating config class " + clazz.getSimpleName()
-                    + ". Check whether null-arg constructor exists.", e);
-        }
-
-        // if uuid is defined, put into pool
-        if (uuid != null) {
-            // need to add this fresh instance to the pool
-            vitalizer.registerInstanceInThreadLocalPool(uuid, confObj);
-        }
-
-        return confObj;
-    }
-
 
     @Override
-    public Map<String, Object> toConfigNode(T object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Map<String, Object> toConfigNode(T object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
 
         if (object == null) return null;
 
@@ -174,7 +137,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
         for (AnnotatedConfigurableProperty fieldProperty : ConfigIterators.getAllConfigurableFields(clazz)) {
             try {
                 Object value = PropertyUtils.getSimpleProperty(object, fieldProperty.getName());
-                DefaultConfigTypeAdapters.delegateChildToConfigNode(value, configNode, fieldProperty, vitalizer);
+                DefaultConfigTypeAdapters.delegateChildToConfigNode(value, configNode, fieldProperty, ctx);
             } catch (Exception e) {
                 throw new ConfigurationException("Error while serializing configuration field '" + fieldProperty.getName() + "' in class " + clazz.getSimpleName(), e);
             }
@@ -189,7 +152,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
 
 
     @Override
-    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
 
         Class<T> clazz = (Class<T>) property.getType();
 
@@ -210,7 +173,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
 
             ConfigurableProperty propertyAnnotation = configurableChildProperty.getAnnotation(ConfigurableProperty.class);
 
-            ConfigTypeAdapter childAdapter = vitalizer.lookupTypeAdapter(configurableChildProperty);
+            ConfigTypeAdapter childAdapter = ctx.getVitalizer().lookupTypeAdapter(configurableChildProperty);
             Map<String, Object> childPropertyMetadata = new LinkedHashMap<String, Object>();
             classMetaData.put(configurableChildProperty.getAnnotatedName(), childPropertyMetadata);
 
@@ -221,7 +184,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
                 childPropertyMetadata.put("description", propertyAnnotation.description());
             try {
                 if (!propertyAnnotation.defaultValue().equals(ConfigurableProperty.NO_DEFAULT_VALUE))
-                    childPropertyMetadata.put("default", childAdapter.normalize(propertyAnnotation.defaultValue(), configurableChildProperty, vitalizer));
+                    childPropertyMetadata.put("default", childAdapter.normalize(propertyAnnotation.defaultValue(), configurableChildProperty, ctx));
             } catch (ClassCastException e) {
                 childPropertyMetadata.put("default", 0);
             }
@@ -234,7 +197,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
             childPropertyMetadata.put("uiGroup", propertyAnnotation.group());
 
             // also merge in the metadata from this child itself
-            Map<String, Object> childMetaData = childAdapter.getSchema(configurableChildProperty, vitalizer);
+            Map<String, Object> childMetaData = childAdapter.getSchema(configurableChildProperty, ctx);
             if (childMetaData != null) childPropertyMetadata.putAll(childMetaData);
         }
 
@@ -242,7 +205,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
     }
 
     @Override
-    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
         return (Map<String, Object>) configNode;
     }
 }

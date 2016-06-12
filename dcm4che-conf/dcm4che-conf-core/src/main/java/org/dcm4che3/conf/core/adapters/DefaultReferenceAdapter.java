@@ -40,9 +40,8 @@
 package org.dcm4che3.conf.core.adapters;
 
 import org.apache.commons.beanutils.PropertyUtils;
-import org.dcm4che3.conf.core.api.ConfigurationException;
+import org.dcm4che3.conf.core.api.*;
 import org.dcm4che3.conf.core.api.internal.*;
-import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.util.PathPattern;
 
 import java.util.HashMap;
@@ -64,7 +63,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
     }
 
     @Override
-    public Object fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer, Object parent) throws ConfigurationException {
+    public Object fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
         // TODO: remove this around beginning 2017 ;)
         // old deprecated style ref, for backwards-compatibility
@@ -72,7 +71,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
 
             String refStr = (String) configNode;
 
-            Configuration config = vitalizer.getContext(ConfigurationManager.class).getConfigurationStorage();
+            Configuration config = ctx.getContext(ConfigurationManager.class).getConfigurationStorage();
             Map<String, Object> referencedNode = (Map<String, Object>) config.getConfigurationNode(refStr, property.getRawClass());
 
             if (referencedNode == null) {
@@ -90,7 +89,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
                 throw new IllegalArgumentException("A referable node MUST have a UUID. A node referenced by " + refStr + " does not have UUID property.");
             }
 
-            return getReferencedConfigurableObject(uuid, vitalizer, property);
+            return getReferencedConfigurableObject(uuid, ctx, property);
         }
         // new style
         else {
@@ -104,7 +103,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
                 throw new IllegalArgumentException("Unexpected value for reference property " + property.getAnnotatedName() + ", value" + configNode);
             }
 
-            return getReferencedConfigurableObject(uuid, vitalizer, property);
+            return getReferencedConfigurableObject(uuid, ctx, property);
         }
     }
 
@@ -129,7 +128,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
     }
 
     @Override
-    public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
         Map<String, Object> node = Configuration.NodeFactory.emptyNode();
 
         AnnotatedConfigurableProperty uuidPropertyForClass = ConfigIterators.getUUIDPropertyForClass(property.getRawClass());
@@ -151,7 +150,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
     }
 
     @Override
-    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
         Map<String, Object> schema = new HashMap<String, Object>();
         schema.putAll(metadata);
         schema.put("referencedClass", property.getRawClass().getSimpleName());
@@ -159,7 +158,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
     }
 
     @Override
-    public Object normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Object normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
         return configNode;
     }
 

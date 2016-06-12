@@ -41,10 +41,7 @@
 package org.dcm4che3.conf.core.adapters;
 
 import org.apache.commons.beanutils.PropertyUtils;
-import org.dcm4che3.conf.core.api.ConfigurableClass;
-import org.dcm4che3.conf.core.api.ConfigurableClassExtension;
-import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.SetParentIntoField;
+import org.dcm4che3.conf.core.api.*;
 import org.dcm4che3.conf.core.api.internal.*;
 import org.dcm4che3.conf.core.util.Extensions;
 import org.slf4j.Logger;
@@ -63,7 +60,8 @@ public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Obj
     public static final Logger log = LoggerFactory.getLogger(ExtensionTypeAdaptor.class);
 
     @Override
-    public Map<Class<?>, Object> fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer, Object parent) throws ConfigurationException {
+    public Map<Class<?>, Object> fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
+
 
         // figure out base extension class
         Class<Object> extensionBaseClass = null;
@@ -79,11 +77,11 @@ public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Obj
             try {
 
                 // figure out current extension class
-                List<Class<?>> extensionClasses = vitalizer.getContext(ConfigurationManager.class).getExtensionClassesByBaseClass(extensionBaseClass);
+                List<Class<?>> extensionClasses = ctx.getVitalizer().getContext(ConfigurationManager.class).getExtensionClassesByBaseClass(extensionBaseClass);
                 Class<?> extensionClass = Extensions.getExtensionClassBySimpleName(entry.getKey(), extensionClasses);
 
                 // create empty extension bean
-                Object extension = vitalizer.newInstance(extensionClass);
+                Object extension = ctx.getVitalizer().newInstance(extensionClass);
 
                 // set parent so this field is accessible for use in extension bean's setters
                 SetParentIntoField setParentIntoField = extensionBaseClass.getAnnotation(SetParentIntoField.class);
@@ -97,7 +95,7 @@ public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Obj
 
                 //TODO: speedup new AnnotatedConfigurableProperty(extensionClass)
                 // proceed with deserialization
-                new ReflectiveAdapter(extension).fromConfigNode((Map<String, Object>) entry.getValue(), new AnnotatedConfigurableProperty(extensionClass), vitalizer, parent);
+                new ReflectiveAdapter(extension).fromConfigNode((Map<String, Object>) entry.getValue(), new AnnotatedConfigurableProperty(extensionClass), ctx, parent);
 
                 extensionsMap.put(extensionClass, extension);
 
@@ -111,12 +109,12 @@ public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Obj
     }
 
     @Override
-    public Map<String, Object> toConfigNode(Map<Class<?>, Object> object, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Map<String, Object> toConfigNode(Map<Class<?>, Object> object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
 
         Map<String, Object> extensionsMapNode = new TreeMap<String, Object>();
 
         for (Map.Entry<Class<?>, Object> classObjectEntry : object.entrySet()) {
-            Object extensionNode = vitalizer.createConfigNodeFromInstance(classObjectEntry.getValue(), classObjectEntry.getKey());
+            Object extensionNode = ctx.createConfigNodeFromInstance(classObjectEntry.getValue(), classObjectEntry.getKey());
             extensionsMapNode.put(classObjectEntry.getKey().getSimpleName(), extensionNode);
         }
 
@@ -124,14 +122,14 @@ public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Obj
     }
 
     @Override
-    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
         Map<String, Object> metadata = new HashMap<String, Object>();
         metadata.put("type", "extensionMap");
         return metadata;
     }
 
     @Override
-    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property, BeanVitalizer vitalizer) throws ConfigurationException {
+    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
         if (configNode == null)
             return new HashMap<String, Object>();
         return (Map<String, Object>) configNode;

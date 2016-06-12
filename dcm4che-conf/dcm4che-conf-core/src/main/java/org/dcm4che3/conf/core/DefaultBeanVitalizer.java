@@ -56,12 +56,24 @@ import java.util.Map;
  */
 public class DefaultBeanVitalizer implements BeanVitalizer {
 
-    private final Map<Class, Object> contextMap = new HashMap<Class, Object>();
     private final Map<Class, ConfigTypeAdapter> customConfigTypeAdapters = new HashMap<Class, ConfigTypeAdapter>();
     private ConfigTypeAdapter referenceTypeAdapter;
 
     private final ArrayTypeAdapter arrayTypeAdapter = new ArrayTypeAdapter();
 
+    private final TypeSafeConfiguration typeSafeConfiguration;
+
+    /**
+     * "Standalone" vitalizer. This should only be used for e.g. tests.
+     * To be able to handle references, custom context factories, etc, vitalizer must be bound to typeSafeConfiguration
+     */
+    public DefaultBeanVitalizer() {
+        typeSafeConfiguration = null;
+    }
+
+    public DefaultBeanVitalizer(TypeSafeConfiguration typeSafeConfiguration) {
+        this.typeSafeConfiguration = typeSafeConfiguration;
+    }
 
     /**
      * Needed for avoiding infinite loops and 'optimistic' reference resolution (when we create the target instance before we actually find it during deserialization)
@@ -77,6 +89,18 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         return referenceTypeAdapter;
     }
 
+    private LoadingContext createLoadingContext() {
+
+        if (typeSafeConfiguration == null)
+            // for backward-compatibility when Vitalizer is 'standalone'
+            return new BaseLoadingContext(this, null);
+        else
+            return typeSafeConfiguration.createLoadingContext();
+
+    }
+
+
+
     @Override
     public <T> T newConfiguredInstance(Map<String, Object> configNode, Class<T> clazz) throws ConfigurationException {
         boolean doCleanUpReferableLocal = false;
@@ -88,7 +112,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         }
         try {
 
-            return new ReflectiveAdapter<T>().fromConfigNode(configNode, new AnnotatedConfigurableProperty(clazz), this, null);
+            return new ReflectiveAdapter<T>().fromConfigNode(configNode, new AnnotatedConfigurableProperty(clazz), createLoadingContext(), null);
 
         } finally {
             if (doCleanUpReferableLocal)
@@ -144,7 +168,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
             doCleanUpReferableLocal = true;
         }
         try {
-            new ReflectiveAdapter<T>(object).fromConfigNode(configNode, new AnnotatedConfigurableProperty(configurableClass), this, null);
+            new ReflectiveAdapter<T>(object).fromConfigNode(configNode, new AnnotatedConfigurableProperty(configurableClass), createLoadingContext(), null);
         } finally {
             if (doCleanUpReferableLocal)
                 currentlyLoadedReferableLocal.remove();
@@ -236,21 +260,6 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
             throw new ConfigurationException("TypeAdapter not found for class " + clazz.getName());
 
         return adapter;
-    }
-
-    /**
-     * Register any context data needed by custom ConfigTypeAdapters
-     *
-     * @return
-     */
-    @Override
-    public void registerContext(Class clazz, Object context) {
-        this.contextMap.put(clazz, context);
-    }
-
-    @Override
-    public <T> T getContext(Class<T> clazz) {
-        return (T) contextMap.get(clazz);
     }
 
     /**
