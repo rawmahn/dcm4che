@@ -41,10 +41,11 @@
 package org.dcm4che3.conf.core;
 
 import org.dcm4che3.conf.core.api.Configuration;
-import org.dcm4che3.conf.core.api.LoadingContext;
 import org.dcm4che3.conf.core.api.Path;
 import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
+import org.dcm4che3.conf.core.context.ContextFactory;
+import org.dcm4che3.conf.core.context.LoadingContext;
 
 import java.util.Map;
 
@@ -52,19 +53,24 @@ import java.util.Map;
  * @author Roman K
  */
 @SuppressWarnings("unchecked")
-public class BaseTypeSafeConfiguration implements TypeSafeConfiguration {
+public class DefaultTypeSafeConfiguration implements TypeSafeConfiguration {
 
     private final Configuration confStorage;
     private final BeanVitalizer vitalizer;
+    private ContextFactory contextFactory;
 
-    public BaseTypeSafeConfiguration(Configuration configurationStorage) {
+
+    public DefaultTypeSafeConfiguration(Configuration configurationStorage) {
         this.confStorage = configurationStorage;
-        this.vitalizer = new DefaultBeanVitalizer();
+        this.vitalizer = new DefaultBeanVitalizer(this);
+        contextFactory = new ContextFactory(this, vitalizer);
     }
+
+
 
     @Override
     public <T> T load(Path path, Class<T> clazz) {
-        return load(path, clazz, new BaseLoadingContext(vitalizer,this));
+        return load(path, clazz, contextFactory.newLoadingContext());
     }
 
     @Override
@@ -77,6 +83,15 @@ public class BaseTypeSafeConfiguration implements TypeSafeConfiguration {
         }
 
         return vitalizer.newConfiguredInstance((Map<String, Object>) configurationNode, clazz, ctx);
+    }
+
+    public <T> T find(String uuid, Class<T> clazz) {
+        return find(uuid, clazz, contextFactory.newLoadingContext());
+    }
+
+    public <T> T find(String uuid, Class<T> clazz, LoadingContext ctx) {
+        // TODO: find
+        return null;
     }
 
     @Override
@@ -95,5 +110,12 @@ public class BaseTypeSafeConfiguration implements TypeSafeConfiguration {
         return vitalizer;
     }
 
+    @Override
+    public ContextFactory getContextFactory() {
+        return contextFactory;
+    }
 
+    public void setContextFactory(ContextFactory contextFactory) {
+        this.contextFactory = contextFactory;
+    }
 }

@@ -40,7 +40,11 @@
 
 package org.dcm4che3.conf.core.api;
 
+import org.dcm4che3.conf.core.context.ContextFactory;
+import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
+
+import javax.naming.ldap.ControlFactory;
 
 /**
  * This API is work in progress, do not use it just yet.
@@ -57,8 +61,7 @@ public interface TypeSafeConfiguration {
     <T> void save(Path path, T object, Class<T> clazz);
 
     Configuration getLowLevelAccess();
-
     BeanVitalizer getVitalizer();
+    ContextFactory getContextFactory();
 
-    LoadingContext createLoadingContext();
 }

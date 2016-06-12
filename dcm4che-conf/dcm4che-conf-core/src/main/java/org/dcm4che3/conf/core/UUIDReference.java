@@ -1,6 +1,6 @@
 package org.dcm4che3.conf.core;
 
-import org.dcm4che3.conf.core.api.LoadingContext;
+import org.dcm4che3.conf.core.context.LoadingContext;
 
 /**
  * @author rawmahn

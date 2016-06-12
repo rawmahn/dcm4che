@@ -41,6 +41,9 @@ package org.dcm4che3.conf.core.adapters;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.core.api.*;
+import org.dcm4che3.conf.core.context.LoadingContext;
+import org.dcm4che3.conf.core.context.ProcessingContext;
+import org.dcm4che3.conf.core.context.SavingContext;
 import org.dcm4che3.conf.core.api.internal.*;
 import org.dcm4che3.conf.core.util.PathPattern;
 
@@ -71,7 +74,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
 
             String refStr = (String) configNode;
 
-            Configuration config = ctx.getContext(ConfigurationManager.class).getConfigurationStorage();
+            Configuration config = ctx.getTypeSafeConfiguration().getLowLevelAccess();
             Map<String, Object> referencedNode = (Map<String, Object>) config.getConfigurationNode(refStr, property.getRawClass());
 
             if (referencedNode == null) {

@@ -39,9 +39,9 @@
  */
 package org.dcm4che3.conf.core.adapters;
 
-import org.dcm4che3.conf.core.api.LoadingContext;
-import org.dcm4che3.conf.core.api.ProcessingContext;
-import org.dcm4che3.conf.core.api.SavingContext;
+import org.dcm4che3.conf.core.context.LoadingContext;
+import org.dcm4che3.conf.core.context.ProcessingContext;
+import org.dcm4che3.conf.core.context.SavingContext;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;

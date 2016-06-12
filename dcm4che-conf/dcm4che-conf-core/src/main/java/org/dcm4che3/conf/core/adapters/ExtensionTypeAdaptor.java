@@ -42,6 +42,9 @@ package org.dcm4che3.conf.core.adapters;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.core.api.*;
+import org.dcm4che3.conf.core.context.LoadingContext;
+import org.dcm4che3.conf.core.context.ProcessingContext;
+import org.dcm4che3.conf.core.context.SavingContext;
 import org.dcm4che3.conf.core.api.internal.*;
 import org.dcm4che3.conf.core.util.Extensions;
 import org.slf4j.Logger;

@@ -45,7 +45,10 @@ package org.dcm4che3.conf.core;
 
 import org.dcm4che3.conf.core.adapters.*;
 import org.dcm4che3.conf.core.api.*;
+import org.dcm4che3.conf.core.context.SavingContext;
 import org.dcm4che3.conf.core.api.internal.*;
+import org.dcm4che3.conf.core.context.LoadingContext;
+import org.dcm4che3.conf.core.context.DefaultSavingContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -89,16 +92,24 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         return referenceTypeAdapter;
     }
 
-    private LoadingContext createLoadingContext() {
+    private org.dcm4che3.conf.core.context.LoadingContext createLoadingContext() {
 
         if (typeSafeConfiguration == null)
             // for backward-compatibility when Vitalizer is 'standalone'
-            return new BaseLoadingContext(this, null);
+            return new LoadingContext(this, null);
         else
             return typeSafeConfiguration.createLoadingContext();
 
     }
+    private SavingContext createSavingContext() {
 
+        if (typeSafeConfiguration == null)
+            // for backward-compatibility when Vitalizer is 'standalone'
+            return new DefaultSavingContext(this, null);
+        else
+            return typeSafeConfiguration.createSavingContext();
+
+    }
 
 
     @Override
@@ -121,7 +132,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
     }
 
     @Override
-    public <T> T newConfiguredInstance(Map<String, Object> configurationNode, Class<T> clazz, LoadingContext ctx) {
+    public <T> T newConfiguredInstance(Map<String, Object> configurationNode, Class<T> clazz, org.dcm4che3.conf.core.context.LoadingContext ctx) {
         // TODO: use ctx for circ ref handling
         // TODO: get rid of vitalizer in all adapters, use ctx
         // TODO: add custom factories for objects (i.e. Groups tc )
@@ -214,7 +225,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
      */
     @Override
     public <T> Map<String, Object> createConfigNodeFromInstance(T object, Class configurableClass) throws ConfigurationException {
-        return (Map<String, Object>) lookupDefaultTypeAdapter(configurableClass).toConfigNode(object, new AnnotatedConfigurableProperty(configurableClass), this);
+        return (Map<String, Object>) lookupDefaultTypeAdapter(configurableClass).toConfigNode(object, new AnnotatedConfigurableProperty(configurableClass), createLoadingContext());
     }
 
 

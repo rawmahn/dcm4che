@@ -1,7 +1,6 @@
-package org.dcm4che3.conf.core;
+package org.dcm4che3.conf.core.context;
 
 import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.LoadingContext;
 import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 
@@ -11,21 +10,29 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * @author rawmahn
  */
-public class BaseLoadingContext implements LoadingContext {
+public class LoadingContext extends ProcessingContext {
 
-    private final BeanVitalizer vitalizer;
-    private final TypeSafeConfiguration typeSafeConfiguration;
+
+    /**
+     * A map of UUID to already loaded object. Used to close the circular references loop instead of creating clones, and for "optimistic" reference resolution.
+     *
+     * @return
+     */
     private final ConcurrentMap<String, Object> referables = new ConcurrentHashMap<String, Object>();
 
-    public BaseLoadingContext(BeanVitalizer vitalizer, TypeSafeConfiguration typeSafeConfiguration) {
-        this.vitalizer = vitalizer;
-        this.typeSafeConfiguration = typeSafeConfiguration;
+    public LoadingContext(BeanVitalizer vitalizer, TypeSafeConfiguration typeSafeConfiguration) {
+        super(vitalizer, typeSafeConfiguration);
     }
 
-
+    /**
+     * Either
+     * <ul>
+     * <li> uses the existing instance with this UUID from the pool </li>
+     * <li> creates new instance </li>
+     * </ul>
+     */
     @SuppressWarnings("unchecked")
-    @Override
-    public <T> T getRelevantConfigurableInstanceByUUID(String uuid, Class<T> clazz) {
+    public <T> T findOrCreateConfigurableInstanceByUUID(String uuid, Class<T> clazz) {
 
         // try to get from the pool
         if (uuid != null) {
@@ -38,7 +45,7 @@ public class BaseLoadingContext implements LoadingContext {
 
         T confObj;
         try {
-            confObj = getVitalizer().newInstance(clazz);
+            confObj = vitalizer.newInstance(clazz);
         } catch (Exception e) {
             throw new ConfigurationException("Error while instantiating config class " + clazz.getSimpleName()
                     + ". Check whether null-arg constructor exists.", e);
@@ -69,18 +76,5 @@ public class BaseLoadingContext implements LoadingContext {
         }
     }
 
-    @Override
-    public ConcurrentMap<String, Object> getLoadedReferablesByUUID() {
-        return referables;
-    }
 
-    @Override
-    public BeanVitalizer getVitalizer() {
-        return vitalizer;
-    }
-
-    @Override
-    public TypeSafeConfiguration getTypeSafeConfiguration() {
-        return typeSafeConfiguration;
-    }
 }

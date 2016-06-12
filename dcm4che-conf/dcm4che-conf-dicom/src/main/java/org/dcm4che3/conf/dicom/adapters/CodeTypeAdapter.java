@@ -41,8 +41,8 @@ package org.dcm4che3.conf.dicom.adapters;
 
 import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.ConfigurationUnserializableException;
-import org.dcm4che3.conf.core.api.LoadingContext;
-import org.dcm4che3.conf.core.api.SavingContext;
+import org.dcm4che3.conf.core.context.LoadingContext;
+import org.dcm4che3.conf.core.context.SavingContext;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.adapters.DefaultConfigTypeAdapters;
 import org.dcm4che3.data.Code;
