@@ -51,9 +51,9 @@ public interface BeanVitalizer {
      */
     <T> T newInstance(Class<T> clazz) throws ConfigurationException;
 
-    <T> Map<String, Object> createConfigNodeFromInstance(T object) throws ConfigurationException;
+    Map<String, Object> createConfigNodeFromInstance(Object object) throws ConfigurationException;
 
-    <T> Map<String, Object> createConfigNodeFromInstance(T object, Class configurableClass) throws ConfigurationException;
+    Map<String, Object> createConfigNodeFromInstance(Object object, Class configurableClass) throws ConfigurationException;
 
 
     /*****************/
@@ -66,21 +66,6 @@ public interface BeanVitalizer {
      /* REFERENCES */
     /***************/
 
-    /**
-     * Used to resolve circular references while deserializing config.
-     * @param uuid uuid of a configurable object
-     * @param expectedClazz
-     * @return this object, if it was already deserialized or it's deserialization has started (but e.g. is not finished because we are resolving a circular reference)
-     * or null if the object with this uuid was not yet loaded in this load context
-     */
-    <T> T getInstanceFromThreadLocalPoolByUUID(String uuid, Class<T> expectedClazz);
-
-    /**
-     *
-     * @param uuid uuid of a configurable object
-     * @param instance an object that corresponds to the uuid, which deserialization has started
-     */
-    void registerInstanceInThreadLocalPool(String uuid, Object instance);
 
     Object resolveFutureOrFail(String uuid, Future<Object> existingFuture);
 }

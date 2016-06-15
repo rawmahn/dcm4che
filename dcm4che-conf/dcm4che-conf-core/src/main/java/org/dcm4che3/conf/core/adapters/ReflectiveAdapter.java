@@ -74,6 +74,9 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
     @Override
     public T fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
+
+        // TODO: Use Parent?
+
         if (configNode == null) return null;
         Class<T> clazz = (Class<T>) property.getType();
 
@@ -99,6 +102,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
 
         // if we find this obj in the ctx, just return it
         if (existingFuture != null) {
+            // TODO: proper cast!
             return (T) ctx.getVitalizer().resolveFutureOrFail(uuid, existingFuture);
         }
 

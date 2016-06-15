@@ -46,6 +46,8 @@ import org.dcm4che3.conf.core.context.ProcessingContext;
 import org.dcm4che3.conf.core.context.SavingContext;
 import org.dcm4che3.conf.core.api.internal.*;
 import org.dcm4che3.conf.core.util.PathPattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -55,10 +57,12 @@ import java.util.Map;
  */
 public class DefaultReferenceAdapter implements ConfigTypeAdapter {
 
+    private static Logger log = LoggerFactory.getLogger(DefaultReferenceAdapter.class);
+
     // generic uuid-based reference
     private static final PathPattern uuidReferencePath = new PathPattern(Configuration.REFERENCE_BY_UUID_PATTERN);
 
-    private final Map metadata = new HashMap<String, String>();
+    private final Map<String,String> metadata = new HashMap<String, String>();
 
     public DefaultReferenceAdapter(BeanVitalizer vitalizer, Configuration config) {
         metadata.put("type", "string");
@@ -72,27 +76,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
         // old deprecated style ref, for backwards-compatibility
         if (configNode instanceof String) {
 
-            String refStr = (String) configNode;
-
-            Configuration config = ctx.getTypeSafeConfiguration().getLowLevelAccess();
-            Map<String, Object> referencedNode = (Map<String, Object>) config.getConfigurationNode(refStr, property.getRawClass());
-
-            if (referencedNode == null) {
-                if (property.isWeakReference())
-                    return null;
-                else
-                    throw new ConfigurationException("Referenced node '" + refStr + "' not found");
-            }
-
-            // there is always uuid
-            String uuid;
-            try {
-                uuid = (String) referencedNode.get(Configuration.UUID_KEY);
-            } catch (Exception e) {
-                throw new IllegalArgumentException("A referable node MUST have a UUID. A node referenced by " + refStr + " does not have UUID property.");
-            }
-
-            return getReferencedConfigurableObject(uuid, ctx, property);
+            return resolveDeprecatedReference((String) configNode, property, ctx);
         }
         // new style
         else {
@@ -110,24 +94,36 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
         }
     }
 
+    private Object resolveDeprecatedReference(String configNode, AnnotatedConfigurableProperty property, LoadingContext ctx) {
+        String refStr = configNode;
+
+        log.warn("Using deprecated reference format for configuration: " + refStr, new ConfigurationException());
+
+        Configuration config = ctx.getTypeSafeConfiguration().getLowLevelAccess();
+        Map<String, Object> referencedNode = (Map<String, Object>) config.getConfigurationNode(refStr, property.getRawClass());
+
+        if (referencedNode == null) {
+            if (property.isWeakReference())
+                return null;
+            else
+                throw new ConfigurationException("Referenced node '" + refStr + "' not found");
+        }
+
+        // there is always uuid
+        String uuid;
+        try {
+            uuid = (String) referencedNode.get(Configuration.UUID_KEY);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("A referable node MUST have a UUID. A node referenced by " + refStr + " does not have UUID property.");
+        }
+
+        return getReferencedConfigurableObject(uuid, ctx, property);
+    }
+
 
     @SuppressWarnings("unchecked")
-    protected Object getReferencedConfigurableObject(String uuid, LoadingContext ctx, AnnotatedConfigurableProperty property) {
-
-        Object instanceFromPool = ctx.vitalizer.getInstanceFromThreadLocalPoolByUUID(uuid, property.getRawClass());
-
-        if (instanceFromPool != null)
-            return instanceFromPool;
-        else {
-            // fallback to simply loading by reference
-            Configuration configuration = vitalizer.getContext(ConfigurationManager.class).getConfigurationStorage();
-            Map<String, Object> referencedNode = (Map<String, Object>) configuration.getConfigurationNode(
-                    uuidReferencePath.set("uuid", uuid).path(),
-                    property.getRawClass()
-            );
-
-            return new ReflectiveAdapter().fromConfigNode(referencedNode, new AnnotatedConfigurableProperty(property.getRawClass()), vitalizer, null);
-        }
+    private Object getReferencedConfigurableObject(String uuid, LoadingContext ctx, AnnotatedConfigurableProperty property) {
+       return ctx.getTypeSafeConfiguration().find(uuid, property.getRawClass(), ctx);
     }
 
     @Override

@@ -40,20 +40,29 @@
 
 package org.dcm4che3.conf.core;
 
+import com.google.common.util.concurrent.SettableFuture;
+import org.dcm4che3.conf.core.adapters.ReflectiveAdapter;
 import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.Path;
 import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
+import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
+import org.dcm4che3.conf.core.api.internal.ConfigurationManager;
 import org.dcm4che3.conf.core.context.ContextFactory;
 import org.dcm4che3.conf.core.context.LoadingContext;
+import org.dcm4che3.conf.core.util.PathPattern;
 
 import java.util.Map;
+import java.util.concurrent.Future;
 
 /**
  * @author Roman K
  */
 @SuppressWarnings("unchecked")
 public class DefaultTypeSafeConfiguration implements TypeSafeConfiguration {
+
+    private static PathPattern referencePattern = new PathPattern(Configuration.REFERENCE_BY_UUID_PATTERN);
+
 
     private final Configuration confStorage;
     private final BeanVitalizer vitalizer;
@@ -89,9 +98,30 @@ public class DefaultTypeSafeConfiguration implements TypeSafeConfiguration {
         return find(uuid, clazz, contextFactory.newLoadingContext());
     }
 
+    @Override
     public <T> T find(String uuid, Class<T> clazz, LoadingContext ctx) {
-        // TODO: find
-        return null;
+
+        // TODO: proper cast checks!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        // either get existing from the context
+        Future<Object> configObjectFuture = ctx.getConfigObjectFuture(uuid);
+        if (configObjectFuture!=null) {
+
+            // TODO here
+            return (T) vitalizer.resolveFutureOrFail(uuid, configObjectFuture);
+        }
+
+        //// or go ahead and load
+
+        Map<String, Object> referencedNode = (Map<String, Object>) confStorage.getConfigurationNode(
+                referencePattern.set("uuid", uuid).path(),
+                clazz
+        );
+
+        // TODO here
+        return (T) new ReflectiveAdapter().fromConfigNode(referencedNode, new AnnotatedConfigurableProperty(clazz), ctx, null);
+
+
     }
 
     @Override

@@ -53,12 +53,16 @@ import javax.naming.ldap.ControlFactory;
  *
  * @author Roman K
  */
+@ConfigurableClass()
 public interface TypeSafeConfiguration {
 
     <T> T load(Path path, Class<T> clazz);
     <T> T load(Path path, Class<T> clazz, LoadingContext ctx);
 
     <T> void save(Path path, T object, Class<T> clazz);
+
+    <T> T find(String uuid, Class<T> clazz);
+    <T> T find(String uuid, Class<T> clazz, LoadingContext ctx);
 
     Configuration getLowLevelAccess();
     BeanVitalizer getVitalizer();

@@ -46,7 +46,6 @@ import org.dcm4che3.conf.core.api.ConfigurableProperty;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.*;
 
@@ -90,7 +89,7 @@ public class ConfigIterators {
 
     public static AnnotatedConfigurableProperty getUUIDPropertyForClass(Class clazz) {
 
-
+        // TODO: cache!!!!!!!!!!!!!!!!!!!!!!!!!!!
         for (AnnotatedConfigurableProperty annotatedConfigurableProperty : getAllConfigurableFields(clazz)) {
             if (annotatedConfigurableProperty.isUuid())
                 return annotatedConfigurableProperty;
@@ -161,7 +160,7 @@ public class ConfigIterators {
     /**
      * Gets all the fields for the class and it's superclass(es)
      */
-    public static List<Field> getAllFields(Class<?> clazz) {
+    private static List<Field> getAllFields(Class clazz) {
 
         List<Field> fields = new ArrayList<Field>();
 
