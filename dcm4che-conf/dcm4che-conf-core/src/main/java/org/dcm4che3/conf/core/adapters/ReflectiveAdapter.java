@@ -48,10 +48,7 @@ import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.ConfigIterators;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Reflective adapter that handles classes with ConfigurableClass annotations.<br/>
@@ -107,21 +104,6 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
                 throw new ConfigurationException("Error while reading configuration property '" + fieldProperty.getAnnotatedName() + "' (field " + fieldProperty.getName() + ") in class " + clazz.getSimpleName(), e);
             }
 
-        // iterate over setters
-        for (ConfigIterators.AnnotatedSetter setter : ConfigIterators.getAllConfigurableSetters(clazz)) {
-            try {
-                // populate parameters for the setter
-                Object[] args = new Object[setter.getParameters().size()];
-                int i = 0;
-                for (AnnotatedConfigurableProperty paramProperty : setter.getParameters())
-                    args[i++] = DefaultConfigTypeAdapters.delegateGetChildFromConfigNode(configNode, paramProperty, ctx, confObj);
-
-                // invoke setter
-                setter.getMethod().invoke(confObj, args);
-            } catch (Exception e) {
-                throw new ConfigurationException("Error while trying to initialize the object with method '" + setter.getMethod().getName() + "'", e);
-            }
-        }
 
         return confObj;
     }
@@ -146,10 +128,6 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
             }
         }
 
-        // there must be no setters
-        for (ConfigIterators.AnnotatedSetter setter : ConfigIterators.getAllConfigurableSetters(clazz))
-            throw new ConfigurationUnserializableException("Cannot infer properties which are setter parameters. This object has a setter (" + setter.getMethod().getName() + ")");
-
         return configNode;
     }
 
@@ -167,12 +145,16 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
 
         // find out if we need to include uiOrder metadata
         boolean includeOrder = false;
-        for (AnnotatedConfigurableProperty configurableChildProperty : ConfigIterators.getAllConfigurableFieldsAndSetterParameters(clazz))
+
+
+        for (AnnotatedConfigurableProperty configurableChildProperty : ConfigIterators.getAllConfigurableFields(clazz))
             if (configurableChildProperty.getAnnotation(ConfigurableProperty.class).order() != 0) includeOrder = true;
 
 
         // populate properties
-        for (AnnotatedConfigurableProperty configurableChildProperty : ConfigIterators.getAllConfigurableFieldsAndSetterParameters(clazz)) {
+
+
+        for (AnnotatedConfigurableProperty configurableChildProperty : ConfigIterators.getAllConfigurableFields(clazz)) {
 
             ConfigurableProperty propertyAnnotation = configurableChildProperty.getAnnotation(ConfigurableProperty.class);
 

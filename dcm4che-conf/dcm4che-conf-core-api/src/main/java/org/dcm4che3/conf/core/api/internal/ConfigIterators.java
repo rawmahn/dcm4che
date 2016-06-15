@@ -62,67 +62,9 @@ public class ConfigIterators {
      */
 
 
-    private static final Map<Class, List<AnnotatedConfigurableProperty>> configurableFieldsAndSettersCache = Collections.synchronizedMap(new HashMap<Class, List<AnnotatedConfigurableProperty>>());
     private static final Map<Class, List<AnnotatedConfigurableProperty>> configurableFieldsCache = Collections.synchronizedMap(new HashMap<Class, List<AnnotatedConfigurableProperty>>());
-    private static final Map<Class, List<AnnotatedSetter>> configurableSettersCache = Collections.synchronizedMap(new HashMap<Class, List<AnnotatedSetter>>());
     private static final Map<Class, Boolean> isClassConfigurable = Collections.synchronizedMap(new HashMap<Class, Boolean>());
 
-    public static class AnnotatedSetter {
-        private Map<Type, Annotation> annotations;
-        private List<AnnotatedConfigurableProperty> parameters;
-        private Method method;
-
-        public Map<Type, Annotation> getAnnotations() {
-            return annotations;
-        }
-
-        public void setAnnotations(Map<Type, Annotation> annotations) {
-            this.annotations = annotations;
-        }
-
-        public <T> T getAnnotation(Class<T> annotationType) {
-            return (T) annotations.get(annotationType);
-        }
-
-        public List<AnnotatedConfigurableProperty> getParameters() {
-            return parameters;
-        }
-
-        public void setParameters(List<AnnotatedConfigurableProperty> parameters) {
-            this.parameters = parameters;
-        }
-
-        public Method getMethod() {
-            return method;
-        }
-
-        public void setMethod(Method method) {
-            this.method = method;
-        }
-    }
-
-
-    public static List<AnnotatedConfigurableProperty> getAllConfigurableFieldsAndSetterParameters(Class clazz) {
-
-        if (configurableFieldsAndSettersCache.containsKey(clazz))
-            return configurableFieldsAndSettersCache.get(clazz);
-
-        List<AnnotatedConfigurableProperty> fields = new ArrayList<AnnotatedConfigurableProperty>(getAllConfigurableFields(clazz));
-        for (AnnotatedSetter s : getAllConfigurableSetters(clazz)) fields.addAll(s.getParameters());
-
-        configurableFieldsAndSettersCache.put(clazz, fields);
-
-        return fields;
-    }
-
-    public static List<AnnotatedSetter> getAllConfigurableSetters(Class clazz) {
-        List<AnnotatedSetter> list = configurableSettersCache.get(clazz);
-        if (list != null) return list;
-
-        processAndCacheAnnotationsForClass(clazz);
-
-        return configurableSettersCache.get(clazz);
-    }
 
     public static List<AnnotatedConfigurableProperty> getAllConfigurableFields(Class clazz) {
 
@@ -147,7 +89,9 @@ public class ConfigIterators {
     }
 
     public static AnnotatedConfigurableProperty getUUIDPropertyForClass(Class clazz) {
-        for (AnnotatedConfigurableProperty annotatedConfigurableProperty : getAllConfigurableFieldsAndSetterParameters(clazz)) {
+
+
+        for (AnnotatedConfigurableProperty annotatedConfigurableProperty : getAllConfigurableFields(clazz)) {
             if (annotatedConfigurableProperty.isUuid())
                 return annotatedConfigurableProperty;
         }
@@ -155,7 +99,6 @@ public class ConfigIterators {
     }
 
     private static void processAndCacheAnnotationsForClass(Class clazz) {
-        processAnnotatedSetters(clazz);
         processAnnotatedProperties(clazz);
 
 
@@ -172,7 +115,9 @@ public class ConfigIterators {
         // make sure there is at most one UUID and olockHash
         int uuidProps = 0;
         int olockProps = 0;
-        for (AnnotatedConfigurableProperty annotatedConfigurableProperty : getAllConfigurableFieldsAndSetterParameters(clazz)) {
+
+
+        for (AnnotatedConfigurableProperty annotatedConfigurableProperty : getAllConfigurableFields(clazz)) {
             if (annotatedConfigurableProperty.isUuid()) uuidProps++;
             if (annotatedConfigurableProperty.isOlockHash()) olockProps++;
         }
@@ -184,59 +129,6 @@ public class ConfigIterators {
 
     }
 
-
-    private static List<AnnotatedSetter> processAnnotatedSetters(Class clazz) {
-        List<AnnotatedSetter> list;
-        list = new ArrayList<AnnotatedSetter>();
-
-        // scan all methods including superclasses, assume each is a config-setter
-        for (Method m : clazz.getMethods()) {
-            AnnotatedSetter annotatedSetter = new AnnotatedSetter();
-            annotatedSetter.setParameters(new ArrayList<AnnotatedConfigurableProperty>());
-
-
-            Annotation[][] parameterAnnotations = m.getParameterAnnotations();
-            Type[] genericParameterTypes = m.getGenericParameterTypes();
-
-            // if method is no-arg, then it is not a setter
-            boolean thisMethodIsNotASetter = true;
-
-            for (int i = 0; i < parameterAnnotations.length; i++) {
-
-                thisMethodIsNotASetter = false;
-
-                AnnotatedConfigurableProperty property = null;
-                try {
-                    property = new AnnotatedConfigurableProperty(
-                            annotationsArrayToMap(parameterAnnotations[i]),
-                            genericParameterTypes[i]
-                    );
-                } catch (Exception e) {
-                    // dirty..
-                    thisMethodIsNotASetter = true;
-                    break;
-                }
-
-                annotatedSetter.getParameters().add(property);
-
-                // make sure all the parameters of this setter-wannabe are annotated
-                if (property.getAnnotation(ConfigurableProperty.class) == null) {
-                    thisMethodIsNotASetter = true;
-                    break;
-                }
-            }
-
-            // filter out non-setters
-            if (thisMethodIsNotASetter) continue;
-
-            list.add(annotatedSetter);
-            annotatedSetter.setAnnotations(annotationsArrayToMap(m.getAnnotations()));
-            annotatedSetter.setMethod(m);
-        }
-
-        configurableSettersCache.put(clazz, list);
-        return list;
-    }
 
     private static List<AnnotatedConfigurableProperty> processAnnotatedProperties(Class clazz) {
         List<AnnotatedConfigurableProperty> l;
