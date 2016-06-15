@@ -44,14 +44,22 @@ package org.dcm4che3.conf.core;
  */
 
 import org.dcm4che3.conf.core.adapters.*;
-import org.dcm4che3.conf.core.api.*;
-import org.dcm4che3.conf.core.context.SavingContext;
-import org.dcm4che3.conf.core.api.internal.*;
+import org.dcm4che3.conf.core.api.ConfigurableProperty;
+import org.dcm4che3.conf.core.api.ConfigurationException;
+import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
+import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
+import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
+import org.dcm4che3.conf.core.api.internal.ConfigIterators;
+import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
+import org.dcm4che3.conf.core.context.ContextFactory;
 import org.dcm4che3.conf.core.context.LoadingContext;
-import org.dcm4che3.conf.core.context.DefaultSavingContext;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Main class that is used to initialize annotated Java objects with settings fetched from a configuration backend.
@@ -60,11 +68,17 @@ import java.util.Map;
 public class DefaultBeanVitalizer implements BeanVitalizer {
 
     private final Map<Class, ConfigTypeAdapter> customConfigTypeAdapters = new HashMap<Class, ConfigTypeAdapter>();
+    private int loadingTimeoutSec = 5;
     private ConfigTypeAdapter referenceTypeAdapter;
 
     private final ArrayTypeAdapter arrayTypeAdapter = new ArrayTypeAdapter();
 
+    /**
+     * Can be null!
+     * TODO change to Optional when migrated to java 8
+     */
     private final TypeSafeConfiguration typeSafeConfiguration;
+    private final ContextFactory contextFactory;
 
     /**
      * "Standalone" vitalizer. This should only be used for e.g. tests.
@@ -72,16 +86,30 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
      */
     public DefaultBeanVitalizer() {
         typeSafeConfiguration = null;
+        contextFactory = new ContextFactory(null, this);
     }
 
     public DefaultBeanVitalizer(TypeSafeConfiguration typeSafeConfiguration) {
         this.typeSafeConfiguration = typeSafeConfiguration;
+        this.contextFactory = typeSafeConfiguration.getContextFactory();
+    }
+
+    /**
+     * Sets the timeout for resolving futures (objs being loaded by other threads) while loading the config.
+     * <p/>
+     * This is rather a defence-against-ourselves measure, the config futures should always get resolved/fail with an exception at some point.
+     *
+     * @param loadingTimeoutSec timeout. If <b>0</b> is passed, timeout is disabled.
+     */
+    public void setLoadingTimeoutSec(int loadingTimeoutSec) {
+        this.loadingTimeoutSec = loadingTimeoutSec;
     }
 
     /**
      * Needed for avoiding infinite loops and 'optimistic' reference resolution (when we create the target instance before we actually find it during deserialization)
      */
     private final ThreadLocal<Map<String, Object>> currentlyLoadedReferableLocal = new ThreadLocal<Map<String, Object>>();
+
 
     public void setReferenceTypeAdapter(ConfigTypeAdapter referenceTypeAdapter) {
         this.referenceTypeAdapter = referenceTypeAdapter;
@@ -92,23 +120,31 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         return referenceTypeAdapter;
     }
 
-    private org.dcm4che3.conf.core.context.LoadingContext createLoadingContext() {
 
-        if (typeSafeConfiguration == null)
-            // for backward-compatibility when Vitalizer is 'standalone'
-            return new LoadingContext(this, null);
-        else
-            return typeSafeConfiguration.createLoadingContext();
+    @Override
+    public Object resolveFutureOrFail(String uuid, Future<Object> f) {
+        try {
 
-    }
-    private SavingContext createSavingContext() {
+            if (loadingTimeoutSec == 0) {
+                return f.get();
+            } else {
+                return f.get(loadingTimeoutSec, TimeUnit.SECONDS);
+            }
 
-        if (typeSafeConfiguration == null)
-            // for backward-compatibility when Vitalizer is 'standalone'
-            return new DefaultSavingContext(this, null);
-        else
-            return typeSafeConfiguration.createSavingContext();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ConfigurationException("Loading of configuration unexpectedly interrupted", e);
 
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof ConfigurationException) {
+                throw (ConfigurationException) e.getCause();
+            } else {
+                throw new ConfigurationException("Error while loading configuration", e.getCause());
+            }
+
+        } catch (TimeoutException e) {
+            throw new ConfigurationException("Time-out while waiting for the object [uuid=" + uuid + "] to be loaded", e);
+        }
     }
 
 
@@ -122,8 +158,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
             doCleanUpReferableLocal = true;
         }
         try {
-
-            return new ReflectiveAdapter<T>().fromConfigNode(configNode, new AnnotatedConfigurableProperty(clazz), createLoadingContext(), null);
+            return new ReflectiveAdapter<T>().fromConfigNode(configNode, new AnnotatedConfigurableProperty(clazz), contextFactory.newLoadingContext(), null);
 
         } finally {
             if (doCleanUpReferableLocal)
@@ -132,9 +167,10 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
     }
 
     @Override
-    public <T> T newConfiguredInstance(Map<String, Object> configurationNode, Class<T> clazz, org.dcm4che3.conf.core.context.LoadingContext ctx) {
+    public <T> T newConfiguredInstance(Map<String, Object> configurationNode, Class<T> clazz, LoadingContext ctx) {
+
+
         // TODO: use ctx for circ ref handling
-        // TODO: get rid of vitalizer in all adapters, use ctx
         // TODO: add custom factories for objects (i.e. Groups tc )
         return newConfiguredInstance(configurationNode, clazz);
     }
@@ -151,8 +187,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
     public <T> T newInstance(Class<T> clazz) throws ConfigurationException {
         try {
 
-            T object = clazz.newInstance();
-            return object;
+            return clazz.newInstance();
 
         } catch (InstantiationException e) {
             throw new ConfigurationException(e);
@@ -179,7 +214,8 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
             doCleanUpReferableLocal = true;
         }
         try {
-            new ReflectiveAdapter<T>(object).fromConfigNode(configNode, new AnnotatedConfigurableProperty(configurableClass), createLoadingContext(), null);
+
+            new ReflectiveAdapter<T>(object).fromConfigNode(configNode, new AnnotatedConfigurableProperty(configurableClass), contextFactory.newLoadingContext(), null);
         } finally {
             if (doCleanUpReferableLocal)
                 currentlyLoadedReferableLocal.remove();
@@ -203,29 +239,18 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         currentlyLoadedReferableLocal.get().put(uuid, instance);
     }
 
-    /**
-     * Will not work (throws an exception) if <b>object</b> has setters that use configurable properties!
-     *
-     * @param object
-     * @param <T>
-     * @return
-     */
     @Override
     public <T> Map<String, Object> createConfigNodeFromInstance(T object) throws ConfigurationException {
         return createConfigNodeFromInstance(object, object.getClass());
     }
 
-    /**
-     * Will not work (throws an exception) if <b>object</b> has setters that use configurable properties!
-     *
-     * @param <T>
-     * @param object
-     * @param configurableClass
-     * @return
-     */
+
     @Override
     public <T> Map<String, Object> createConfigNodeFromInstance(T object, Class configurableClass) throws ConfigurationException {
-        return (Map<String, Object>) lookupDefaultTypeAdapter(configurableClass).toConfigNode(object, new AnnotatedConfigurableProperty(configurableClass), createLoadingContext());
+        LoadingContext result;
+
+        contextFactory.newLoadingContext();
+        return (Map<String, Object>) lookupDefaultTypeAdapter(configurableClass).toConfigNode(object, new AnnotatedConfigurableProperty(configurableClass), contextFactory.newSavingContext());
     }
 
 

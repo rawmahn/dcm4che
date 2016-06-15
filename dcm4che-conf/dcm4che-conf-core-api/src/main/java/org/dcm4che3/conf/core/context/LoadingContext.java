@@ -6,6 +6,7 @@ import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
 
 /**
  * @author rawmahn
@@ -14,15 +15,31 @@ public class LoadingContext extends ProcessingContext {
 
 
     /**
-     * A map of UUID to already loaded object. Used to close the circular references loop instead of creating clones, and for "optimistic" reference resolution.
+     * A map of UUID to a loaded (being loaded) object. Used to close the circular references loop instead of creating clones, and for "optimistic" reference resolution.
      *
      * @return
      */
-    private final ConcurrentMap<String, Object> referables = new ConcurrentHashMap<String, Object>();
+    private final ConcurrentHashMap<String, Future<Object>> referables = new ConcurrentHashMap<String, Future<Object>>();
 
     public LoadingContext(BeanVitalizer vitalizer, TypeSafeConfiguration typeSafeConfiguration) {
         super(vitalizer, typeSafeConfiguration);
     }
+
+
+    /**
+     * Behaves like {@link ConcurrentMap#putIfAbsent}
+     * @param uuid config object uuid
+     * @param o the candidate future
+     * @return
+     */
+    public Future<Object> registerConfigObjectFutureIfAbsent(String uuid, Future<Object> o) {
+        return referables.putIfAbsent(uuid, o);
+    }
+
+
+
+
+
 
     /**
      * Either

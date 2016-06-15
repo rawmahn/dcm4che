@@ -112,9 +112,9 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
 
 
     @SuppressWarnings("unchecked")
-    protected Object getReferencedConfigurableObject(String uuid, BeanVitalizer vitalizer, AnnotatedConfigurableProperty property) {
+    protected Object getReferencedConfigurableObject(String uuid, LoadingContext ctx, AnnotatedConfigurableProperty property) {
 
-        Object instanceFromPool = vitalizer.getInstanceFromThreadLocalPoolByUUID(uuid, property.getRawClass());
+        Object instanceFromPool = ctx.vitalizer.getInstanceFromThreadLocalPoolByUUID(uuid, property.getRawClass());
 
         if (instanceFromPool != null)
             return instanceFromPool;

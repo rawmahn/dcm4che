@@ -39,6 +39,7 @@
  */
 package org.dcm4che3.conf.core.adapters;
 
+import com.google.common.util.concurrent.SettableFuture;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.core.api.*;
 import org.dcm4che3.conf.core.context.LoadingContext;
@@ -49,6 +50,7 @@ import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.ConfigIterators;
 
 import java.util.*;
+import java.util.concurrent.Future;
 
 /**
  * Reflective adapter that handles classes with ConfigurableClass annotations.<br/>
@@ -78,23 +80,46 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
         if (!Map.class.isAssignableFrom(configNode.getClass()))
             throw new ConfigurationException("Provided configuration node is not a map (type " + clazz.getName() + ")");
 
-        T confObj;
-        // create instance or use provided when it was created for us
-        if (providedConfObj != null)
-            confObj = providedConfObj;
-        else {
+        // if the object is provided - just populate and return
+        if (providedConfObj != null) {
+            populate(configNode, ctx, clazz, providedConfObj);
+            return providedConfObj;
+        }
+        //// otherwise need to coordinate with the context
 
-            String uuid = null;
-            try {
-                uuid = (String) configNode.get(Configuration.UUID_KEY);
-            } catch (Exception e) {
-                throw new ConfigurationException("UUID is malformed: " + configNode.get(Configuration.UUID_KEY));
-            }
-
-            confObj = ctx.findOrCreateConfigurableInstanceByUUID(uuid, clazz);
+        String uuid = null;
+        try {
+            uuid = (String) configNode.get(Configuration.UUID_KEY);
+        } catch (Exception e) {
+            throw new ConfigurationException("UUID is malformed: " + configNode.get(Configuration.UUID_KEY));
         }
 
+        SettableFuture<Object> confObjFuture = SettableFuture.create();
+        Future<Object> existingFuture = ctx.registerConfigObjectFutureIfAbsent(uuid, confObjFuture);
 
+        // if we find this obj in the ctx, just return it
+        if (existingFuture != null) {
+            return (T) ctx.getVitalizer().resolveFutureOrFail(uuid, existingFuture);
+        }
+
+        // otherwise it's us who is responsible for loading this object
+        try {
+
+            T confObj = ctx.getVitalizer().newInstance(clazz);
+            populate(configNode, ctx, clazz, confObj);
+            confObjFuture.set(confObj);
+            return confObj;
+
+        } catch (RuntimeException e) {
+            confObjFuture.setException(e);
+            throw e;
+        } catch (Error e) {
+            confObjFuture.setException(e);
+            throw e;
+        }
+    }
+
+    private void populate(Map<String, Object> configNode, LoadingContext ctx, Class<T> clazz, T confObj) {
         // iterate and populate annotated fields
         for (AnnotatedConfigurableProperty fieldProperty : ConfigIterators.getAllConfigurableFields(clazz))
             try {
@@ -103,9 +128,6 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
             } catch (Exception e) {
                 throw new ConfigurationException("Error while reading configuration property '" + fieldProperty.getAnnotatedName() + "' (field " + fieldProperty.getName() + ") in class " + clazz.getSimpleName(), e);
             }
-
-
-        return confObj;
     }
 
 

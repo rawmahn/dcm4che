@@ -4,6 +4,7 @@ import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.context.LoadingContext;
 
 import java.util.Map;
+import java.util.concurrent.Future;
 
 /**
  * This API shall NOT be considered stable, it will be refactored without notice.
@@ -81,4 +82,5 @@ public interface BeanVitalizer {
      */
     void registerInstanceInThreadLocalPool(String uuid, Object instance);
 
+    Object resolveFutureOrFail(String uuid, Future<Object> existingFuture);
 }

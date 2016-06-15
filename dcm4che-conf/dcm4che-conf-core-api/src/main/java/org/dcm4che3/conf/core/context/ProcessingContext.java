@@ -16,11 +16,11 @@ public class ProcessingContext {
         this.typeSafeConfiguration = typeSafeConfiguration;
     }
 
-    TypeSafeConfiguration getTypeSafeConfiguration() {
+    public TypeSafeConfiguration getTypeSafeConfiguration() {
         return typeSafeConfiguration;
     }
 
-    BeanVitalizer getVitalizer() {
+    public BeanVitalizer getVitalizer() {
         return vitalizer;
     }
 }

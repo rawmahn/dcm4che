@@ -157,7 +157,8 @@ public class ConfigNodeTraverser {
 
         Map<String, Object> containerNode = (Map<String, Object>) node;
 
-        List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(containerProperty.getRawClass());
+
+        List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFields(containerProperty.getRawClass());
         for (AnnotatedConfigurableProperty property : properties) {
             Object childNode = containerNode.get(property.getAnnotatedName());
 
@@ -236,7 +237,8 @@ public class ConfigNodeTraverser {
         Map<String, Object> containerNode1 = (Map<String, Object>) node1;
         Map<String, Object> containerNode2 = (Map<String, Object>) node2;
 
-        List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFieldsAndSetterParameters(containerProperty.getRawClass());
+
+        List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFields(containerProperty.getRawClass());
         for (AnnotatedConfigurableProperty property : properties) {
 
             filter.beforeNodes(containerNode1, containerNode2, containerProperty.getRawClass(), property);
