@@ -47,6 +47,7 @@ import org.dcm4che3.conf.api.ConfigurationNotFoundException;
 import org.dcm4che3.conf.api.TCConfiguration;
 import org.dcm4che3.conf.api.TransferCapabilityConfigExtension;
 import org.dcm4che3.conf.api.internal.DicomConfigurationManager;
+import org.dcm4che3.conf.core.DefaultBeanVitalizer;
 import org.dcm4che3.conf.core.DefaultTypeSafeConfiguration;
 import org.dcm4che3.conf.core.Nodes;
 import org.dcm4che3.conf.core.adapters.NullToNullDecorator;
@@ -158,6 +159,11 @@ public class CommonDicomConfiguration implements DicomConfigurationManager, Tran
 
         Nodes.replaceNode(rootNode, new HashMap(), pathItems);
         return rootNode;
+    }
+
+    @Override
+    public TypeSafeConfiguration<DicomConfigurationRoot> getTypeSafeConfiguration() {
+        return config;
     }
 
     @Override
@@ -326,7 +332,7 @@ public class CommonDicomConfiguration implements DicomConfigurationManager, Tran
         // create exception to log the stacktrace
         ConfigurationException exception = new ConfigurationException();
 
-        log.warn(message,exception);
+        log.warn(message, exception);
     }
 
     @Override
@@ -440,5 +446,10 @@ public class CommonDicomConfiguration implements DicomConfigurationManager, Tran
         });
     }
 
+    public static BeanVitalizer createDefaultDicomVitalizer() {
+        DefaultBeanVitalizer defaultBeanVitalizer = new DefaultBeanVitalizer();
+        addCustomAdapters(defaultBeanVitalizer);
+        return defaultBeanVitalizer;
+    }
 }
 

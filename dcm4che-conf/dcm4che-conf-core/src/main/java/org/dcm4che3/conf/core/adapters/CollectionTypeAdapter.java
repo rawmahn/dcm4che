@@ -95,9 +95,9 @@ public class CollectionTypeAdapter< V extends Collection,T extends Collection> i
 
         ConfigTypeAdapter elementAdapter;
         if (property.isCollectionOfReferences())
-            elementAdapter = ctx.getReferenceTypeAdapter();
+            elementAdapter = ctx.getVitalizer().getReferenceTypeAdapter();
         else
-            elementAdapter = ctx.lookupTypeAdapter(elementPseudoProperty);
+            elementAdapter = ctx.getVitalizer().lookupTypeAdapter(elementPseudoProperty);
 
         V collection = createCollectionVitalized(property);
 
@@ -114,9 +114,9 @@ public class CollectionTypeAdapter< V extends Collection,T extends Collection> i
 
         ConfigTypeAdapter elementAdapter;
         if (property.isCollectionOfReferences())
-            elementAdapter = ctx.getReferenceTypeAdapter();
+            elementAdapter = ctx.getVitalizer().getReferenceTypeAdapter();
         else
-            elementAdapter = ctx.lookupTypeAdapter(elementPseudoProperty);
+            elementAdapter = ctx.getVitalizer().lookupTypeAdapter(elementPseudoProperty);
 
         T node = createCollectionNode();
         for (Object element : object)
@@ -137,9 +137,9 @@ public class CollectionTypeAdapter< V extends Collection,T extends Collection> i
 
         ConfigTypeAdapter elementAdapter;
         if (property.isCollectionOfReferences())
-            elementAdapter = ctx.getReferenceTypeAdapter();
+            elementAdapter = ctx.getVitalizer().getReferenceTypeAdapter();
         else
-            elementAdapter = ctx.lookupTypeAdapter(elementPseudoProperty);
+            elementAdapter = ctx.getVitalizer().lookupTypeAdapter(elementPseudoProperty);
 
         elementMetadata.putAll(elementAdapter.getSchema(elementPseudoProperty, ctx));
         metadata.put("items", elementMetadata);
