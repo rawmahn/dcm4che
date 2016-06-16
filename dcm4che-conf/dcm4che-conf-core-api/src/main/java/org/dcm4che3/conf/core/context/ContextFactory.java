@@ -11,21 +11,34 @@ public class ContextFactory {
     private final TypeSafeConfiguration typeSafeConfiguration;
     private final BeanVitalizer vitalizer;
 
-    public ContextFactory(TypeSafeConfiguration typeSafeConfiguration, BeanVitalizer vitalizer) {
+    public ContextFactory(TypeSafeConfiguration typeSafeConfiguration) {
         this.typeSafeConfiguration = typeSafeConfiguration;
+        this.vitalizer = null;
+    }
+    public ContextFactory(BeanVitalizer vitalizer) {
+        this.typeSafeConfiguration = null;
         this.vitalizer = vitalizer;
     }
 
     public LoadingContext newLoadingContext() {
-        return new LoadingContext(vitalizer, typeSafeConfiguration);
+        if (typeSafeConfiguration == null)
+            return new LoadingContext(vitalizer);
+        else
+            return new LoadingContext(typeSafeConfiguration);
     }
 
     public SavingContext newSavingContext() {
-        return new SavingContext(vitalizer, typeSafeConfiguration);
+        if (typeSafeConfiguration == null) {
+            return new SavingContext(vitalizer);
+        } else
+            return new SavingContext(typeSafeConfiguration);
     }
 
     public ProcessingContext newProcessingContext() {
-        return new ProcessingContext(vitalizer, typeSafeConfiguration);
+        if (typeSafeConfiguration==null)
+            return new ProcessingContext(vitalizer);
+        else
+            return new ProcessingContext(typeSafeConfiguration);
     }
 
 }

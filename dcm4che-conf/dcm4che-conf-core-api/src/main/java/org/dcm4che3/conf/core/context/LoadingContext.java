@@ -1,6 +1,5 @@
 package org.dcm4che3.conf.core.context;
 
-import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 
@@ -22,10 +21,13 @@ public class LoadingContext extends ProcessingContext {
      */
     private final ConcurrentHashMap<String, Future<Object>> referables = new ConcurrentHashMap<String, Future<Object>>();
 
-    public LoadingContext(BeanVitalizer vitalizer, TypeSafeConfiguration typeSafeConfiguration) {
-        super(vitalizer, typeSafeConfiguration);
+    public LoadingContext(TypeSafeConfiguration typeSafeConfiguration) {
+        super(typeSafeConfiguration);
     }
 
+    public LoadingContext(BeanVitalizer vitalizer) {
+        super(vitalizer);
+    }
 
     /**
      * Behaves like {@link ConcurrentMap#putIfAbsent}

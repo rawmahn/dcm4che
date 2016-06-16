@@ -45,7 +45,6 @@ package org.dcm4che3.conf.core;
 
 import org.dcm4che3.conf.core.adapters.*;
 import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 import org.dcm4che3.conf.core.api.internal.ConfigReflection;
@@ -70,7 +69,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
 
     private final Map<Class, List<Class>> extensionsByClass;
 
-    private ConfigTypeAdapter referenceTypeAdapter;
+    private final ConfigTypeAdapter referenceTypeAdapter = DefaultConfigTypeAdapters.getReferenceAdapter();
 
     private final ContextFactory contextFactory;
 
@@ -79,13 +78,13 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
      * To be able to handle references, custom context factories, etc, vitalizer must be bound to typeSafeConfiguration
      */
     public DefaultBeanVitalizer() {
-        contextFactory = new ContextFactory(null, this);
+        contextFactory = new ContextFactory(this);
         extensionsByClass = new HashMap<Class, List<Class>>();
     }
 
-    public DefaultBeanVitalizer(TypeSafeConfiguration typeSafeConfiguration, Map<Class, List<Class>> extensionsByClass) {
+    public DefaultBeanVitalizer(Map<Class, List<Class>> extensionsByClass, ContextFactory contextFactory) {
         this.extensionsByClass = extensionsByClass;
-        this.contextFactory = typeSafeConfiguration.getContextFactory();
+        this.contextFactory = contextFactory;
     }
 
     /**
@@ -99,10 +98,6 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         this.loadingTimeoutSec = loadingTimeoutSec;
     }
 
-
-    public void setReferenceTypeAdapter(ConfigTypeAdapter referenceTypeAdapter) {
-        this.referenceTypeAdapter = referenceTypeAdapter;
-    }
 
     @Override
     public ConfigTypeAdapter getReferenceTypeAdapter() {

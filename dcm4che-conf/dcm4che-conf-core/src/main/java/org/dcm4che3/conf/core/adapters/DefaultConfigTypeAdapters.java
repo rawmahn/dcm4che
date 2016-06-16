@@ -60,6 +60,7 @@ public class DefaultConfigTypeAdapters {
     private static final ArrayTypeAdapter ARRAY_TYPE_ADAPTER = new ArrayTypeAdapter();
     private static final ConfigTypeAdapter EXTENSION_TYPE_ADAPTER = new NullToNullDecorator(new ExtensionTypeAdapter());
     private static final ReflectiveAdapter REFLECTIVE_ADAPTER = new ReflectiveAdapter();
+    private static final ConfigTypeAdapter REFERENCE_ADAPTER = new DefaultReferenceAdapter();
 
     /**
      * Gets a child node using the name of the provided property, and then looks up the proper adapter and runs it against this child node
@@ -125,6 +126,10 @@ public class DefaultConfigTypeAdapters {
 
     public static ReflectiveAdapter getReflectiveAdapter() {
         return REFLECTIVE_ADAPTER;
+    }
+
+    public static ConfigTypeAdapter getReferenceAdapter() {
+        return REFERENCE_ADAPTER;
     }
 
     /**

@@ -144,6 +144,11 @@ public class AnnotatedConfigurableProperty {
 
         defaultValue = configurablePropertyAnnotation.defaultValue();
 
+        if (this.type instanceof ParameterizedType) {
+            genericsTypes = ((ParameterizedType) this.type).getActualTypeArguments();
+        } else
+            genericsTypes = null;
+
         isReference = configurablePropertyAnnotation.isReference() ||
                 configurablePropertyAnnotation.type().equals(ConfigurablePropertyType.Reference);
 
@@ -201,11 +206,6 @@ public class AnnotatedConfigurableProperty {
             enumValues = null;
         }
 
-
-        if (this.type instanceof ParameterizedType) {
-            genericsTypes = ((ParameterizedType) this.type).getActualTypeArguments();
-        } else
-            genericsTypes = null;
 
     }
 

@@ -73,7 +73,7 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
         super(delegate);
         this.allExtensionClasses = allExtensionClasses;
         this.vitalizer = vitalizer;
-        contextFactory = new ContextFactory(null, vitalizer);
+        contextFactory = new ContextFactory(vitalizer);
     }
 
     @Override

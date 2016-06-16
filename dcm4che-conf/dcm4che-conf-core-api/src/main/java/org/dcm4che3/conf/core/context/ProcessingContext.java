@@ -11,10 +11,16 @@ public class ProcessingContext {
     protected final BeanVitalizer vitalizer;
     protected final TypeSafeConfiguration typeSafeConfiguration;
 
-    public ProcessingContext(BeanVitalizer vitalizer, TypeSafeConfiguration typeSafeConfiguration) {
-        this.vitalizer = vitalizer;
+    public ProcessingContext(TypeSafeConfiguration typeSafeConfiguration) {
+        this.vitalizer = typeSafeConfiguration.getVitalizer() ;
         this.typeSafeConfiguration = typeSafeConfiguration;
     }
+
+    public ProcessingContext(BeanVitalizer vitalizer) {
+        this.vitalizer = vitalizer ;
+        this.typeSafeConfiguration = null;
+    }
+
 
     public TypeSafeConfiguration getTypeSafeConfiguration() {
         return typeSafeConfiguration;

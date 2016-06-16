@@ -67,7 +67,7 @@ public class JsonSchema {
 
         AnnotatedConfigurableProperty property = new AnnotatedConfigurableProperty(ApplicationEntity.class);
         ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
-        Map schema = adapter.getSchema(property, new ProcessingContext(vitalizer, null));
+        Map schema = adapter.getSchema(property, new ProcessingContext(vitalizer));
 
         ObjectMapper objectMapper = new ObjectMapper();
         try {

@@ -64,7 +64,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
 
     private final Map<String,String> metadata = new HashMap<String, String>();
 
-    public DefaultReferenceAdapter(BeanVitalizer vitalizer, Configuration config) {
+    public DefaultReferenceAdapter() {
         metadata.put("type", "string");
         metadata.put("class", "Reference");
     }

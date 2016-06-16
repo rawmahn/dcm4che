@@ -41,11 +41,9 @@
 package org.dcm4che3.conf.core;
 
 import org.dcm4che3.conf.core.adapters.DefaultConfigTypeAdapters;
-import org.dcm4che3.conf.core.adapters.ReflectiveAdapter;
 import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.Path;
 import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.dcm4che3.conf.core.context.ContextFactory;
@@ -63,20 +61,17 @@ import java.util.concurrent.Future;
 public class DefaultTypeSafeConfiguration<R> implements TypeSafeConfiguration<R> {
 
     private static PathPattern referencePattern = new PathPattern(Configuration.REFERENCE_BY_UUID_PATTERN);
-
-
     private final Configuration confStorage;
+    private final Class<R> rootClass;
     private final BeanVitalizer vitalizer;
     private ContextFactory contextFactory;
 
-
-    public DefaultTypeSafeConfiguration(Configuration configurationStorage, Class<R> rootClazz, Map<Class, List<Class>> extensionsByClass) {
+    public DefaultTypeSafeConfiguration(Configuration configurationStorage, Class<R> rootClass, Map<Class, List<Class>> extensionsByClass) {
         this.confStorage = configurationStorage;
-        this.vitalizer = new DefaultBeanVitalizer(this, extensionsByClass);
-        contextFactory = new ContextFactory(this, vitalizer);
+        this.rootClass = rootClass;
+        contextFactory = new ContextFactory(this);
+        this.vitalizer = new DefaultBeanVitalizer(extensionsByClass, contextFactory);
     }
-
-
 
     @Override
     public <T> T load(Path path, Class<T> clazz) {

@@ -8,7 +8,12 @@ import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
  */
 public class SavingContext extends ProcessingContext {
 
-    public SavingContext(BeanVitalizer vitalizer, TypeSafeConfiguration typeSafeConfiguration) {
-        super(vitalizer, typeSafeConfiguration);
+    public SavingContext(TypeSafeConfiguration typeSafeConfiguration) {
+        super(typeSafeConfiguration);
     }
+
+    public SavingContext(BeanVitalizer vitalizer) {
+        super(vitalizer);
+    }
+
 }
