@@ -81,12 +81,6 @@ public interface ExtendedDicomConfiguration extends DicomConfiguration, Closeabl
 
     String deviceRef(String name);
 
-    void persistCertificates(String ref, X509Certificate... certs) throws ConfigurationException;
-
-    void removeCertificates(String ref) throws ConfigurationException;
-
-    X509Certificate[] findCertificates(String dn) throws ConfigurationException;
-
     void close();
 
     boolean purgeConfiguration() throws ConfigurationException;

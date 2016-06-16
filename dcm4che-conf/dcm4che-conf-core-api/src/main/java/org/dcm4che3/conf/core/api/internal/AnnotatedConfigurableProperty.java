@@ -69,45 +69,46 @@ public class AnnotatedConfigurableProperty {
         }
     }
 
-    private Map<Type, Annotation> annotations = new HashMap<Type, Annotation>();
+    private final Map<Type, Annotation> annotations;
 
-    private ConfigurableProperty configurablePropertyAnnotation;
+    private final ConfigurableProperty configurablePropertyAnnotation;
     private LDAP ldapAnnotation;
 
-    private Type type;
-    private Class rawType;
+    private final Type type;
+    private final Class rawType;
 
-    private String name;
-    private String annotatedName;
+    private final String name;
+    private final String annotatedName;
 
-    private boolean isReference;
-    private boolean isUuid;
-    private boolean isCollectionOfConfObjects;
-    private boolean isMapOfConfObjects;
-    private boolean isOlockHash;
-    private boolean isExtensionsProperty;
-    private boolean isConfObject;
-    private boolean isCollection;
-    private boolean isCollectionOfReferences;
-    private boolean isArrayOfConfObjects;
-    private boolean isArray;
-    private boolean isMap;
-    private AnnotatedConfigurableProperty pseudoPropertyForCollectionElement;
-    private Method valueOfMethod;
-    private ConfigurableProperty.EnumRepresentation enumRepresentation;
-    private Enum[] enumValues;
-    private AnnotatedConfigurableProperty pseudoPropertyForConfigClassCollectionElement;
-    private Type[] genericsTypes;
-    private String defaultValue;
-    private boolean isWeakReference;
+    private final boolean isReference;
+    private final boolean isUuid;
+    private final boolean isCollectionOfConfObjects;
+    private final boolean isMapOfConfObjects;
+    private final boolean isOlockHash;
+    private final boolean isExtensionsProperty;
+    private final boolean isConfObject;
+    private final boolean isCollection;
+    private final boolean isCollectionOfReferences;
+    private final boolean isArrayOfConfObjects;
+    private final boolean isArray;
+    private final boolean isMap;
+    private final boolean isWeakReference;
+
+    private final AnnotatedConfigurableProperty pseudoPropertyForCollectionElement;
+    private final AnnotatedConfigurableProperty pseudoPropertyForConfigClassCollectionElement;
+
+    private final Method valueOfMethod;
+    private final ConfigurableProperty.EnumRepresentation enumRepresentation;
+    private final Enum[] enumValues;
+
+    private final Type[] genericsTypes;
+    private final String defaultValue;
 
 
     public AnnotatedConfigurableProperty(Map<Type, Annotation> annotations, String name, Type type) {
         this.annotations = annotations;
         this.name = name;
         this.type = type;
-
-        if (annotatedName != null) return;
 
         // Annotations
         configurablePropertyAnnotation = (ConfigurableProperty) this.annotations.get(ConfigurableProperty.class);
@@ -131,13 +132,14 @@ public class AnnotatedConfigurableProperty {
             annotatedName = Configuration.UUID_KEY;
         } else if (isOlockHash) {
             annotatedName = Configuration.OLOCK_HASH_KEY;
+        } else if (configurablePropertyAnnotation.name().isEmpty()) {
+
+            annotatedName = this.name;
+
+            if (annotatedName == null)
+                throw new ConfigurationException("Property name not specified");
         } else {
             annotatedName = configurablePropertyAnnotation.name();
-            if (annotatedName.isEmpty()) {
-                annotatedName = this.name;
-                if (annotatedName == null)
-                    throw new ConfigurationException("Property name not specified");
-            }
         }
 
         defaultValue = configurablePropertyAnnotation.defaultValue();
@@ -169,7 +171,7 @@ public class AnnotatedConfigurableProperty {
                 && !isCollectionOfReferences();
 
         isArrayOfConfObjects = getRawClass().isArray()
-                && getRawClass().getComponentType().getAnnotation(ConfigurableClass.class) != null
+                && ConfigReflection.isConfigurableClass(getRawClass().getComponentType())
                 && !isCollectionOfReferences();
 
         isArray = rawType.isArray();
@@ -278,7 +280,7 @@ public class AnnotatedConfigurableProperty {
     }
 
 
-    public String getAnnotatedName()  {
+    public String getAnnotatedName() {
         return annotatedName;
     }
 

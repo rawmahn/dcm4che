@@ -62,8 +62,6 @@ public class JsonSchema {
     //    @Test
     public void testSchema() throws ConfigurationException {
 
-        BeanVitalizer beanVitalizer = new DefaultBeanVitalizer();
-
         CommonDicomConfigurationWithHL7 configuration = SimpleStorageTest.createCommonDicomConfiguration();
         BeanVitalizer vitalizer = configuration.getVitalizer();
 
@@ -73,7 +71,7 @@ public class JsonSchema {
 
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(System.out, (Object) schema);
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(System.out, schema);
         } catch (IOException e) {
             throw new ConfigurationException(e);
         }
