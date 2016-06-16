@@ -42,12 +42,12 @@ package org.dcm4che3.conf.core.adapters;
 import com.google.common.util.concurrent.SettableFuture;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.core.api.*;
+import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.context.ProcessingContext;
 import org.dcm4che3.conf.core.context.SavingContext;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
-import org.dcm4che3.conf.core.api.internal.ConfigIterators;
 
 import java.util.*;
 import java.util.concurrent.Future;
@@ -64,9 +64,15 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
 
     private T providedConfObj;
 
+    /**
+     * stateless
+     */
     public ReflectiveAdapter() {
     }
 
+    /**
+     * stateful
+     */
     public ReflectiveAdapter(T providedConfigurationObjectInstance) {
         this.providedConfObj = providedConfigurationObjectInstance;
     }
@@ -130,7 +136,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
 
     private void populate(Map<String, Object> configNode, LoadingContext ctx, Class<T> clazz, T confObj) {
         // iterate and populate annotated fields
-        for (AnnotatedConfigurableProperty fieldProperty : ConfigIterators.getAllConfigurableFields(clazz))
+        for (AnnotatedConfigurableProperty fieldProperty : ConfigReflection.getAllConfigurableFields(clazz))
             try {
                 Object fieldValue = DefaultConfigTypeAdapters.delegateGetChildFromConfigNode(configNode, fieldProperty, ctx, confObj);
                 PropertyUtils.setSimpleProperty(confObj, fieldProperty.getName(), fieldValue);
@@ -150,7 +156,7 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
         Map<String, Object> configNode = new TreeMap<String, Object>();
 
         // get data from all the configurable fields
-        for (AnnotatedConfigurableProperty fieldProperty : ConfigIterators.getAllConfigurableFields(clazz)) {
+        for (AnnotatedConfigurableProperty fieldProperty : ConfigReflection.getAllConfigurableFields(clazz)) {
             try {
                 Object value = PropertyUtils.getSimpleProperty(object, fieldProperty.getName());
                 DefaultConfigTypeAdapters.delegateChildToConfigNode(value, configNode, fieldProperty, ctx);
@@ -178,14 +184,14 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
         boolean includeOrder = false;
 
 
-        for (AnnotatedConfigurableProperty configurableChildProperty : ConfigIterators.getAllConfigurableFields(clazz))
+        for (AnnotatedConfigurableProperty configurableChildProperty : ConfigReflection.getAllConfigurableFields(clazz))
             if (configurableChildProperty.getAnnotation(ConfigurableProperty.class).order() != 0) includeOrder = true;
 
 
         // populate properties
 
 
-        for (AnnotatedConfigurableProperty configurableChildProperty : ConfigIterators.getAllConfigurableFields(clazz)) {
+        for (AnnotatedConfigurableProperty configurableChildProperty : ConfigReflection.getAllConfigurableFields(clazz)) {
 
             ConfigurableProperty propertyAnnotation = configurableChildProperty.getAnnotation(ConfigurableProperty.class);
 

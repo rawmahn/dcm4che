@@ -47,8 +47,6 @@ import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.validation.ValidationException;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -58,6 +56,10 @@ import static java.lang.String.format;
  * @author Roman K
  */
 public class DefaultConfigTypeAdapters {
+
+    private static final ArrayTypeAdapter ARRAY_TYPE_ADAPTER = new ArrayTypeAdapter();
+    private static final ConfigTypeAdapter EXTENSION_TYPE_ADAPTER = new NullToNullDecorator(new ExtensionTypeAdapter());
+    private static final ReflectiveAdapter REFLECTIVE_ADAPTER = new ReflectiveAdapter();
 
     /**
      * Gets a child node using the name of the provided property, and then looks up the proper adapter and runs it against this child node
@@ -111,6 +113,18 @@ public class DefaultConfigTypeAdapters {
         // filter out nulls, except olocks
         if (value != null || property.isOlockHash())
             parentNode.put(nodeName, value);
+    }
+
+    public static ConfigTypeAdapter getExtensionTypeAdapter() {
+        return EXTENSION_TYPE_ADAPTER;
+    }
+
+    public static ArrayTypeAdapter getArrayTypeAdapter() {
+        return ARRAY_TYPE_ADAPTER;
+    }
+
+    public static ReflectiveAdapter getReflectiveAdapter() {
+        return REFLECTIVE_ADAPTER;
     }
 
     /**
@@ -324,37 +338,22 @@ public class DefaultConfigTypeAdapters {
         @Override
         public Enum<?> fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
-            try {
-                ConfigurableProperty.EnumRepresentation howToRepresent = getEnumRepresentation(property);
-                switch (howToRepresent) {
-                    case ORDINAL:
-                        Enum[] vals = getEnumValues(property);
-                        return vals[(Integer) configNode];
-                    default:
-                    case STRING:
-                        Method valueOfMethod = ((Class) property.getType()).getMethod("valueOf", String.class);
-                        return (Enum<?>) valueOfMethod.invoke(null, configNode);
+            ConfigurableProperty.EnumRepresentation howToRepresent = property.getEnumRepresentation();
+            switch (howToRepresent) {
+                case ORDINAL:
+                    Enum[] vals = property.getEnumValues();
+                    return vals[(Integer) configNode];
+                default:
+                case STRING:
+                    return property.getEnumValueFor((String) configNode);
 
-                }
-            } catch (Exception x) {
-                throw new ConfigurationException("Deserialization of Enum failed! field:" + property.getName() + " of type " + property.getType(), x);
             }
-        }
-
-        private ConfigurableProperty.EnumRepresentation getEnumRepresentation(AnnotatedConfigurableProperty property) {
-            ConfigurableProperty anno = property.getAnnotation(ConfigurableProperty.class);
-            return anno == null ? ConfigurableProperty.EnumRepresentation.STRING : anno.enumRepresentation();
-        }
-
-        private Enum[] getEnumValues(AnnotatedConfigurableProperty property) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-            Method valuesMethod = ((Class) property.getType()).getMethod("values");
-            return (Enum[]) valuesMethod.invoke(null);
         }
 
         @Override
         public Object toConfigNode(Enum<?> object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationUnserializableException {
 
-            ConfigurableProperty.EnumRepresentation howToRepresent = getEnumRepresentation(property);
+            ConfigurableProperty.EnumRepresentation howToRepresent = property.getEnumRepresentation();
 
             switch (howToRepresent) {
                 case ORDINAL:
@@ -383,10 +382,10 @@ public class DefaultConfigTypeAdapters {
 
                 metadata.put("class", property.getRawClass().getSimpleName());
 
-                ConfigurableProperty.EnumRepresentation howToRepresent = getEnumRepresentation(property);
+                ConfigurableProperty.EnumRepresentation howToRepresent = property.getEnumRepresentation();
                 List<String> enumStringValues = new ArrayList<String>();
 
-                for (Enum anEnum : getEnumValues(property)) enumStringValues.add(anEnum.toString());
+                for (Enum anEnum : property.getEnumValues()) enumStringValues.add(anEnum.toString());
 
                 if (howToRepresent.equals(ConfigurableProperty.EnumRepresentation.STRING)) {
                     metadata.put("enum", enumStringValues);
@@ -394,7 +393,7 @@ public class DefaultConfigTypeAdapters {
                     // for ordinal representation - create array of ints with appropriate length, and add a clarifying array with names
                     List<Integer> vals = new ArrayList<Integer>();
 
-                    for (int i = 0; i<getEnumValues(property).length;i++) vals.add(i);
+                    for (int i = 0; i< property.getEnumValues().length;i++) vals.add(i);
                     metadata.put("enum", vals);
                     metadata.put("enumStrValues", enumStringValues);
                 }

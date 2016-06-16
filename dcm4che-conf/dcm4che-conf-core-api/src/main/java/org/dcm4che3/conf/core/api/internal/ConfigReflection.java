@@ -56,7 +56,7 @@ import java.util.*;
  *
  * @author Roman K
  */
-public class ConfigIterators {
+public class ConfigReflection {
 
 
     private static final Map<Class, ClassInfo> classInfoCache = Collections.synchronizedMap(new HashMap<Class, ClassInfo>());

@@ -44,12 +44,11 @@ package org.dcm4che3.conf.core;
  */
 
 import org.dcm4che3.conf.core.adapters.*;
-import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
-import org.dcm4che3.conf.core.api.internal.ConfigIterators;
+import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.context.ContextFactory;
 import org.dcm4che3.conf.core.context.LoadingContext;
@@ -71,7 +70,6 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
 
     private final Map<Class, List<Class>> extensionsByClass;
 
-    private final ArrayTypeAdapter arrayTypeAdapter = new ArrayTypeAdapter();
     private ConfigTypeAdapter referenceTypeAdapter;
 
     private final ContextFactory contextFactory;
@@ -182,7 +180,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
 
     @Override
     public Map<String, Object> createConfigNodeFromInstance(Object object, Class clazz) throws ConfigurationException {
-        return (Map<String, Object>) lookupDefaultTypeAdapter(clazz).toConfigNode(object, ConfigIterators.getDummyPropertyForClass(clazz), contextFactory.newSavingContext());
+        return (Map<String, Object>) lookupDefaultTypeAdapter(clazz).toConfigNode(object, ConfigReflection.getDummyPropertyForClass(clazz), contextFactory.newSavingContext());
     }
 
     @Override
@@ -208,12 +206,12 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         if (typeAdapter != null) return typeAdapter;
 
         // check if it is a reference
-        if (property.getAnnotation(ConfigurableProperty.class) != null && property.isReference())
+        if (property.isReference())
             return getReferenceTypeAdapter();
 
         // check if it is an extensions map
-        if (property.getAnnotation(ConfigurableProperty.class) != null && property.isExtensionsProperty())
-            return new NullToNullDecorator(new ExtensionTypeAdaptor());
+        if (property.isExtensionsProperty())
+            return DefaultConfigTypeAdapters.getExtensionTypeAdapter();
 
         // delegate to default otherwise
         return lookupDefaultTypeAdapter(clazz);
@@ -226,10 +224,10 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         ConfigTypeAdapter adapter;
 
         // if it is a config class, use reflective adapter
-        if (ConfigIterators.isConfigurableClass(clazz))
-            adapter = new ReflectiveAdapter();
+        if (ConfigReflection.isConfigurableClass(clazz))
+            adapter = DefaultConfigTypeAdapters.getReflectiveAdapter();
         else if (clazz.isArray())
-            adapter = arrayTypeAdapter;
+            adapter = DefaultConfigTypeAdapters.getArrayTypeAdapter();
         else if (clazz.isEnum())
             adapter = DefaultConfigTypeAdapters.get(Enum.class);
         else

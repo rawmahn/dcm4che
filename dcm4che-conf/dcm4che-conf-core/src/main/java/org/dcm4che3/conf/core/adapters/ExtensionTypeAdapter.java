@@ -54,15 +54,14 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * @author Roman K
  */
 @SuppressWarnings("unchecked")
-public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Object>, Map<String, Object>> {
+public class ExtensionTypeAdapter implements ConfigTypeAdapter<Map<Class<?>, Object>, Map<String, Object>> {
 
-    public static final Logger log = LoggerFactory.getLogger(ExtensionTypeAdaptor.class);
+    public static final Logger log = LoggerFactory.getLogger(ExtensionTypeAdapter.class);
 
     @Override
     public Map<Class<?>, Object> fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
@@ -88,7 +87,7 @@ public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Obj
                 Object extension = ctx.getVitalizer().newInstance(extensionClass);
 
                 // set parent so this field is accessible for use in extension bean's setters
-                Field parentProperty = ConfigIterators.getParentPropertyForClass(extensionClass);
+                Field parentProperty = ConfigReflection.getParentPropertyForClass(extensionClass);
                 if (parentProperty != null)
                     try {
                         PropertyUtils.setSimpleProperty(extension, parentProperty.getName(), parent);
@@ -97,7 +96,7 @@ public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Obj
                     }
 
                 // proceed with deserialization
-                new ReflectiveAdapter(extension).fromConfigNode((Map<String, Object>) entry.getValue(), ConfigIterators.getDummyPropertyForClass(extensionClass), ctx, parent);
+                new ReflectiveAdapter(extension).fromConfigNode((Map<String, Object>) entry.getValue(), ConfigReflection.getDummyPropertyForClass(extensionClass), ctx, parent);
 
                 extensionsMap.put(extensionClass, extension);
 

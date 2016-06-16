@@ -130,7 +130,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
     public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
         Map<String, Object> node = Configuration.NodeFactory.emptyNode();
 
-        AnnotatedConfigurableProperty uuidPropertyForClass = ConfigIterators.getUUIDPropertyForClass(property.getRawClass());
+        AnnotatedConfigurableProperty uuidPropertyForClass = ConfigReflection.getUUIDPropertyForClass(property.getRawClass());
         if (uuidPropertyForClass == null)
             throw new ConfigurationException("Class " + property.getRawClass().getName() + " cannot be referenced, because it lacks a UUID property");
 

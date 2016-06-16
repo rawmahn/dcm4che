@@ -43,7 +43,7 @@ import org.dcm4che3.conf.core.Nodes;
 import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
-import org.dcm4che3.conf.core.api.internal.ConfigIterators;
+import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,7 +158,7 @@ public class ConfigNodeTraverser {
         Map<String, Object> containerNode = (Map<String, Object>) node;
 
 
-        List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFields(containerProperty.getRawClass());
+        List<AnnotatedConfigurableProperty> properties = ConfigReflection.getAllConfigurableFields(containerProperty.getRawClass());
         for (AnnotatedConfigurableProperty property : properties) {
             Object childNode = containerNode.get(property.getAnnotatedName());
 
@@ -238,7 +238,7 @@ public class ConfigNodeTraverser {
         Map<String, Object> containerNode2 = (Map<String, Object>) node2;
 
 
-        List<AnnotatedConfigurableProperty> properties = ConfigIterators.getAllConfigurableFields(containerProperty.getRawClass());
+        List<AnnotatedConfigurableProperty> properties = ConfigReflection.getAllConfigurableFields(containerProperty.getRawClass());
         for (AnnotatedConfigurableProperty property : properties) {
 
             filter.beforeNodes(containerNode1, containerNode2, containerProperty.getRawClass(), property);
