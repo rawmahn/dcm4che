@@ -115,6 +115,11 @@ public class AnnotatedConfigurableProperty {
         init();
     }
 
+    @Override
+    public String toString() {
+        return "AnnotatedConfigurableProperty[name='"+name+"', annotatedName='"+annotatedName+"', rawType='"+rawType+"']";
+    }
+
     //////// wrapping annotations, otherwise it gets too unDRY ///////////////
 
     public boolean isExtensionsProperty() {

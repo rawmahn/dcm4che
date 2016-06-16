@@ -40,14 +40,12 @@
 
 package org.dcm4che3.conf.core;
 
-import com.google.common.util.concurrent.SettableFuture;
 import org.dcm4che3.conf.core.adapters.ReflectiveAdapter;
 import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.Path;
 import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
-import org.dcm4che3.conf.core.api.internal.ConfigurationManager;
 import org.dcm4che3.conf.core.context.ContextFactory;
 import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.util.PathPattern;
@@ -59,7 +57,7 @@ import java.util.concurrent.Future;
  * @author Roman K
  */
 @SuppressWarnings("unchecked")
-public class DefaultTypeSafeConfiguration implements TypeSafeConfiguration {
+public class DefaultTypeSafeConfiguration<R> implements TypeSafeConfiguration<R> {
 
     private static PathPattern referencePattern = new PathPattern(Configuration.REFERENCE_BY_UUID_PATTERN);
 
@@ -69,9 +67,9 @@ public class DefaultTypeSafeConfiguration implements TypeSafeConfiguration {
     private ContextFactory contextFactory;
 
 
-    public DefaultTypeSafeConfiguration(Configuration configurationStorage) {
+    public DefaultTypeSafeConfiguration(Configuration configurationStorage, Class<R> rootClazz) {
         this.confStorage = configurationStorage;
-        this.vitalizer = new DefaultBeanVitalizer(this);
+        this.vitalizer = new DefaultBeanVitalizer(this, extensionsByClass);
         contextFactory = new ContextFactory(this, vitalizer);
     }
 

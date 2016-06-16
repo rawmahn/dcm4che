@@ -43,6 +43,7 @@ package org.dcm4che3.conf.core.api.internal;
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableClassExtension;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
+import org.dcm4che3.conf.core.api.Parent;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -51,29 +52,42 @@ import java.util.*;
 
 /**
  * This class shall NOT be referenced externally, it will be removed/renamed/refactored without notice.
+ * Caches to minimize reflection access.
  *
  * @author Roman K
  */
 public class ConfigIterators {
 
-    /*
-     * Caches to overcome slow reflection access
-     */
 
-
-    private static final Map<Class, List<AnnotatedConfigurableProperty>> configurableFieldsCache = Collections.synchronizedMap(new HashMap<Class, List<AnnotatedConfigurableProperty>>());
+    private static final Map<Class, ClassInfo> classInfoCache = Collections.synchronizedMap(new HashMap<Class, ClassInfo>());
     private static final Map<Class, Boolean> isClassConfigurable = Collections.synchronizedMap(new HashMap<Class, Boolean>());
 
+    private static final Map<Class, AnnotatedConfigurableProperty> dummyPropsCache = Collections.synchronizedMap(new HashMap<Class, AnnotatedConfigurableProperty>());
 
     public static List<AnnotatedConfigurableProperty> getAllConfigurableFields(Class clazz) {
+        return getClassInfo(clazz).configurableProperties;
+    }
 
-        //check cache
-        List<AnnotatedConfigurableProperty> l = configurableFieldsCache.get(clazz);
-        if (l != null) return l;
-        processAndCacheAnnotationsForClass(clazz);
+    public static AnnotatedConfigurableProperty getDummyPropertyForClass(Class clazz) {
+        AnnotatedConfigurableProperty found = dummyPropsCache.get(clazz);
 
-        return configurableFieldsCache.get(clazz);
+        if (found != null) {
+            return found;
+        } else {
+            AnnotatedConfigurableProperty property = new AnnotatedConfigurableProperty(clazz);
+            dummyPropsCache.put(clazz, property);
+            return property;
+        }
+    }
 
+    private static ClassInfo getClassInfo(Class clazz) {
+        ClassInfo classInfo = classInfoCache.get(clazz);
+
+        if (classInfo != null) {
+            return classInfo;
+        } else {
+            return processAndCacheClassInfo(clazz);
+        }
     }
 
     public static boolean isConfigurableClass(Class clazz) {
@@ -88,50 +102,39 @@ public class ConfigIterators {
     }
 
     public static AnnotatedConfigurableProperty getUUIDPropertyForClass(Class clazz) {
-
-        // TODO: cache!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        for (AnnotatedConfigurableProperty annotatedConfigurableProperty : getAllConfigurableFields(clazz)) {
-            if (annotatedConfigurableProperty.isUuid())
-                return annotatedConfigurableProperty;
-        }
-        return null;
+        return getClassInfo(clazz).uuidProperty;
     }
 
-    private static void processAndCacheAnnotationsForClass(Class clazz) {
-        processAnnotatedProperties(clazz);
 
+    private static ClassInfo processAndCacheClassInfo(Class clazz) {
+        ClassInfo classInfo = scanClass(clazz);
 
         ConfigurableClass configClassAnno = (ConfigurableClass) clazz.getAnnotation(ConfigurableClass.class);
         if (configClassAnno == null)
             throw new IllegalArgumentException("Class '" + clazz.getName() + "' is not a configurable class. Make sure the a dependency to org.dcm4che.conf.core-api exists.");
 
-        //// safeguards
+        // some restrictions on extensions
+        if (ConfigurableClassExtension.class.isAssignableFrom(clazz)) {
 
-        // refs vs extensions
-        if (configClassAnno.referable() && ConfigurableClassExtension.class.isAssignableFrom(clazz))
-            throw new IllegalArgumentException("A configurable extension class MUST NOT be referable - violated by class " + clazz.getName());
+            if (configClassAnno.referable()) {
+                throw new IllegalArgumentException("A configurable extension class MUST NOT be referable - violated by class " + clazz.getName());
+            }
 
-        // make sure there is at most one UUID and olockHash
-        int uuidProps = 0;
-        int olockProps = 0;
-
-
-        for (AnnotatedConfigurableProperty annotatedConfigurableProperty : getAllConfigurableFields(clazz)) {
-            if (annotatedConfigurableProperty.isUuid()) uuidProps++;
-            if (annotatedConfigurableProperty.isOlockHash()) olockProps++;
+            if (classInfo.uuidProperty != null) {
+                throw new IllegalArgumentException("A configurable extension class MUST NOT have a uuid - violated by class " + clazz.getName());
+            }
         }
-        if (uuidProps > 1)
-            throw new IllegalArgumentException("A configurable class MUST NOT have more than one UUID field - violated by class " + clazz.getName());
-        if (olockProps > 1)
-            throw new IllegalArgumentException("A configurable class MUST NOT have more than one optimistic locking hash field - violated by class " + clazz.getName());
 
+        classInfoCache.put(clazz, classInfo);
 
+        return classInfo;
     }
 
 
-    private static List<AnnotatedConfigurableProperty> processAnnotatedProperties(Class clazz) {
-        List<AnnotatedConfigurableProperty> l;
-        l = new ArrayList<AnnotatedConfigurableProperty>();
+    private static ClassInfo scanClass(Class clazz) {
+
+        ClassInfo classInfo = new ClassInfo();
+        classInfo.configurableProperties = new ArrayList<AnnotatedConfigurableProperty>();
 
         // scan all fields from this class and superclasses
         for (Field field : getAllFields(clazz)) {
@@ -142,12 +145,33 @@ public class ConfigIterators {
                         field.getName(),
                         field.getGenericType()
                 );
-                l.add(ap);
+                classInfo.configurableProperties.add(ap);
+
+                if (ap.isUuid()) {
+                    if (classInfo.uuidProperty != null) {
+                        throw new IllegalArgumentException("A configurable class MUST NOT have more than one UUID field - violated by class " + clazz.getName());
+                    }
+
+                    classInfo.uuidProperty = ap;
+                }
+
+                if (ap.isOlockHash()) {
+                    if (classInfo.olockHashProperty != null) {
+                        throw new IllegalArgumentException("A configurable class MUST NOT have more than one optimistic locking hash field - violated by class " + clazz.getName());
+                    }
+
+                    classInfo.olockHashProperty = ap;
+                }
+            } else if (field.getAnnotation(Parent.class) != null) {
+                if (classInfo.parentField != null) {
+                    throw new IllegalArgumentException("A configurable class MUST NOT have more than one field annotated with @Parent - violated by class " + clazz.getName());
+                }
+
+                classInfo.parentField = field;
             }
         }
 
-        configurableFieldsCache.put(clazz, l);
-        return l;
+        return classInfo;
     }
 
     public static Map<Type, Annotation> annotationsArrayToMap(Annotation[] annos) {
@@ -156,6 +180,11 @@ public class ConfigIterators {
             annotations.put(anno.annotationType(), anno);
         return annotations;
     }
+
+    public static Field getParentPropertyForClass(Class<?> extensionClass) {
+        return getClassInfo(extensionClass).parentField;
+    }
+
 
     /**
      * Gets all the fields for the class and it's superclass(es)
@@ -175,4 +204,12 @@ public class ConfigIterators {
         return fields;
     }
 
+    private static class ClassInfo {
+
+        List<AnnotatedConfigurableProperty> configurableProperties;
+        AnnotatedConfigurableProperty uuidProperty;
+        AnnotatedConfigurableProperty olockHashProperty;
+        Field parentField;
+
+    }
 }

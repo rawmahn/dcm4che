@@ -3,6 +3,7 @@ package org.dcm4che3.conf.core.api.internal;
 import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.context.LoadingContext;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
@@ -62,10 +63,16 @@ public interface BeanVitalizer {
 
     //TODO: add factory registration
 
+    /**
+     * Returns a list of registered extensions for a specified base extension class
+     */
+    List<Class> getExtensionClassesByBaseClass(Class extensionBaseClass);
+
     /*****************/
      /* REFERENCES */
     /***************/
 
 
     Object resolveFutureOrFail(String uuid, Future<Object> existingFuture);
+
 }

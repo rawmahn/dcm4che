@@ -88,15 +88,21 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
             populate(configNode, ctx, clazz, providedConfObj);
             return providedConfObj;
         }
-        //// otherwise need to coordinate with the context
 
-        String uuid = null;
+        String uuid;
         try {
             uuid = (String) configNode.get(Configuration.UUID_KEY);
         } catch (Exception e) {
             throw new ConfigurationException("UUID is malformed: " + configNode.get(Configuration.UUID_KEY));
         }
 
+        if (uuid==null) {
+            T confObj = ctx.getVitalizer().newInstance(clazz);
+            populate(configNode, ctx, clazz, confObj);
+            return confObj;
+        }
+
+        // uuid present - need to coordinate with the context
         SettableFuture<Object> confObjFuture = SettableFuture.create();
         Future<Object> existingFuture = ctx.registerConfigObjectFutureIfAbsent(uuid, confObjFuture);
 
@@ -108,7 +114,6 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
 
         // otherwise it's us who is responsible for loading this object
         try {
-
             T confObj = ctx.getVitalizer().newInstance(clazz);
             populate(configNode, ctx, clazz, confObj);
             confObjFuture.set(confObj);

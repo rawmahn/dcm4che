@@ -54,8 +54,7 @@ import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.context.ContextFactory;
 import org.dcm4che3.conf.core.context.LoadingContext;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -69,9 +68,11 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
 
     private final Map<Class, ConfigTypeAdapter> customConfigTypeAdapters = new HashMap<Class, ConfigTypeAdapter>();
     private int loadingTimeoutSec = 5;
-    private ConfigTypeAdapter referenceTypeAdapter;
+
+    private final Map<Class, List<Class>> extensionsByClass;
 
     private final ArrayTypeAdapter arrayTypeAdapter = new ArrayTypeAdapter();
+    private ConfigTypeAdapter referenceTypeAdapter;
 
     private final ContextFactory contextFactory;
 
@@ -81,9 +82,11 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
      */
     public DefaultBeanVitalizer() {
         contextFactory = new ContextFactory(null, this);
+        extensionsByClass = new HashMap<Class, List<Class>>();
     }
 
-    public DefaultBeanVitalizer(TypeSafeConfiguration typeSafeConfiguration) {
+    public DefaultBeanVitalizer(TypeSafeConfiguration typeSafeConfiguration, Map<Class, List<Class>> extensionsByClass) {
+        this.extensionsByClass = extensionsByClass;
         this.contextFactory = typeSafeConfiguration.getContextFactory();
     }
 
@@ -172,14 +175,25 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
 
     @Override
     public Map<String, Object> createConfigNodeFromInstance(Object object) throws ConfigurationException {
-        if (object==null) return null;
+        if (object == null) return null;
         return createConfigNodeFromInstance(object, object.getClass());
     }
 
 
     @Override
     public Map<String, Object> createConfigNodeFromInstance(Object object, Class clazz) throws ConfigurationException {
-        return (Map<String, Object>) lookupDefaultTypeAdapter(clazz).toConfigNode(object, new AnnotatedConfigurableProperty(clazz), contextFactory.newSavingContext());
+        return (Map<String, Object>) lookupDefaultTypeAdapter(clazz).toConfigNode(object, ConfigIterators.getDummyPropertyForClass(clazz), contextFactory.newSavingContext());
+    }
+
+    @Override
+    public List<Class> getExtensionClassesByBaseClass(Class extensionBaseClass) {
+
+        List<Class> classes = extensionsByClass.get(extensionBaseClass);
+
+        if (classes == null)
+            return Collections.emptyList();
+
+        return classes;
     }
 
 

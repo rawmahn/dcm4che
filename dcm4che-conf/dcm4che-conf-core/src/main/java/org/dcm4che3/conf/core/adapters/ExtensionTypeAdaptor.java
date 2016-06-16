@@ -50,6 +50,7 @@ import org.dcm4che3.conf.core.util.Extensions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,7 @@ import java.util.TreeMap;
 /**
  * @author Roman K
  */
+@SuppressWarnings("unchecked")
 public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Object>, Map<String, Object>> {
 
     public static final Logger log = LoggerFactory.getLogger(ExtensionTypeAdaptor.class);
@@ -65,13 +67,12 @@ public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Obj
     @Override
     public Map<Class<?>, Object> fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
-
         // figure out base extension class
-        Class<Object> extensionBaseClass = null;
+        Class extensionBaseClass;
         try {
-            extensionBaseClass = (Class<Object>) property.getTypeForGenericsParameter(1);
+            extensionBaseClass = (Class) property.getTypeForGenericsParameter(1);
         } catch (ClassCastException e) {
-            throw new ConfigurationException("Incorrectly annotated extensions field, parameter 1 must be an extension class", e);
+            throw new ConfigurationException("Malformed extensions field, generic parameter 1 must be an extension class (" + property + ")", e);
         }
 
         Map<Class<?>, Object> extensionsMap = new HashMap<Class<?>, Object>();
@@ -80,25 +81,23 @@ public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Obj
             try {
 
                 // figure out current extension class
-                List<Class<?>> extensionClasses = ctx.getVitalizer().getContext(ConfigurationManager.class).getExtensionClassesByBaseClass(extensionBaseClass);
-                Class<?> extensionClass = Extensions.getExtensionClassBySimpleName(entry.getKey(), extensionClasses);
+                List<Class> extensionClasses = ctx.getVitalizer().getExtensionClassesByBaseClass(extensionBaseClass);
+                Class extensionClass = Extensions.getExtensionClassBySimpleName(entry.getKey(), extensionClasses);
 
                 // create empty extension bean
                 Object extension = ctx.getVitalizer().newInstance(extensionClass);
 
                 // set parent so this field is accessible for use in extension bean's setters
-                SetParentIntoField setParentIntoField = extensionBaseClass.getAnnotation(SetParentIntoField.class);
-                if (setParentIntoField != null)
+                Field parentProperty = ConfigIterators.getParentPropertyForClass(extensionClass);
+                if (parentProperty != null)
                     try {
-                        PropertyUtils.setSimpleProperty(extension, setParentIntoField.value(), parent);
+                        PropertyUtils.setSimpleProperty(extension, parentProperty.getName(), parent);
                     } catch (Exception e) {
-                        throw new ConfigurationException(
-                                "Could not 'inject' parent object into field specified by 'SetParentIntoField' annotation. Field '" + setParentIntoField.value() + "'", e);
+                        throw new ConfigurationException("Could not 'inject' parent object into the @Parent field (class " + extensionClass + ")", e);
                     }
 
-                //TODO: speedup new AnnotatedConfigurableProperty(extensionClass)
                 // proceed with deserialization
-                new ReflectiveAdapter(extension).fromConfigNode((Map<String, Object>) entry.getValue(), new AnnotatedConfigurableProperty(extensionClass), ctx, parent);
+                new ReflectiveAdapter(extension).fromConfigNode((Map<String, Object>) entry.getValue(), ConfigIterators.getDummyPropertyForClass(extensionClass), ctx, parent);
 
                 extensionsMap.put(extensionClass, extension);
 
@@ -113,11 +112,10 @@ public class ExtensionTypeAdaptor implements ConfigTypeAdapter<Map<Class<?>, Obj
 
     @Override
     public Map<String, Object> toConfigNode(Map<Class<?>, Object> object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
-
-        Map<String, Object> extensionsMapNode = new TreeMap<String, Object>();
+        Map<String, Object> extensionsMapNode = Configuration.NodeFactory.emptyNode();
 
         for (Map.Entry<Class<?>, Object> classObjectEntry : object.entrySet()) {
-            Object extensionNode = ctx.createConfigNodeFromInstance(classObjectEntry.getValue(), classObjectEntry.getKey());
+            Object extensionNode = ctx.getVitalizer().createConfigNodeFromInstance(classObjectEntry.getValue(), classObjectEntry.getKey());
             extensionsMapNode.put(classObjectEntry.getKey().getSimpleName(), extensionNode);
         }
 

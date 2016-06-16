@@ -51,10 +51,10 @@ import javax.naming.ldap.ControlFactory;
  *
  * Highest level core configuration API.
  *
- * @author Roman K
+ * @param <R> Configuration root class
  */
 @ConfigurableClass()
-public interface TypeSafeConfiguration {
+public interface TypeSafeConfiguration<R> {
 
     <T> T load(Path path, Class<T> clazz);
     <T> T load(Path path, Class<T> clazz, LoadingContext ctx);

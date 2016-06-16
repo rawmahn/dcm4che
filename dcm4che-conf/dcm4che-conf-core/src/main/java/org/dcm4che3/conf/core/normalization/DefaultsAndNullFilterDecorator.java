@@ -49,6 +49,7 @@ import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
+import org.dcm4che3.conf.core.api.internal.ConfigIterators;
 import org.dcm4che3.conf.core.util.ConfigNodeTraverser;
 import org.dcm4che3.conf.core.util.ConfigNodeTraverser.ConfigNodeTypesafeFilter;
 import org.slf4j.Logger;
@@ -190,7 +191,7 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
         // fill in default values for properties that are null and have defaults
         Map<String, Object> node = (Map<String, Object>) super.getConfigurationNode(path, configurableClass);
         if (configurableClass != null && node != null)
-            ConfigNodeTraverser.traverseNodeTypesafe(node, new AnnotatedConfigurableProperty(configurableClass), allExtensionClasses, applyDefaults);
+            ConfigNodeTraverser.traverseNodeTypesafe(node, ConfigIterators.getDummyPropertyForClass(configurableClass), allExtensionClasses, applyDefaults);
         return node;
     }
 
