@@ -130,7 +130,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         Class wrapperClass = PRIMITIVE_TO_WRAPPER.get(componentType);
         AnnotatedConfigurableProperty componentPseudoProperty = property.getPseudoPropertyForCollectionElement();
 
-        ConfigTypeAdapter elementTypeAdapter = ctx.lookupTypeAdapter(componentPseudoProperty);
+        ConfigTypeAdapter elementTypeAdapter = ctx.getVitalizer().lookupTypeAdapter(componentPseudoProperty);
 
         ArrayList list = new ArrayList();
         for (int i = 0; i < Array.getLength(object); i++) {
@@ -156,7 +156,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
 
 
         AnnotatedConfigurableProperty componentPseudoProperty = property.getPseudoPropertyForCollectionElement();
-        metadata.put("items", ctx.lookupTypeAdapter(componentPseudoProperty).getSchema(componentPseudoProperty, ctx));
+        metadata.put("items", ctx.getVitalizer().lookupTypeAdapter(componentPseudoProperty).getSchema(componentPseudoProperty, ctx));
 
         return metadata;
     }
@@ -168,7 +168,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         if (((Class) property.getType()).getComponentType().equals(byte.class))
             return configNode;
 
-        ConfigTypeAdapter elemAdapter = ctx.lookupTypeAdapter(property.getPseudoPropertyForCollectionElement());
+        ConfigTypeAdapter elemAdapter = ctx.getVitalizer().lookupTypeAdapter(property.getPseudoPropertyForCollectionElement());
 
         // always create an empty collection
         Collection c = new ArrayList();

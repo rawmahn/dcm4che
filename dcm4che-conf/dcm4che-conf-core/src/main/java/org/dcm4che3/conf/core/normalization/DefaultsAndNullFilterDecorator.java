@@ -50,6 +50,7 @@ import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 import org.dcm4che3.conf.core.api.internal.ConfigReflection;
+import org.dcm4che3.conf.core.context.ContextFactory;
 import org.dcm4che3.conf.core.util.ConfigNodeTraverser;
 import org.dcm4che3.conf.core.util.ConfigNodeTraverser.ConfigNodeTypesafeFilter;
 import org.slf4j.Logger;
@@ -64,14 +65,15 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
     public static final Logger log = LoggerFactory.getLogger(DefaultsAndNullFilterDecorator.class);
 
 
-    protected List<Class> allExtensionClasses;
-    private BeanVitalizer vitalizer;
+    private final List<Class> allExtensionClasses;
+    private final BeanVitalizer vitalizer;
+    private final ContextFactory contextFactory;
 
     public DefaultsAndNullFilterDecorator(Configuration delegate, List<Class> allExtensionClasses, BeanVitalizer vitalizer) {
         super(delegate);
         this.allExtensionClasses = allExtensionClasses;
-
         this.vitalizer = vitalizer;
+        contextFactory = new ContextFactory(null, vitalizer);
     }
 
     @Override
@@ -129,10 +131,10 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
 
         if (configurableClass != null) {
             // filter out defaults
-            ConfigNodeTraverser.traverseNodeTypesafe(configNode, new AnnotatedConfigurableProperty(configurableClass), allExtensionClasses, filterDefaults);
+            ConfigNodeTraverser.traverseNodeTypesafe(configNode, ConfigReflection.getDummyPropertyForClass(configurableClass), allExtensionClasses, filterDefaults);
 
             // generate missing UUIDs
-            ConfigNodeTraverser.traverseNodeTypesafe(configNode, new AnnotatedConfigurableProperty(configurableClass), allExtensionClasses, new ConfigNodeTypesafeFilter() {
+            ConfigNodeTraverser.traverseNodeTypesafe(configNode, ConfigReflection.getDummyPropertyForClass(configurableClass), allExtensionClasses, new ConfigNodeTypesafeFilter() {
                 @Override
                 public boolean beforeNode(Map<String, Object> containerNode, Class containerNodeClass, AnnotatedConfigurableProperty property) throws ConfigurationException {
                     if (property.isUuid() && (containerNode.get(Configuration.UUID_KEY) == null || "".equals(containerNode.get(Configuration.UUID_KEY)))) {
@@ -160,9 +162,9 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
 
                 // if no value for this property, see if there is default and set it
                 if (!containerNode.containsKey(property.getAnnotatedName())) {
-                    String defaultValue = property.getAnnotation(ConfigurableProperty.class).defaultValue();
+                    String defaultValue = property.getDefaultValue();
                     if (!defaultValue.equals(ConfigurableProperty.NO_DEFAULT_VALUE)) {
-                        Object normalized = vitalizer.lookupDefaultTypeAdapter(property.getRawClass()).normalize(defaultValue, property, vitalizer);
+                        Object normalized = vitalizer.lookupDefaultTypeAdapter(property.getRawClass()).normalize(defaultValue, property, contextFactory.newProcessingContext());
                         containerNode.put(property.getAnnotatedName(), normalized);
                         return true;
                     }
@@ -202,7 +204,7 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
         } catch (ReflectiveOperationException e) {
             throw new ConfigurationException(e);
         }
-        return new ArrayTypeAdapter().toConfigNode(defaultValueFromClass, property, vitalizer);
+        return new ArrayTypeAdapter().toConfigNode(defaultValueFromClass, property, contextFactory.newSavingContext());
     }
 
 

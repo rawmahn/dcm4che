@@ -282,7 +282,7 @@ public class DefaultConfigTypeAdapters {
         
         private Object checkIfNoValueAndSetDefaultOrFallback(Object configNode, AnnotatedConfigurableProperty property, Object fallbackDefValue) {
             if(configNode == null) {
-                String defaultValue = property.getAnnotation(ConfigurableProperty.class).defaultValue();
+                String defaultValue = property.getDefaultValue();
                 if (!defaultValue.equals(ConfigurableProperty.NO_DEFAULT_VALUE)) {
                     return defaultValue;
                 } else {
@@ -370,7 +370,7 @@ public class DefaultConfigTypeAdapters {
                 Map<String, Object> metadata = new HashMap<String, Object>();
 
                 // if there is no default, then this enum supports null
-                if (property.getAnnotation(ConfigurableProperty.class).defaultValue().equals(ConfigurableProperty.NO_DEFAULT_VALUE)) {
+                if (property.getDefaultValue().equals(ConfigurableProperty.NO_DEFAULT_VALUE)) {
                     ArrayList<String> types = new ArrayList<String>();
                     types.add("enum");
                     types.add("null");
@@ -410,7 +410,7 @@ public class DefaultConfigTypeAdapters {
         public Object normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
 
             if (configNode == null) return null;
-            switch (property.getAnnotation(ConfigurableProperty.class).enumRepresentation()) {
+            switch (property.getEnumRepresentation()) {
                 case ORDINAL:
                     try {
                         if (configNode.getClass().equals(String.class))

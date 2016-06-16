@@ -45,6 +45,7 @@ import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
+import org.dcm4che3.conf.core.context.ProcessingContext;
 import org.dcm4che3.conf.dicom.CommonDicomConfigurationWithHL7;
 import org.dcm4che3.net.ApplicationEntity;
 import org.junit.Ignore;
@@ -68,7 +69,7 @@ public class JsonSchema {
 
         AnnotatedConfigurableProperty property = new AnnotatedConfigurableProperty(ApplicationEntity.class);
         ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
-        Map schema = adapter.getSchema(property, vitalizer);
+        Map schema = adapter.getSchema(property, new ProcessingContext(vitalizer, null));
 
         ObjectMapper objectMapper = new ObjectMapper();
         try {

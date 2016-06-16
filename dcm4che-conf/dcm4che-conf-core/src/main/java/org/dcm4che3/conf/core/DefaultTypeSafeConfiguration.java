@@ -40,16 +40,19 @@
 
 package org.dcm4che3.conf.core;
 
+import org.dcm4che3.conf.core.adapters.DefaultConfigTypeAdapters;
 import org.dcm4che3.conf.core.adapters.ReflectiveAdapter;
 import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.Path;
 import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
+import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.dcm4che3.conf.core.context.ContextFactory;
 import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.util.PathPattern;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
@@ -67,7 +70,7 @@ public class DefaultTypeSafeConfiguration<R> implements TypeSafeConfiguration<R>
     private ContextFactory contextFactory;
 
 
-    public DefaultTypeSafeConfiguration(Configuration configurationStorage, Class<R> rootClazz) {
+    public DefaultTypeSafeConfiguration(Configuration configurationStorage, Class<R> rootClazz, Map<Class, List<Class>> extensionsByClass) {
         this.confStorage = configurationStorage;
         this.vitalizer = new DefaultBeanVitalizer(this, extensionsByClass);
         contextFactory = new ContextFactory(this, vitalizer);
@@ -117,7 +120,8 @@ public class DefaultTypeSafeConfiguration<R> implements TypeSafeConfiguration<R>
         );
 
         // TODO here
-        return (T) new ReflectiveAdapter().fromConfigNode(referencedNode, new AnnotatedConfigurableProperty(clazz), ctx, null);
+        return (T) DefaultConfigTypeAdapters.getReflectiveAdapter()
+                .fromConfigNode(referencedNode, ConfigReflection.getDummyPropertyForClass(clazz), ctx, null);
 
 
     }

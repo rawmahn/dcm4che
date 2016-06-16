@@ -208,7 +208,13 @@ public class ConfigNodeTraverser {
 
                     for (Entry<String, Object> entry : extensionsMap.entrySet()) {
                         try {
-                            traverseNodeTypesafe(entry.getValue(), new AnnotatedConfigurableProperty(Extensions.getExtensionClassBySimpleName(entry.getKey(), allExtensionClasses)), allExtensionClasses, filter);
+                            traverseNodeTypesafe(
+                                    entry.getValue(),
+                                    ConfigReflection.getDummyPropertyForClass(Extensions.getExtensionClassBySimpleName(entry.getKey(), allExtensionClasses)),
+                                    allExtensionClasses,
+                                    filter
+                            );
+
                         } catch (ClassNotFoundException e) {
                             // noop
                             log.debug("Extension class {} not found, parent node class {} ", entry.getKey(), containerProperty.getRawClass().getName());
@@ -257,8 +263,8 @@ public class ConfigNodeTraverser {
             // collection, where a generics parameter is a configurable class or it is an array with comp type of configurableClass
             if (property.isCollectionOfConfObjects() || property.isArrayOfConfObjects()) {
 
-                List<Map<String, Object>> nodeList1  = (List) childNode1;
-                List<Map<String, Object>> nodeList2  = (List) childNode2;
+                List<Map<String, Object>> nodeList1 = (List) childNode1;
+                List<Map<String, Object>> nodeList2 = (List) childNode2;
 
                 boolean allUuids = allElementsAreNodesAndHaveUuids(nodeList1)
                         && allElementsAreNodesAndHaveUuids(nodeList2);
@@ -281,7 +287,13 @@ public class ConfigNodeTraverser {
 
                         if (elem1Ind != null) {
                             // found match
-                            dualTraverseNodeTypesafe(nodeList1.get(elem1Ind), node, property.getPseudoPropertyForConfigClassCollectionElement(), allExtensionClasses, filter);
+                            dualTraverseNodeTypesafe(
+                                    nodeList1.get(elem1Ind),
+                                    node,
+                                    property.getPseudoPropertyForConfigClassCollectionElement(),
+                                    allExtensionClasses,
+                                    filter
+                            );
                         }
                     }
                 }
@@ -296,7 +308,13 @@ public class ConfigNodeTraverser {
                     Map<String, Object> collection2 = (Map<String, Object>) childNode2;
 
                     for (String key : collection1.keySet()) {
-                        dualTraverseNodeTypesafe(collection1.get(key), collection2.get(key), property.getPseudoPropertyForConfigClassCollectionElement(), allExtensionClasses, filter);
+                        dualTraverseNodeTypesafe(
+                                collection1.get(key),
+                                collection2.get(key),
+                                property.getPseudoPropertyForConfigClassCollectionElement(),
+                                allExtensionClasses,
+                                filter
+                        );
                     }
 
                 } catch (ClassCastException e) {
@@ -315,7 +333,15 @@ public class ConfigNodeTraverser {
 
                     for (String key : extensionsMap1.keySet()) {
                         try {
-                            dualTraverseNodeTypesafe(extensionsMap1.get(key), extensionsMap2.get(key), new AnnotatedConfigurableProperty(Extensions.getExtensionClassBySimpleName(key, allExtensionClasses)), allExtensionClasses, filter);
+
+                            dualTraverseNodeTypesafe(
+                                    extensionsMap1.get(key),
+                                    extensionsMap2.get(key),
+                                    ConfigReflection.getDummyPropertyForClass(Extensions.getExtensionClassBySimpleName(key, allExtensionClasses)),
+                                    allExtensionClasses,
+                                    filter
+                            );
+
                         } catch (ClassNotFoundException e) {
                             // noop
                             log.debug("Extension class {} not found, parent node class {} ", key, containerProperty.getRawClass().getName());
@@ -342,33 +368,39 @@ public class ConfigNodeTraverser {
 
                 filter.beforeNodeElement(map, key, value);
 
-                if (Nodes.isPrimitive(value))
+                if (Nodes.isPrimitive(value)) {
                     filter.onPrimitiveNodeElement(map, key, value);
-                else if (value instanceof Map) traverseMapNode(value, filter);
-                else if (value instanceof List) {
+                } else if (value instanceof Map) {
+                    traverseMapNode(value, filter);
+                } else if (value instanceof List) {
+
                     List list = (List) value;
-
                     filter.beforeList(list);
-
                     for (int i = 0; i < list.size(); i++) {
 
                         Object o = list.get(i);
 
                         filter.beforeListElement(list, i, o);
 
-                        if (Nodes.isPrimitive(o))
+                        if (Nodes.isPrimitive(o)) {
                             filter.onPrimitiveListElement(list, o);
-                        else if (o instanceof Map) traverseMapNode(o, filter);
-                        else throw new IllegalArgumentException("List is only allowed to contain primitive elements and map nodes. " +
+                        } else if (o instanceof Map) {
+                            traverseMapNode(o, filter);
+                        } else {
+                            throw new IllegalArgumentException("List is only allowed to contain primitive elements and map nodes. " +
                                     "Encountered " + o.getClass() + " in list " + key);
+                        }
 
                         filter.afterListElement(list, i, o);
                     }
                     filter.afterList(list);
-                } else
-                    throw new IllegalArgumentException("Illegal node type " + value.getClass()+", node "+value);
+                } else {
+                    throw new IllegalArgumentException("Illegal node type " + value.getClass() + ", node " + value);
+                }
+
                 filter.afterNodeElement(map, key, value);
             }
+
             filter.afterNode(map);
 
         } else

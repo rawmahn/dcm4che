@@ -5,6 +5,7 @@ import org.dcm4che3.conf.core.api.BatchRunner;
 import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
+import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.dcm4che3.conf.core.util.ConfigNodeTraverser;
 import org.dcm4che3.conf.core.util.ConfigNodeTraverser.ADualNodeFilter;
 import org.dcm4che3.conf.core.util.ConfigNodeTraverser.ConfigNodeTypesafeFilter;
@@ -64,8 +65,9 @@ public class HashBasedOptimisticLockingConfiguration extends DelegatingConfigura
 
         // if there is nothing in storage - just persist and leave
         if (nodeInStorage == null) {
-            if (nodeBeingPersisted != null)
+            if (nodeBeingPersisted != null) {
                 ConfigNodeTraverser.traverseMapNode(nodeBeingPersisted, new CleanupFilter(Configuration.OLOCK_HASH_KEY));
+            }
             delegate.persistNode(path, nodeBeingPersisted, configurableClass);
             return;
         }
@@ -93,7 +95,14 @@ public class HashBasedOptimisticLockingConfiguration extends DelegatingConfigura
 
         //  calculate olock hashes if called with configurableClass
         if (configurableClass != null && configurationNode != null) {
-            ConfigNodeTraverser.traverseNodeTypesafe(configurationNode, new AnnotatedConfigurableProperty(configurableClass), allExtensionClasses, new HashMarkingTypesafeNodeFilter());
+
+            ConfigNodeTraverser.traverseNodeTypesafe(
+                    configurationNode,
+                    ConfigReflection.getDummyPropertyForClass(configurableClass),
+                    allExtensionClasses,
+                    new HashMarkingTypesafeNodeFilter()
+            );
+
             ConfigNodeTraverser.traverseMapNode(configurationNode, new OLockHashCalcFilter());
         }
 

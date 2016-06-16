@@ -146,7 +146,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
     public <T> T newConfiguredInstance(Map<String, Object> configurationNode, Class<T> clazz, LoadingContext ctx) {
         // TODO: add custom factories for objects (i.e. Groups tc )
 
-        return new ReflectiveAdapter<T>().fromConfigNode(configurationNode, new AnnotatedConfigurableProperty(clazz), ctx, null);
+        return new ReflectiveAdapter<T>().fromConfigNode(configurationNode, ConfigReflection.getDummyPropertyForClass(clazz), ctx, null);
     }
 
     /**
@@ -180,7 +180,11 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
 
     @Override
     public Map<String, Object> createConfigNodeFromInstance(Object object, Class clazz) throws ConfigurationException {
-        return (Map<String, Object>) lookupDefaultTypeAdapter(clazz).toConfigNode(object, ConfigReflection.getDummyPropertyForClass(clazz), contextFactory.newSavingContext());
+        return (Map<String, Object>) lookupDefaultTypeAdapter(clazz).toConfigNode(
+                object,
+                ConfigReflection.getDummyPropertyForClass(clazz),
+                contextFactory.newSavingContext()
+        );
     }
 
     @Override
