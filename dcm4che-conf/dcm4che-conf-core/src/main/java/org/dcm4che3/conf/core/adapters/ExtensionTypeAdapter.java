@@ -40,7 +40,6 @@
 
 package org.dcm4che3.conf.core.adapters;
 
-import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.core.api.*;
 import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.context.ProcessingContext;
@@ -50,7 +49,6 @@ import org.dcm4che3.conf.core.util.Extensions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +62,7 @@ public class ExtensionTypeAdapter implements ConfigTypeAdapter<Map<Class<?>, Obj
     public static final Logger log = LoggerFactory.getLogger(ExtensionTypeAdapter.class);
 
     @Override
-    public Map<Class<?>, Object> fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
+    public Map<Class<?>, Object> fromConfigNode(Map<String, Object> configNode, ConfigProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
         // figure out base extension class
         Class extensionBaseClass;
@@ -86,15 +84,6 @@ public class ExtensionTypeAdapter implements ConfigTypeAdapter<Map<Class<?>, Obj
                 // create empty extension bean
                 Object extension = ctx.getVitalizer().newInstance(extensionClass);
 
-                // set parent so this field is accessible for use in extension bean's setters
-                Field parentProperty = ConfigReflection.getParentPropertyForClass(extensionClass);
-                if (parentProperty != null)
-                    try {
-                        PropertyUtils.setSimpleProperty(extension, parentProperty.getName(), parent);
-                    } catch (Exception e) {
-                        throw new ConfigurationException("Could not 'inject' parent object into the @Parent field (class " + extensionClass + ")", e);
-                    }
-
                 // proceed with deserialization
                 new ReflectiveAdapter(extension).fromConfigNode((Map<String, Object>) entry.getValue(), ConfigReflection.getDummyPropertyForClass(extensionClass), ctx, parent);
 
@@ -110,7 +99,7 @@ public class ExtensionTypeAdapter implements ConfigTypeAdapter<Map<Class<?>, Obj
     }
 
     @Override
-    public Map<String, Object> toConfigNode(Map<Class<?>, Object> object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
+    public Map<String, Object> toConfigNode(Map<Class<?>, Object> object, ConfigProperty property, SavingContext ctx) throws ConfigurationException {
         Map<String, Object> extensionsMapNode = Configuration.NodeFactory.emptyNode();
 
         for (Map.Entry<Class<?>, Object> classObjectEntry : object.entrySet()) {
@@ -122,14 +111,14 @@ public class ExtensionTypeAdapter implements ConfigTypeAdapter<Map<Class<?>, Obj
     }
 
     @Override
-    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public Map<String, Object> getSchema(ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
         Map<String, Object> metadata = new HashMap<String, Object>();
         metadata.put("type", "extensionMap");
         return metadata;
     }
 
     @Override
-    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public Map<String, Object> normalize(Object configNode, ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
         if (configNode == null)
             return new HashMap<String, Object>();
         return (Map<String, Object>) configNode;

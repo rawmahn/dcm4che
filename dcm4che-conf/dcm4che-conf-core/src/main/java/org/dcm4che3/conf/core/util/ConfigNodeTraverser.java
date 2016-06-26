@@ -42,7 +42,7 @@ package org.dcm4che3.conf.core.util;
 import org.dcm4che3.conf.core.Nodes;
 import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
+import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,14 +59,14 @@ public class ConfigNodeTraverser {
         /**
          * @return if returns true, traversal will skip going inside this node
          */
-        boolean beforeNode(Map<String, Object> containerNode, Class containerNodeClass, AnnotatedConfigurableProperty property) throws ConfigurationException;
+        boolean beforeNode(Map<String, Object> containerNode, Class containerNodeClass, ConfigProperty property) throws ConfigurationException;
     }
 
     public interface ConfigNodesTypesafeFilter {
         /**
          * @return if returns true, traversal will skip going inside this node
          */
-        void beforeNodes(Map<String, Object> containerNode1, Map<String, Object> containerNode2, Class containerNodeClass, AnnotatedConfigurableProperty property) throws ConfigurationException;
+        void beforeNodes(Map<String, Object> containerNode1, Map<String, Object> containerNode2, Class containerNodeClass, ConfigProperty property) throws ConfigurationException;
     }
 
     public static class AConfigNodeFilter {
@@ -146,7 +146,7 @@ public class ConfigNodeTraverser {
         }
     }
 
-    public static void traverseNodeTypesafe(Object node, AnnotatedConfigurableProperty containerProperty, List<Class> allExtensionClasses, ConfigNodeTypesafeFilter filter) throws ConfigurationException {
+    public static void traverseNodeTypesafe(Object node, ConfigProperty containerProperty, List<Class> allExtensionClasses, ConfigNodeTypesafeFilter filter) throws ConfigurationException {
 
         // if because of any reason this is not a map (e.g. a reference or a custom adapter for a configurableclass),
         // we don't go deeper
@@ -158,8 +158,8 @@ public class ConfigNodeTraverser {
         Map<String, Object> containerNode = (Map<String, Object>) node;
 
 
-        List<AnnotatedConfigurableProperty> properties = ConfigReflection.getAllConfigurableFields(containerProperty.getRawClass());
-        for (AnnotatedConfigurableProperty property : properties) {
+        List<ConfigProperty> properties = ConfigReflection.getAllConfigurableFields(containerProperty.getRawClass());
+        for (ConfigProperty property : properties) {
             Object childNode = containerNode.get(property.getAnnotatedName());
 
             if (filter.beforeNode(containerNode, containerProperty.getRawClass(), property)) continue;
@@ -231,7 +231,7 @@ public class ConfigNodeTraverser {
         }
     }
 
-    public static void dualTraverseNodeTypesafe(Object node1, Object node2, AnnotatedConfigurableProperty containerProperty, List<Class> allExtensionClasses, ConfigNodesTypesafeFilter filter) throws ConfigurationException {
+    public static void dualTraverseNodeTypesafe(Object node1, Object node2, ConfigProperty containerProperty, List<Class> allExtensionClasses, ConfigNodesTypesafeFilter filter) throws ConfigurationException {
 
         // if because of any reason these are not maps (e.g. a reference or a custom adapter for a configurableclass),
         // we don't go deeper
@@ -244,8 +244,8 @@ public class ConfigNodeTraverser {
         Map<String, Object> containerNode2 = (Map<String, Object>) node2;
 
 
-        List<AnnotatedConfigurableProperty> properties = ConfigReflection.getAllConfigurableFields(containerProperty.getRawClass());
-        for (AnnotatedConfigurableProperty property : properties) {
+        List<ConfigProperty> properties = ConfigReflection.getAllConfigurableFields(containerProperty.getRawClass());
+        for (ConfigProperty property : properties) {
 
             filter.beforeNodes(containerNode1, containerNode2, containerProperty.getRawClass(), property);
 

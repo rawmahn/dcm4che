@@ -61,8 +61,8 @@ public interface TypeSafeConfiguration<R> {
 
     <T> void save(Path path, T object, Class<T> clazz);
 
-    <T> T find(String uuid, Class<T> clazz);
-    <T> T find(String uuid, Class<T> clazz, LoadingContext ctx);
+    <T> T findByUUID(String uuid, Class<T> clazz);
+    <T> T findByUUID(String uuid, Class<T> clazz, LoadingContext ctx);
 
     Configuration getLowLevelAccess();
     BeanVitalizer getVitalizer();

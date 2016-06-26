@@ -21,7 +21,7 @@ public interface BeanVitalizer {
 
     void registerCustomConfigTypeAdapter(Class clazz, ConfigTypeAdapter typeAdapter);
 
-    ConfigTypeAdapter lookupTypeAdapter(AnnotatedConfigurableProperty property) throws ConfigurationException;
+    ConfigTypeAdapter lookupTypeAdapter(ConfigProperty property) throws ConfigurationException;
 
     ConfigTypeAdapter lookupDefaultTypeAdapter(Class clazz) throws ConfigurationException;
 
@@ -75,4 +75,5 @@ public interface BeanVitalizer {
 
     Object resolveFutureOrFail(String uuid, Future<Object> existingFuture);
 
+    Map<String, Object> getSchemaForConfigurableClass(Class<?> clazz);
 }

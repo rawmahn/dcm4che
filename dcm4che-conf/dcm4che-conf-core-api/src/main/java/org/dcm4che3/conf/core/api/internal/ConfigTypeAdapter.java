@@ -64,7 +64,7 @@ public interface ConfigTypeAdapter<T, ST> {
      * @return
      * @throws ConfigurationException
      */
-    T fromConfigNode(ST configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException;
+    T fromConfigNode(ST configNode, ConfigProperty property, LoadingContext ctx, Object parent) throws ConfigurationException;
 
     /**
      * <p>Creates a serialized configuration representation for a provided object.
@@ -77,7 +77,7 @@ public interface ConfigTypeAdapter<T, ST> {
      * @param ctx @return
      * @throws ConfigurationException
      */
-    ST toConfigNode(T object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException;
+    ST toConfigNode(T object, ConfigProperty property, SavingContext ctx) throws ConfigurationException;
 
     /**
      * Returns a metadata node in json-schema format (http://json-schema.org/)
@@ -93,7 +93,7 @@ public interface ConfigTypeAdapter<T, ST> {
      * @return
      * @throws ConfigurationException
      */
-    Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException;
+    Map<String, Object> getSchema(ConfigProperty property, ProcessingContext ctx) throws ConfigurationException;
 
     /**
      * Converts allowed representations (e.g., "123" for Integer) to proper serialized representation
@@ -103,6 +103,6 @@ public interface ConfigTypeAdapter<T, ST> {
      * @param ctx
      * @return
      */
-    ST normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException;
+    ST normalize(Object configNode, ConfigProperty property, ProcessingContext ctx) throws ConfigurationException;
 
 }

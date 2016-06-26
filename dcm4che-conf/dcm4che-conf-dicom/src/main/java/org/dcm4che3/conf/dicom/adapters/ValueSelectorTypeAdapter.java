@@ -40,9 +40,9 @@
 package org.dcm4che3.conf.dicom.adapters;
 
 import org.dcm4che3.conf.core.api.ConfigurationException;
+import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.context.SavingContext;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.adapters.DefaultConfigTypeAdapters;
 import org.dcm4che3.data.ValueSelector;
 
@@ -54,7 +54,7 @@ public class ValueSelectorTypeAdapter extends DefaultConfigTypeAdapters.CommonAb
     }
 
     @Override
-    public ValueSelector fromConfigNode(String configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
+    public ValueSelector fromConfigNode(String configNode, ConfigProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
         if (configNode == null || configNode.length() == 0)
             return null;
 
@@ -62,7 +62,7 @@ public class ValueSelectorTypeAdapter extends DefaultConfigTypeAdapters.CommonAb
     }
 
     @Override
-    public String toConfigNode(ValueSelector object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
+    public String toConfigNode(ValueSelector object, ConfigProperty property, SavingContext ctx) throws ConfigurationException {
         return object.toString();
     }
 

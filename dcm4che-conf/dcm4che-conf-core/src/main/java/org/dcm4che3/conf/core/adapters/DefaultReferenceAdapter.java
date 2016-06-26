@@ -39,7 +39,6 @@
  */
 package org.dcm4che3.conf.core.adapters;
 
-import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.core.api.*;
 import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.context.ProcessingContext;
@@ -62,7 +61,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
     // generic uuid-based reference
     private static final PathPattern uuidReferencePath = new PathPattern(Configuration.REFERENCE_BY_UUID_PATTERN);
 
-    private final Map<String,String> metadata = new HashMap<String, String>();
+    private final Map<String, String> metadata = new HashMap<String, String>();
 
     public DefaultReferenceAdapter() {
         metadata.put("type", "string");
@@ -70,7 +69,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
     }
 
     @Override
-    public Object fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
+    public Object fromConfigNode(Object configNode, ConfigProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
         // TODO: remove this around beginning 2017 ;)
         // old deprecated style ref, for backwards-compatibility
@@ -94,7 +93,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
         }
     }
 
-    private Object resolveDeprecatedReference(String configNode, AnnotatedConfigurableProperty property, LoadingContext ctx) {
+    private Object resolveDeprecatedReference(String configNode, ConfigProperty property, LoadingContext ctx) {
         String refStr = configNode;
 
         log.warn("Using deprecated reference format for configuration: " + refStr, new ConfigurationException());
@@ -122,24 +121,20 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
 
 
     @SuppressWarnings("unchecked")
-    private Object getReferencedConfigurableObject(String uuid, LoadingContext ctx, AnnotatedConfigurableProperty property) {
-       return ctx.getTypeSafeConfiguration().find(uuid, property.getRawClass(), ctx);
+    private Object getReferencedConfigurableObject(String uuid, LoadingContext ctx, ConfigProperty property) {
+        return ctx.getTypeSafeConfiguration().findByUUID(uuid, property.getRawClass(), ctx);
     }
 
     @Override
-    public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
+    public Object toConfigNode(Object object, ConfigProperty property, SavingContext ctx) throws ConfigurationException {
         Map<String, Object> node = Configuration.NodeFactory.emptyNode();
 
-        AnnotatedConfigurableProperty uuidPropertyForClass = ConfigReflection.getUUIDPropertyForClass(property.getRawClass());
+        ConfigProperty uuidPropertyForClass = ConfigReflection.getUUIDPropertyForClass(property.getRawClass());
         if (uuidPropertyForClass == null)
             throw new ConfigurationException("Class " + property.getRawClass().getName() + " cannot be referenced, because it lacks a UUID property");
 
         String uuid;
-        try {
-            uuid = (String) PropertyUtils.getSimpleProperty(object, uuidPropertyForClass.getName());
-        } catch (Exception e) {
-            throw new ConfigurationException(e);
-        }
+        uuid = (String) ConfigReflection.getProperty(object, uuidPropertyForClass);
         node.put(Configuration.REFERENCE_KEY, uuidReferencePath.set("uuid", uuid).path());
 
         if (property.isWeakReference())
@@ -149,7 +144,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
     }
 
     @Override
-    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public Map<String, Object> getSchema(ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
         Map<String, Object> schema = new HashMap<String, Object>();
         schema.putAll(metadata);
         schema.put("referencedClass", property.getRawClass().getSimpleName());
@@ -157,7 +152,7 @@ public class DefaultReferenceAdapter implements ConfigTypeAdapter {
     }
 
     @Override
-    public Object normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public Object normalize(Object configNode, ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
         return configNode;
     }
 

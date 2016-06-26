@@ -2,7 +2,7 @@ package org.dcm4che3.conf.core;
 
 import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
+import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.dcm4che3.conf.core.util.ConfigNodeTraverser;
 import org.slf4j.Logger;
@@ -35,7 +35,7 @@ public class ExtensionMergingConfiguration extends DelegatingConfiguration {
 
             ConfigNodeTraverser.dualTraverseNodeTypesafe(configNode, currentConfigurationNode, ConfigReflection.getDummyPropertyForClass(configurableClass), allExtensionClasses, new ConfigNodeTraverser.ConfigNodesTypesafeFilter() {
                 @Override
-                public void beforeNodes(Map<String, Object> containerNode1, Map<String, Object> containerNode2, Class containerNodeClass, AnnotatedConfigurableProperty property) throws ConfigurationException {
+                public void beforeNodes(Map<String, Object> containerNode1, Map<String, Object> containerNode2, Class containerNodeClass, ConfigProperty property) throws ConfigurationException {
 
                 if (property.isExtensionsProperty()) {
                         //Preserve each key of the current configuration that do not belong to the new configuration

@@ -39,12 +39,12 @@
  */
 package org.dcm4che3.conf.core.adapters;
 
+import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.context.ProcessingContext;
 import org.dcm4che3.conf.core.context.SavingContext;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.util.Base64;
 
 import java.io.IOException;
@@ -77,7 +77,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     }
 
     @Override
-    public Object fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
+    public Object fromConfigNode(Object configNode, ConfigProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
         Class<?> componentType = ((Class) property.getType()).getComponentType();
 
@@ -97,7 +97,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         if (Collection.class.isAssignableFrom(configNode.getClass())) {
             Collection l = ((Collection) configNode);
             Object arr = Array.newInstance(componentType, l.size());
-            AnnotatedConfigurableProperty componentPseudoProperty = property.getPseudoPropertyForCollectionElement();
+            ConfigProperty componentPseudoProperty = property.getPseudoPropertyForCollectionElement();
             ConfigTypeAdapter elementTypeAdapter = ctx.getVitalizer().lookupTypeAdapter(componentPseudoProperty);
             int i = 0;
             for (Object el : l) {
@@ -117,7 +117,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     }
 
     @Override
-    public Object toConfigNode(Object object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
+    public Object toConfigNode(Object object, ConfigProperty property, SavingContext ctx) throws ConfigurationException {
 
         if (object == null) return null;
 
@@ -128,7 +128,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
             return Base64.toBase64((byte[]) object);
 
         Class wrapperClass = PRIMITIVE_TO_WRAPPER.get(componentType);
-        AnnotatedConfigurableProperty componentPseudoProperty = property.getPseudoPropertyForCollectionElement();
+        ConfigProperty componentPseudoProperty = property.getPseudoPropertyForCollectionElement();
 
         ConfigTypeAdapter elementTypeAdapter = ctx.getVitalizer().lookupTypeAdapter(componentPseudoProperty);
 
@@ -141,7 +141,7 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
     }
 
     @Override
-    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public Map<String, Object> getSchema(ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
 
         Map<String, Object> metadata = new HashMap<String, Object>();
 
@@ -155,14 +155,14 @@ public class ArrayTypeAdapter implements ConfigTypeAdapter<Object, Object> {
         metadata.put("type", "array");
 
 
-        AnnotatedConfigurableProperty componentPseudoProperty = property.getPseudoPropertyForCollectionElement();
+        ConfigProperty componentPseudoProperty = property.getPseudoPropertyForCollectionElement();
         metadata.put("items", ctx.getVitalizer().lookupTypeAdapter(componentPseudoProperty).getSchema(componentPseudoProperty, ctx));
 
         return metadata;
     }
 
     @Override
-    public Object normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public Object normalize(Object configNode, ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
 
         // byte[] is a special case
         if (((Class) property.getType()).getComponentType().equals(byte.class))

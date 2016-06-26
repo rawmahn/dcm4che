@@ -146,6 +146,10 @@ public interface Configuration extends BatchRunner {
      */
     void removeNode(String path) throws ConfigurationException;
 
+
+    Path getPathByUUID(String uuid);
+
+
     /**
      * Performs a search on the configuration tree and returns an iterator to configuration nodes that satisfy the search criteria.
      *

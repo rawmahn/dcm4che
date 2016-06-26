@@ -48,6 +48,7 @@ import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.dcm4che3.conf.core.context.ContextFactory;
 import org.dcm4che3.conf.core.context.LoadingContext;
+import org.dcm4che3.conf.core.index.ReferablesIndex;
 import org.dcm4che3.conf.core.util.PathPattern;
 
 import java.util.List;
@@ -65,6 +66,7 @@ public class DefaultTypeSafeConfiguration<R> implements TypeSafeConfiguration<R>
     private final Class<R> rootClass;
     private final BeanVitalizer vitalizer;
     private ContextFactory contextFactory;
+
 
     public DefaultTypeSafeConfiguration(Configuration configurationStorage, Class<R> rootClass, Map<Class, List<Class>> extensionsByClass) {
         this.confStorage = configurationStorage;
@@ -90,12 +92,12 @@ public class DefaultTypeSafeConfiguration<R> implements TypeSafeConfiguration<R>
         return vitalizer.newConfiguredInstance((Map<String, Object>) configurationNode, clazz, ctx);
     }
 
-    public <T> T find(String uuid, Class<T> clazz) {
-        return find(uuid, clazz, contextFactory.newLoadingContext());
+    public <T> T findByUUID(String uuid, Class<T> clazz) {
+        return findByUUID(uuid, clazz, contextFactory.newLoadingContext());
     }
 
     @Override
-    public <T> T find(String uuid, Class<T> clazz, LoadingContext ctx) {
+    public <T> T findByUUID(String uuid, Class<T> clazz, LoadingContext ctx) {
 
         // TODO: proper cast checks!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

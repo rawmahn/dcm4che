@@ -40,13 +40,12 @@
 package org.dcm4che3.conf.core.api.internal;
 
 
-import org.dcm4che3.conf.core.api.ConfigurableClass;
-import org.dcm4che3.conf.core.api.ConfigurableClassExtension;
-import org.dcm4che3.conf.core.api.ConfigurableProperty;
-import org.dcm4che3.conf.core.api.Parent;
+import org.apache.commons.beanutils.PropertyUtils;
+import org.dcm4che3.conf.core.api.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.*;
 
@@ -62,19 +61,19 @@ public class ConfigReflection {
     private static final Map<Class, ClassInfo> classInfoCache = Collections.synchronizedMap(new HashMap<Class, ClassInfo>());
     private static final Map<Class, Boolean> isClassConfigurable = Collections.synchronizedMap(new HashMap<Class, Boolean>());
 
-    private static final Map<Class, AnnotatedConfigurableProperty> dummyPropsCache = Collections.synchronizedMap(new HashMap<Class, AnnotatedConfigurableProperty>());
+    private static final Map<Class, ConfigProperty> dummyPropsCache = Collections.synchronizedMap(new HashMap<Class, ConfigProperty>());
 
-    public static List<AnnotatedConfigurableProperty> getAllConfigurableFields(Class clazz) {
+    public static List<ConfigProperty> getAllConfigurableFields(Class clazz) {
         return getClassInfo(clazz).configurableProperties;
     }
 
-    public static AnnotatedConfigurableProperty getDummyPropertyForClass(Class clazz) {
-        AnnotatedConfigurableProperty found = dummyPropsCache.get(clazz);
+    public static ConfigProperty getDummyPropertyForClass(Class clazz) {
+        ConfigProperty found = dummyPropsCache.get(clazz);
 
         if (found != null) {
             return found;
         } else {
-            AnnotatedConfigurableProperty property = new AnnotatedConfigurableProperty(clazz);
+            ConfigProperty property = new ConfigProperty(clazz);
             dummyPropsCache.put(clazz, property);
             return property;
         }
@@ -101,17 +100,19 @@ public class ConfigReflection {
         return isItForReal;
     }
 
-    public static AnnotatedConfigurableProperty getUUIDPropertyForClass(Class clazz) {
+    public static ConfigProperty getUUIDPropertyForClass(Class clazz) {
         return getClassInfo(clazz).uuidProperty;
     }
 
 
     private static ClassInfo processAndCacheClassInfo(Class clazz) {
-        ClassInfo classInfo = scanClass(clazz);
 
         ConfigurableClass configClassAnno = (ConfigurableClass) clazz.getAnnotation(ConfigurableClass.class);
         if (configClassAnno == null)
             throw new IllegalArgumentException("Class '" + clazz.getName() + "' is not a configurable class. Make sure the a dependency to org.dcm4che.conf.core-api exists.");
+
+
+        ClassInfo classInfo = scanClass(clazz);
 
         // some restrictions on extensions
         if (ConfigurableClassExtension.class.isAssignableFrom(clazz)) {
@@ -134,13 +135,13 @@ public class ConfigReflection {
     private static ClassInfo scanClass(Class clazz) {
 
         ClassInfo classInfo = new ClassInfo();
-        classInfo.configurableProperties = new ArrayList<AnnotatedConfigurableProperty>();
+        classInfo.configurableProperties = new ArrayList<ConfigProperty>();
 
         // scan all fields from this class and superclasses
         for (Field field : getAllFields(clazz)) {
             if (field.getAnnotation(ConfigurableProperty.class) != null) {
 
-                AnnotatedConfigurableProperty ap = new AnnotatedConfigurableProperty(
+                ConfigProperty ap = new ConfigProperty(
                         annotationsArrayToMap(field.getAnnotations()),
                         field.getName(),
                         field.getGenericType()
@@ -169,6 +170,11 @@ public class ConfigReflection {
 
                 classInfo.parentField = field;
             }
+        }
+
+
+        if (classInfo.uuidProperty == null && classInfo.parentField != null) {
+            throw new IllegalArgumentException("A configurable class that refers to a @Parent must have a uuid property defined. Violated by " + clazz.getName());
         }
 
         return classInfo;
@@ -204,11 +210,39 @@ public class ConfigReflection {
         return fields;
     }
 
+    public static void setProperty(Object object, ConfigProperty property, Object value) throws ReflectionAccessException {
+        setProperty(object, property.getName(), value);
+    }
+
+    public static void setProperty(Object object, String propertyName, Object value) throws ReflectionAccessException {
+        try {
+            PropertyUtils.setSimpleProperty(object, propertyName, value);
+        } catch (IllegalAccessException e) {
+            throw new ReflectionAccessException("Could not set property " + propertyName + " in class " + object.getClass().toString(), e);
+        } catch (InvocationTargetException e) {
+            throw new ReflectionAccessException("Could not set property " + propertyName + " in class " + object.getClass().toString(), e);
+        } catch (NoSuchMethodException e) {
+            throw new ReflectionAccessException("Could not set property " + propertyName + " in class " + object.getClass().toString(), e);
+        }
+    }
+
+    public static Object getProperty(Object object, ConfigProperty property) throws ReflectionAccessException {
+        try {
+            return PropertyUtils.getSimpleProperty(object, property.getName());
+        } catch (IllegalAccessException e) {
+            throw new ReflectionAccessException("Could not get property " + property + " in class " + object.getClass().toString(), e);
+        } catch (InvocationTargetException e) {
+            throw new ReflectionAccessException("Could not get property " + property + " in class " + object.getClass().toString(), e);
+        } catch (NoSuchMethodException e) {
+            throw new ReflectionAccessException("Could not get property " + property + " in class " + object.getClass().toString(), e);
+        }
+    }
+
     private static class ClassInfo {
 
-        List<AnnotatedConfigurableProperty> configurableProperties;
-        AnnotatedConfigurableProperty uuidProperty;
-        AnnotatedConfigurableProperty olockHashProperty;
+        List<ConfigProperty> configurableProperties;
+        ConfigProperty uuidProperty;
+        ConfigProperty olockHashProperty;
         Field parentField;
 
     }

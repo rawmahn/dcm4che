@@ -39,12 +39,12 @@
  */
 package org.dcm4che3.conf.core.adapters;
 
+import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.context.ProcessingContext;
 import org.dcm4che3.conf.core.context.SavingContext;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 
 import java.util.Collection;
 import java.util.EnumSet;
@@ -52,6 +52,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Note: As a parent for it's elements, the collection adapter will pass it's own parent, and not itself
+ *
  * @author Roman K
  */
 public class CollectionTypeAdapter< V extends Collection,T extends Collection> implements ConfigTypeAdapter<V, T> {
@@ -80,7 +82,7 @@ public class CollectionTypeAdapter< V extends Collection,T extends Collection> i
         }
     }
 
-    private V createCollectionVitalized(AnnotatedConfigurableProperty property) throws ConfigurationException {
+    private V createCollectionVitalized(ConfigProperty property) throws ConfigurationException {
         if (EnumSet.class.isAssignableFrom(property.getRawClass())) {
             Class enumClass = (Class) property.getTypeForGenericsParameter(0);
             return (V) EnumSet.noneOf(enumClass);
@@ -89,9 +91,9 @@ public class CollectionTypeAdapter< V extends Collection,T extends Collection> i
     }
 
     @Override
-    public V fromConfigNode(T configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
+    public V fromConfigNode(T configNode, ConfigProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
-        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForCollectionElement();
+        ConfigProperty elementPseudoProperty = property.getPseudoPropertyForCollectionElement();
 
         ConfigTypeAdapter elementAdapter;
         if (property.isCollectionOfReferences())
@@ -102,15 +104,15 @@ public class CollectionTypeAdapter< V extends Collection,T extends Collection> i
         V collection = createCollectionVitalized(property);
 
         for (Object o : configNode)
-            collection.add(elementAdapter.fromConfigNode(o, elementPseudoProperty, ctx, collection));
+            collection.add(elementAdapter.fromConfigNode(o, elementPseudoProperty, ctx, parent));
 
         return collection;
     }
 
     @Override
-    public T toConfigNode(V object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
+    public T toConfigNode(V object, ConfigProperty property, SavingContext ctx) throws ConfigurationException {
 
-        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForCollectionElement();
+        ConfigProperty elementPseudoProperty = property.getPseudoPropertyForCollectionElement();
 
         ConfigTypeAdapter elementAdapter;
         if (property.isCollectionOfReferences())
@@ -126,14 +128,14 @@ public class CollectionTypeAdapter< V extends Collection,T extends Collection> i
     }
 
     @Override
-    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public Map<String, Object> getSchema(ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
 
         Map<String, Object> metadata = new HashMap<String, Object>();
         Map<String, Object> elementMetadata = new HashMap<String, Object>();
 
         metadata.put("type", "array");
 
-        AnnotatedConfigurableProperty elementPseudoProperty = property.getPseudoPropertyForCollectionElement();
+        ConfigProperty elementPseudoProperty = property.getPseudoPropertyForCollectionElement();
 
         ConfigTypeAdapter elementAdapter;
         if (property.isCollectionOfReferences())
@@ -148,7 +150,7 @@ public class CollectionTypeAdapter< V extends Collection,T extends Collection> i
     }
 
     @Override
-    public T normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public T normalize(Object configNode, ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
         if (configNode == null)
             return createCollectionNode();
         return (T) configNode;

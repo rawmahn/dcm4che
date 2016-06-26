@@ -40,10 +40,10 @@
 package org.dcm4che3.conf.core.adapters;
 
 import org.dcm4che3.conf.core.api.*;
+import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.context.ProcessingContext;
 import org.dcm4che3.conf.core.context.SavingContext;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.validation.ValidationException;
 
@@ -72,7 +72,7 @@ public class DefaultConfigTypeAdapters {
      * @return
      * @throws org.dcm4che3.conf.core.api.ConfigurationException
      */
-    public static Object delegateGetChildFromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
+    public static Object delegateGetChildFromConfigNode(Map<String, Object> configNode, ConfigProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
         Object node;
         if (property.isOlockHash()) {
@@ -96,7 +96,7 @@ public class DefaultConfigTypeAdapters {
         return adapter.fromConfigNode(node, property, ctx, parent);
     }
 
-    public static void delegateChildToConfigNode(Object object, Map<String, Object> parentNode, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
+    public static void delegateChildToConfigNode(Object object, Map<String, Object> parentNode, ConfigProperty property, SavingContext ctx) throws ConfigurationException {
         String nodeName;
         if (property.isOlockHash()) {
             // special case - olock prop name is constant
@@ -152,12 +152,12 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public T fromConfigNode(T configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
+        public T fromConfigNode(T configNode, ConfigProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
             return configNode;
         }
 
         @Override
-        public T toConfigNode(T object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationUnserializableException {
+        public T toConfigNode(T object, ConfigProperty property, SavingContext ctx) throws ConfigurationUnserializableException {
             return object;
         }
 
@@ -165,13 +165,13 @@ public class DefaultConfigTypeAdapters {
          * Constant metadata
          */
         @Override
-        public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+        public Map<String, Object> getSchema(ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
             return metadata;
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public T normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+        public T normalize(Object configNode, ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
             try {
                 if (metadata.get("type").equals("integer")) {
                     return normalizeInt(configNode, property);
@@ -187,7 +187,7 @@ public class DefaultConfigTypeAdapters {
             }
         }
         
-        protected T normalizeInt(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        protected T normalizeInt(Object configNode, ConfigProperty property) throws ConfigurationException {
             if (configNode == null) {
                 throw new ConfigurationException("No value found for primitive integer property without default");
             }
@@ -202,7 +202,7 @@ public class DefaultConfigTypeAdapters {
             }
         }
         
-        protected T normalizeBoolean(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        protected T normalizeBoolean(Object configNode, ConfigProperty property) throws ConfigurationException {
             if (configNode == null && property.getType().equals(boolean.class)) {
                 throw new ConfigurationException("No value found for primitive boolean property without default");
             }
@@ -223,7 +223,7 @@ public class DefaultConfigTypeAdapters {
             }
         }
         
-        protected T normalizeNumber(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        protected T normalizeNumber(Object configNode, ConfigProperty property) throws ConfigurationException {
             if (configNode == null) {
                 throw new ConfigurationException("No value found for number property without default");
             }
@@ -259,33 +259,33 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public T fromConfigNode(T configNode, AnnotatedConfigurableProperty property,
+        public T fromConfigNode(T configNode, ConfigProperty property,
                                 LoadingContext ctx, Object parent) throws ConfigurationException {
             return super.fromConfigNode(configNode, property, ctx, parent);
         }
 
         @Override
-        protected T normalizeInt(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        protected T normalizeInt(Object configNode, ConfigProperty property) throws ConfigurationException {
             // Java default value for int: 0
             Object checkedConfigNode = checkIfNoValueAndSetDefaultOrFallback(configNode, property, new Integer(0));
             return super.normalizeInt(checkedConfigNode, property);
         }
 
         @Override
-        protected T normalizeBoolean(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        protected T normalizeBoolean(Object configNode, ConfigProperty property) throws ConfigurationException {
             // Java default value for boolean: false
             Object checkedConfigNode = checkIfNoValueAndSetDefaultOrFallback(configNode, property, Boolean.FALSE);
             return super.normalizeBoolean(checkedConfigNode, property);
         }
 
         @Override
-        protected T normalizeNumber(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+        protected T normalizeNumber(Object configNode, ConfigProperty property) throws ConfigurationException {
             // use 0.0 as default for other number types
             Object checkedConfigNode = checkIfNoValueAndSetDefaultOrFallback(configNode, property, new Double(0.0));
             return super.normalizeNumber(checkedConfigNode, property);
         }
         
-        private Object checkIfNoValueAndSetDefaultOrFallback(Object configNode, AnnotatedConfigurableProperty property, Object fallbackDefValue) {
+        private Object checkIfNoValueAndSetDefaultOrFallback(Object configNode, ConfigProperty property, Object fallbackDefValue) {
             if(configNode == null) {
                 String defaultValue = property.getDefaultValue();
                 if (!defaultValue.equals(ConfigurableProperty.NO_DEFAULT_VALUE)) {
@@ -313,19 +313,19 @@ public class DefaultConfigTypeAdapters {
 
 
         @Override
-        public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+        public Map<String, Object> getSchema(ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
             return metadata;
         }
 
         @Override
-        public String normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+        public String normalize(Object configNode, ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
             return (String) configNode;
         }
 
 
     }
 
-    private static Object getDefaultIfNull(Object configNode, AnnotatedConfigurableProperty property) throws ConfigurationException {
+    private static Object getDefaultIfNull(Object configNode, ConfigProperty property) throws ConfigurationException {
         if (configNode == null) {
             configNode = property.getDefaultValue();
             if (configNode.equals(""))
@@ -341,7 +341,7 @@ public class DefaultConfigTypeAdapters {
     public static class EnumTypeAdapter implements ConfigTypeAdapter<Enum<?>, Object> {
 
         @Override
-        public Enum<?> fromConfigNode(Object configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
+        public Enum<?> fromConfigNode(Object configNode, ConfigProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
             ConfigurableProperty.EnumRepresentation howToRepresent = property.getEnumRepresentation();
             switch (howToRepresent) {
@@ -356,7 +356,7 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public Object toConfigNode(Enum<?> object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationUnserializableException {
+        public Object toConfigNode(Enum<?> object, ConfigProperty property, SavingContext ctx) throws ConfigurationUnserializableException {
 
             ConfigurableProperty.EnumRepresentation howToRepresent = property.getEnumRepresentation();
 
@@ -370,7 +370,7 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+        public Map<String, Object> getSchema(ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
             try {
                 Map<String, Object> metadata = new HashMap<String, Object>();
 
@@ -412,7 +412,7 @@ public class DefaultConfigTypeAdapters {
         }
 
         @Override
-        public Object normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+        public Object normalize(Object configNode, ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
 
             if (configNode == null) return null;
             switch (property.getEnumRepresentation()) {

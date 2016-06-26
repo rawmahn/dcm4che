@@ -45,7 +45,7 @@ package org.dcm4che3.conf.core;
 
 import org.dcm4che3.conf.core.adapters.*;
 import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
+import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
@@ -196,7 +196,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
 
     @Override
     @SuppressWarnings("unchecked")
-    public ConfigTypeAdapter lookupTypeAdapter(AnnotatedConfigurableProperty property) throws ConfigurationException {
+    public ConfigTypeAdapter lookupTypeAdapter(ConfigProperty property) throws ConfigurationException {
 
         Class clazz = property.getRawClass();
 
@@ -247,5 +247,11 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
     @Override
     public void registerCustomConfigTypeAdapter(Class clazz, ConfigTypeAdapter typeAdapter) {
         customConfigTypeAdapters.put(clazz, typeAdapter);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Map<String, Object> getSchemaForConfigurableClass(Class<?> clazz) {
+        return lookupDefaultTypeAdapter(clazz).getSchema(new ConfigProperty(clazz), contextFactory.newProcessingContext());
     }
 }

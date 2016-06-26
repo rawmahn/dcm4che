@@ -44,7 +44,7 @@ import org.dcm4che3.conf.core.context.ProcessingContext;
 import org.dcm4che3.conf.core.context.SavingContext;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
+import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 
 import java.util.Map;
 
@@ -65,21 +65,21 @@ public class NullToNullDecorator<T, ST> implements ConfigTypeAdapter<T, ST> {
         this.configTypeAdapter = configTypeAdapter;
     }
 
-    public T fromConfigNode(ST configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
+    public T fromConfigNode(ST configNode, ConfigProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
         if (configNode == null) return null;
         return configTypeAdapter.fromConfigNode(configNode, property, ctx, parent);
     }
 
-    public ST toConfigNode(T object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
+    public ST toConfigNode(T object, ConfigProperty property, SavingContext ctx) throws ConfigurationException {
         if (object == null) return null;
         return configTypeAdapter.toConfigNode(object, property, ctx);
     }
 
-    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public Map<String, Object> getSchema(ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
         return configTypeAdapter.getSchema(property, ctx);
     }
 
-    public ST normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public ST normalize(Object configNode, ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
         return configTypeAdapter.normalize(configNode, property, ctx);
     }
 

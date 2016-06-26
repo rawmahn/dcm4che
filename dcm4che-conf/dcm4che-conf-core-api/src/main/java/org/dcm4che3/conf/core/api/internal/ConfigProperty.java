@@ -55,7 +55,7 @@ import java.util.*;
  * @author Roman K
  */
 
-public class AnnotatedConfigurableProperty {
+public class ConfigProperty {
 
     private static final LDAP dummyLdapAnno = DummyConfigurableClass.class.getAnnotation(LDAP.class);
     private static final Map<Type, Annotation> dummyAnnotations = new HashMap<Type, Annotation>();
@@ -94,8 +94,8 @@ public class AnnotatedConfigurableProperty {
     private final boolean isMap;
     private final boolean isWeakReference;
 
-    private final AnnotatedConfigurableProperty pseudoPropertyForCollectionElement;
-    private final AnnotatedConfigurableProperty pseudoPropertyForConfigClassCollectionElement;
+    private final ConfigProperty pseudoPropertyForCollectionElement;
+    private final ConfigProperty pseudoPropertyForConfigClassCollectionElement;
 
     private final Method valueOfMethod;
     private final ConfigurableProperty.EnumRepresentation enumRepresentation;
@@ -105,7 +105,7 @@ public class AnnotatedConfigurableProperty {
     private final String defaultValue;
 
 
-    public AnnotatedConfigurableProperty(Map<Type, Annotation> annotations, String name, Type type) {
+    public ConfigProperty(Map<Type, Annotation> annotations, String name, Type type) {
         this.annotations = annotations;
         this.name = name;
         this.type = type;
@@ -209,16 +209,16 @@ public class AnnotatedConfigurableProperty {
 
     }
 
-    public AnnotatedConfigurableProperty(Map<Type, Annotation> annotations, Type type) {
+    public ConfigProperty(Map<Type, Annotation> annotations, Type type) {
         this(annotations, "dummy", type);
     }
 
-    public AnnotatedConfigurableProperty(Type type) {
+    public ConfigProperty(Type type) {
         this(dummyAnnotations, type);
     }
 
-    public AnnotatedConfigurableProperty clone() {
-        return new AnnotatedConfigurableProperty(
+    public ConfigProperty clone() {
+        return new ConfigProperty(
                 annotations,
                 getName(),
                 getType()
@@ -243,11 +243,11 @@ public class AnnotatedConfigurableProperty {
     }
 
     //TODO: cache
-    public AnnotatedConfigurableProperty getPseudoPropertyForGenericsParamater(int genericParameterIndex) {
+    public ConfigProperty getPseudoPropertyForGenericsParamater(int genericParameterIndex) {
 
         Type typeForGenericsParameter = getTypeForGenericsParameter(genericParameterIndex);
 
-        return new AnnotatedConfigurableProperty(
+        return new ConfigProperty(
                 annotations,
                 typeForGenericsParameter
         );
@@ -255,7 +255,7 @@ public class AnnotatedConfigurableProperty {
 
     @Override
     public String toString() {
-        return "AnnotatedConfigurableProperty[name='" + name + "', annotatedName='" + annotatedName + "', rawType='" + rawType + "']";
+        return "ConfigProperty[name='" + name + "', annotatedName='" + annotatedName + "', rawType='" + rawType + "']";
     }
 
 
@@ -302,11 +302,11 @@ public class AnnotatedConfigurableProperty {
      *
      * @return
      */
-    public AnnotatedConfigurableProperty getPseudoPropertyForConfigClassCollectionElement() {
+    public ConfigProperty getPseudoPropertyForConfigClassCollectionElement() {
         return pseudoPropertyForConfigClassCollectionElement;
     }
 
-    public AnnotatedConfigurableProperty calcPseudoPropertyForConfigClassCollectionElement() {
+    public ConfigProperty calcPseudoPropertyForConfigClassCollectionElement() {
 
         Type type;
         if (isMapOfConfObjects())
@@ -319,7 +319,7 @@ public class AnnotatedConfigurableProperty {
             return null;
         //throw new IllegalArgumentException("This property is not a collection/array/map - "+getType());
 
-        return new AnnotatedConfigurableProperty(annotations, type);
+        return new ConfigProperty(annotations, type);
     }
 
     /**
@@ -329,11 +329,11 @@ public class AnnotatedConfigurableProperty {
      * @return null if not a collection/map
      */
 
-    public AnnotatedConfigurableProperty getPseudoPropertyForCollectionElement() {
+    public ConfigProperty getPseudoPropertyForCollectionElement() {
         return pseudoPropertyForCollectionElement;
     }
 
-    private AnnotatedConfigurableProperty calcPseudoPropertyForCollectionElement() {
+    private ConfigProperty calcPseudoPropertyForCollectionElement() {
 
         Type type;
         if (Map.class.isAssignableFrom(getRawClass()))
@@ -348,7 +348,7 @@ public class AnnotatedConfigurableProperty {
 
         // TODO: only specific params shold be cloned...
 
-        return new AnnotatedConfigurableProperty(
+        return new ConfigProperty(
                 annotations,
                 type
         );

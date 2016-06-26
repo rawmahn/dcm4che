@@ -40,16 +40,12 @@
 package org.dcm4che3.conf.dicom;
 
 import org.codehaus.jackson.map.ObjectMapper;
-import org.dcm4che3.conf.core.DefaultBeanVitalizer;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
+import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.context.ProcessingContext;
-import org.dcm4che3.conf.dicom.CommonDicomConfigurationWithHL7;
 import org.dcm4che3.net.ApplicationEntity;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Map;
@@ -65,7 +61,7 @@ public class JsonSchema {
         CommonDicomConfigurationWithHL7 configuration = SimpleStorageTest.createCommonDicomConfiguration();
         BeanVitalizer vitalizer = configuration.getVitalizer();
 
-        AnnotatedConfigurableProperty property = new AnnotatedConfigurableProperty(ApplicationEntity.class);
+        ConfigProperty property = new ConfigProperty(ApplicationEntity.class);
         ConfigTypeAdapter adapter = vitalizer.lookupTypeAdapter(property);
         Map schema = adapter.getSchema(property, new ProcessingContext(vitalizer));
 

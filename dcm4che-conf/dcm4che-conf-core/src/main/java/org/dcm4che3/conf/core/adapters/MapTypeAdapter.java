@@ -40,12 +40,12 @@
 package org.dcm4che3.conf.core.adapters;
 
 import org.dcm4che3.conf.core.api.Configuration;
+import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.context.ProcessingContext;
 import org.dcm4che3.conf.core.context.SavingContext;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,13 +57,13 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
 
 
     @Override
-    public Map<K, V> fromConfigNode(Map<String, Object> configNode, AnnotatedConfigurableProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
+    public Map<K, V> fromConfigNode(Map<String, Object> configNode, ConfigProperty property, LoadingContext ctx, Object parent) throws ConfigurationException {
 
-        AnnotatedConfigurableProperty keyPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
+        ConfigProperty keyPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
         ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) ctx.getVitalizer().lookupTypeAdapter(keyPseudoProperty);
 
         ConfigTypeAdapter<V, Object> valueAdapter;
-        AnnotatedConfigurableProperty valuePseudoProperty = property.getPseudoPropertyForGenericsParamater(1);
+        ConfigProperty valuePseudoProperty = property.getPseudoPropertyForGenericsParamater(1);
         if (property.isCollectionOfReferences())
             valueAdapter = ctx.getVitalizer().getReferenceTypeAdapter();
         else
@@ -73,7 +73,7 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
 
         for (Entry<String, Object> e : configNode.entrySet()) {
             map.put(keyAdapter.fromConfigNode(keyAdapter.normalize(e.getKey(), keyPseudoProperty, ctx), keyPseudoProperty, ctx, null),
-                    valueAdapter.fromConfigNode(valueAdapter.normalize(e.getValue(),valuePseudoProperty, ctx), valuePseudoProperty, ctx, map));
+                    valueAdapter.fromConfigNode(valueAdapter.normalize(e.getValue(),valuePseudoProperty, ctx), valuePseudoProperty, ctx, parent));
 
         }
 
@@ -81,13 +81,13 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
     }
 
     @Override
-    public Map<String, Object> toConfigNode(Map<K, V> object, AnnotatedConfigurableProperty property, SavingContext ctx) throws ConfigurationException {
+    public Map<String, Object> toConfigNode(Map<K, V> object, ConfigProperty property, SavingContext ctx) throws ConfigurationException {
 
-        AnnotatedConfigurableProperty keyPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
+        ConfigProperty keyPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
         ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) ctx.getVitalizer().lookupTypeAdapter(keyPseudoProperty);
 
         ConfigTypeAdapter<V, Object> valueAdapter;
-        AnnotatedConfigurableProperty valuePseudoProperty = property.getPseudoPropertyForGenericsParamater(1);
+        ConfigProperty valuePseudoProperty = property.getPseudoPropertyForGenericsParamater(1);
         if (property.isCollectionOfReferences())
             valueAdapter = ctx.getVitalizer().getReferenceTypeAdapter();
         else
@@ -106,7 +106,7 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
     }
 
     @Override
-    public Map<String, Object> getSchema(AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public Map<String, Object> getSchema(ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
 
         Map<String, Object> metadata = new HashMap<String, Object>();
         Map<String, Object> keyMetadata = new HashMap<String, Object>();
@@ -117,10 +117,10 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
         metadata.put("class", "Map");
 
         // get adapters
-        AnnotatedConfigurableProperty keyPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
+        ConfigProperty keyPseudoProperty = property.getPseudoPropertyForGenericsParamater(0);
         ConfigTypeAdapter<K, String> keyAdapter = (ConfigTypeAdapter<K, String>) ctx.getVitalizer().lookupTypeAdapter(keyPseudoProperty);
 
-        AnnotatedConfigurableProperty valuePseudoProperty = property.getPseudoPropertyForGenericsParamater(1);
+        ConfigProperty valuePseudoProperty = property.getPseudoPropertyForGenericsParamater(1);
         ConfigTypeAdapter<V, Object> valueAdapter;
         if (property.isCollectionOfReferences())
             valueAdapter = ctx.getVitalizer().getReferenceTypeAdapter();
@@ -139,7 +139,7 @@ public class MapTypeAdapter<K, V> implements ConfigTypeAdapter<Map<K, V>, Map<St
     }
 
     @Override
-    public Map<String, Object> normalize(Object configNode, AnnotatedConfigurableProperty property, ProcessingContext ctx) throws ConfigurationException {
+    public Map<String, Object> normalize(Object configNode, ConfigProperty property, ProcessingContext ctx) throws ConfigurationException {
         if (configNode == null) return new HashMap<String, Object>();
         return (Map<String, Object>) configNode;
     }

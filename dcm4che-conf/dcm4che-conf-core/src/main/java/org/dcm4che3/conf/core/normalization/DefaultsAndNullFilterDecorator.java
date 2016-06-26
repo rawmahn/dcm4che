@@ -41,13 +41,12 @@ package org.dcm4che3.conf.core.normalization;
 
 import java.util.*;
 
-import org.apache.commons.beanutils.PropertyUtils;
 import org.dcm4che3.conf.core.DelegatingConfiguration;
 import org.dcm4che3.conf.core.adapters.ArrayTypeAdapter;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
 import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.internal.AnnotatedConfigurableProperty;
+import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.dcm4che3.conf.core.context.ContextFactory;
@@ -81,7 +80,7 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
 
         ConfigNodeTypesafeFilter filterDefaults = new ConfigNodeTypesafeFilter() {
             @Override
-            public boolean beforeNode(Map<String, Object> containerNode, Class containerNodeClass, AnnotatedConfigurableProperty property) throws ConfigurationException {
+            public boolean beforeNode(Map<String, Object> containerNode, Class containerNodeClass, ConfigProperty property) throws ConfigurationException {
 
                 boolean doDelete = false;
 
@@ -136,7 +135,7 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
             // generate missing UUIDs
             ConfigNodeTraverser.traverseNodeTypesafe(configNode, ConfigReflection.getDummyPropertyForClass(configurableClass), allExtensionClasses, new ConfigNodeTypesafeFilter() {
                 @Override
-                public boolean beforeNode(Map<String, Object> containerNode, Class containerNodeClass, AnnotatedConfigurableProperty property) throws ConfigurationException {
+                public boolean beforeNode(Map<String, Object> containerNode, Class containerNodeClass, ConfigProperty property) throws ConfigurationException {
                     if (property.isUuid() && (containerNode.get(Configuration.UUID_KEY) == null || "".equals(containerNode.get(Configuration.UUID_KEY)))) {
                         String newUUID = UUID.randomUUID().toString();
                         log.warn("Adding a missing UUID [" + newUUID + "] to a " + containerNodeClass.getSimpleName());
@@ -158,7 +157,7 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
 
         ConfigNodeTypesafeFilter applyDefaults = new ConfigNodeTypesafeFilter() {
             @Override
-            public boolean beforeNode(Map<String, Object> containerNode, Class containerNodeClass, AnnotatedConfigurableProperty property) throws ConfigurationException {
+            public boolean beforeNode(Map<String, Object> containerNode, Class containerNodeClass, ConfigProperty property) throws ConfigurationException {
 
                 // if no value for this property, see if there is default and set it
                 if (!containerNode.containsKey(property.getAnnotatedName())) {
@@ -197,13 +196,9 @@ public class DefaultsAndNullFilterDecorator extends DelegatingConfiguration {
         return node;
     }
 
-    private Object getDefaultValueFromClass(Class containerNodeClass, AnnotatedConfigurableProperty property) {
+    private Object getDefaultValueFromClass(Class containerNodeClass, ConfigProperty property) {
         Object defaultValueFromClass;
-        try {
-            defaultValueFromClass = PropertyUtils.getSimpleProperty(vitalizer.newInstance(containerNodeClass), property.getName());
-        } catch (ReflectiveOperationException e) {
-            throw new ConfigurationException(e);
-        }
+        defaultValueFromClass = ConfigReflection.getProperty(vitalizer.newInstance(containerNodeClass), property);
         return new ArrayTypeAdapter().toConfigNode(defaultValueFromClass, property, contextFactory.newSavingContext());
     }
 
