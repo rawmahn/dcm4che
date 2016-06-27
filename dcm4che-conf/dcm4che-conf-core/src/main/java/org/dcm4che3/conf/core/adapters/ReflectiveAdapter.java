@@ -180,14 +180,13 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
         // TODO: replace with proxy
 
         // if no config context - leave the parent unset
-        TypeSafeConfiguration typeSafeConfiguration = ctx.getTypeSafeConfiguration();
-        if (typeSafeConfiguration == null) return;
+        TypeSafeConfiguration typeSafeConfig = ctx.getTypeSafeConfiguration();
+        if (typeSafeConfig == null) return;
 
         // Get path of this object in the storage
-        Path pathByUUID = typeSafeConfiguration.getLowLevelAccess().getPathByUUID(uuid);
+        Path pathByUUID = typeSafeConfig.getLowLevelAccess().getPathByUUID(uuid);
         if (pathByUUID == null) return;
-        Deque<ConfigProperty> configProperties = PathFollower.traceProperties(typeSafeConfiguration.getRootClass(), pathByUUID);
-
+        Deque<ConfigProperty> configProperties = PathFollower.traceProperties(typeSafeConfig.getRootClass(), pathByUUID);
 
         // parent is either the first or the second in the path (otherwise cannot really get the parent)
 
@@ -212,9 +211,11 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
             return;
         }
 
+        Path parentPath = pathByUUID.subPath(0, pathByUUID.getPathItems().size() - nodesAbove);
 
-        // figure out at which level is the parent
         // load parent
+        typeSafeConfig.load(parentPath, parentProp.getRawClass(), ctx);
+
     }
 
 
