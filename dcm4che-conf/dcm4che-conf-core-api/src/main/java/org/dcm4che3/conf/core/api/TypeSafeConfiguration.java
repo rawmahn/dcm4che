@@ -68,4 +68,5 @@ public interface TypeSafeConfiguration<R> {
     BeanVitalizer getVitalizer();
     ContextFactory getContextFactory();
 
+    Class<R> getRootClass();
 }

@@ -25,7 +25,7 @@ public class DicomConfigurationRoot {
     @ConfigurableClass
     public static class DicomConfigurationNode {
 
-        @ConfigurableProperty()
+        @ConfigurableProperty
         Map<String, Device> dicomDevicesRoot;
 
         @ConfigurableProperty

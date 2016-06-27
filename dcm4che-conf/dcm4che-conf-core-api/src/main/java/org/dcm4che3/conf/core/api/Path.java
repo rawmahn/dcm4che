@@ -65,7 +65,7 @@ public class Path implements Serializable {
         pathItems = Collections.unmodifiableList(new ArrayList<Object>());
     }
 
-    public Path(String... pathItems) {
+    public Path(Object... pathItems) {
 
         ArrayList<Object> strings = new ArrayList<Object>(pathItems.length);
         Collections.addAll(strings, pathItems);

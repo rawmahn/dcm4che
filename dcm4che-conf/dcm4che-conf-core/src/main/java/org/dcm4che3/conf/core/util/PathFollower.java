@@ -19,7 +19,7 @@ public class PathFollower {
      *
      * @return
      */
-    public static Deque<ConfigProperty> makeTrace(Class rootConfigurableClazz, Path path) {
+    public static Deque<ConfigProperty> traceProperties(Class rootConfigurableClazz, Path path) {
 
 
         ArrayDeque<ConfigProperty> trace = new ArrayDeque<ConfigProperty>(path.getPathItems().size());
@@ -28,7 +28,7 @@ public class PathFollower {
 
         for (Object i : path.getPathItems()) {
 
-            trace.push(current);
+            trace.addLast(current);
 
             if ((i instanceof String && !current.isConfObject() && !current.isMap())
                     || (i instanceof Number && !current.isCollection())) {
@@ -37,35 +37,35 @@ public class PathFollower {
                 );
             }
 
-
             if (current.isConfObject()) {
                 List<ConfigProperty> props = ConfigReflection.getAllConfigurableFields(current.getRawClass());
+
+                boolean found = false;
                 for (ConfigProperty prop : props) {
-                    boolean found = false;
                     if (prop.getAnnotatedName().equals(i)) {
                         current = prop;
                         found = true;
                         break;
                     }
-
-                    if (!found)
-                        throw new IllegalArgumentException("Cannot find the property with name " + i + " in class " + current.getRawClass() + " while tracing path " + path);
-
                 }
-            }
 
-            if (current.isMap()) {
-                current.getPseudoPropertyForCollectionElement()
+                if (!found) {
+                    throw new IllegalArgumentException("Cannot find the property with name " + i + " in class " + current.getRawClass() + " while tracing path " + path);
+                }
+
+            } else if (current.isMap() || current.isCollection()) {
+                current = current.getPseudoPropertyForCollectionElement();
+            } else
+                throw new IllegalArgumentException("Path " + path + " cannot be followed - property " + current + " is not supposed to have no children");
 
 
-            }
+            // TODO: add support for extensions - for now there are no usecases that involve referables *inside* extensions (hl7apps however are a good example)
+
         }
 
-
-        follow(rootConfigurableClazz, path, trace);
+        trace.addLast(current);
 
         return trace;
-
     }
 
 

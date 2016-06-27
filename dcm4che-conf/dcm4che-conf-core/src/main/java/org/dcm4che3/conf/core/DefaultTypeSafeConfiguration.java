@@ -144,6 +144,11 @@ public class DefaultTypeSafeConfiguration<R> implements TypeSafeConfiguration<R>
         return contextFactory;
     }
 
+    @Override
+    public Class<R> getRootClass() {
+        return rootClass;
+    }
+
     public void setContextFactory(ContextFactory contextFactory) {
         this.contextFactory = contextFactory;
     }

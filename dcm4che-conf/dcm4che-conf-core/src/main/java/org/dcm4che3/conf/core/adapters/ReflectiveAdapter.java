@@ -40,24 +40,19 @@
 package org.dcm4che3.conf.core.adapters;
 
 import com.google.common.util.concurrent.SettableFuture;
-import org.dcm4che3.conf.core.api.ConfigurableProperty;
-import org.dcm4che3.conf.core.api.Configuration;
-import org.dcm4che3.conf.core.api.ConfigurationException;
-import org.dcm4che3.conf.core.api.Path;
+import org.dcm4che3.conf.core.api.*;
 import org.dcm4che3.conf.core.api.internal.ConfigProperty;
 import org.dcm4che3.conf.core.api.internal.ConfigReflection;
 import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.context.LoadingContext;
 import org.dcm4che3.conf.core.context.ProcessingContext;
 import org.dcm4che3.conf.core.context.SavingContext;
+import org.dcm4che3.conf.core.util.PathFollower;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.Future;
 
 /**
@@ -165,13 +160,13 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
 
     private void injectParent(LoadingContext ctx, Class<T> clazz, T confObj, Object parent, String uuid) {
 
-        Field parentProperty = ConfigReflection.getParentPropertyForClass(clazz);
-        if (parentProperty == null) return;
+        Field parentField = ConfigReflection.getParentPropertyForClass(clazz);
+        if (parentField == null) return;
 
         // if parent was provided - use it
         if (parent != null) {
             try {
-                ConfigReflection.setProperty(confObj, parentProperty.getName(), parent);
+                ConfigReflection.setProperty(confObj, parentField.getName(), parent);
                 return;
             } catch (RuntimeException e) {
                 throw new ConfigurationException("Could not 'inject' parent object into the @Parent field (class " + clazz.getName() + ")", e);
@@ -179,15 +174,43 @@ public class ReflectiveAdapter<T> implements ConfigTypeAdapter<T, Map<String, Ob
         }
 
         // if no provided parent and no uuid - we cannot really find the parent, so just leave it null
-        if  (uuid == null) return;
+        if (uuid == null) return;
 
 
         // TODO: replace with proxy
+
+        // if no config context - leave the parent unset
+        TypeSafeConfiguration typeSafeConfiguration = ctx.getTypeSafeConfiguration();
+        if (typeSafeConfiguration == null) return;
+
         // Get path of this object in the storage
-        Path pathByUUID = ctx.getTypeSafeConfiguration().getLowLevelAccess().getPathByUUID(uuid);
+        Path pathByUUID = typeSafeConfiguration.getLowLevelAccess().getPathByUUID(uuid);
+        if (pathByUUID == null) return;
+        Deque<ConfigProperty> configProperties = PathFollower.traceProperties(typeSafeConfiguration.getRootClass(), pathByUUID);
 
 
+        // parent is either the first or the second in the path (otherwise cannot really get the parent)
 
+        if (configProperties.size() < 1) return;
+        configProperties.removeLast();
+        int nodesAbove = 1;
+
+        // this can be still a map/collection, try one level above
+        if (!configProperties.peekLast().isConfObject()) {
+            configProperties.removeLast();
+            nodesAbove++;
+            if (configProperties.size() == 0) return;
+            if (!configProperties.peekLast().isConfObject()) return;
+        }
+
+        // now we are looking at the parent
+        ConfigProperty parentProp = configProperties.peekLast();
+
+        if (!parentField.getType().isAssignableFrom(parentProp.getRawClass())) {
+            log.warn("Parent type mismatch: config structure denotes " + parentProp.getRawClass() + ", but the class has a field of type " + parentField.getType()
+                    + " config object uuid=" + uuid + ", config class " + clazz);
+            return;
+        }
 
 
         // figure out at which level is the parent
