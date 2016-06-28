@@ -59,8 +59,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Main class that is used to initialize annotated Java objects with settings fetched from a configuration backend.
- * These are mostly low-level access methods that should be used to build the API for configuration functionality of an end product
+ * Handles the conversion between annotated Java objects and config nodes from a configuration backend.
  */
 public class DefaultBeanVitalizer implements BeanVitalizer {
 
@@ -90,7 +89,7 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
     /**
      * Sets the timeout for resolving futures (objs being loaded by other threads) while loading the config.
      * <p/>
-     * This is rather a defence-against-ourselves measure, the config futures should always get resolved/fail with an exception at some point.
+     * This is rather a defence-against-ourselves measure, i.e. normally the config futures should always get resolved/fail with an exception at some point.
      *
      * @param loadingTimeoutSec timeout. If <b>0</b> is passed, timeout is disabled.
      */
@@ -137,11 +136,12 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
         return newConfiguredInstance(configNode, clazz, contextFactory.newLoadingContext());
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T newConfiguredInstance(Map<String, Object> configurationNode, Class<T> clazz, LoadingContext ctx) {
-        // TODO: add custom factories for objects (i.e. Groups tc )
-
-        return new ReflectiveAdapter<T>().fromConfigNode(configurationNode, ConfigReflection.getDummyPropertyForClass(clazz), ctx, null);
+        ConfigProperty propertyForClass = ConfigReflection.getDummyPropertyForClass(clazz);
+        return (T) lookupTypeAdapter(propertyForClass)
+                .fromConfigNode(configurationNode, propertyForClass, ctx, null);
     }
 
     /**
@@ -173,13 +173,12 @@ public class DefaultBeanVitalizer implements BeanVitalizer {
     }
 
 
+    @SuppressWarnings("unchecked")
     @Override
     public Map<String, Object> createConfigNodeFromInstance(Object object, Class clazz) throws ConfigurationException {
-        return (Map<String, Object>) lookupDefaultTypeAdapter(clazz).toConfigNode(
-                object,
-                ConfigReflection.getDummyPropertyForClass(clazz),
-                contextFactory.newSavingContext()
-        );
+        ConfigProperty propertyForClass = ConfigReflection.getDummyPropertyForClass(clazz);
+        return (Map<String, Object>) lookupTypeAdapter(propertyForClass)
+                .toConfigNode(object, propertyForClass, contextFactory.newSavingContext());
     }
 
     @Override

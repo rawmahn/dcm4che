@@ -15,7 +15,7 @@ import java.util.*;
 public class TCConfiguration {
 
     @ConfigurableProperty
-    public Map<String, TCGroup> transferCapabilityGroups = new TreeMap<String, TCGroup>();
+    private Map<String, TCGroup> transferCapabilityGroups = new TreeMap<String, TCGroup>();
 
     /**
      * Persists default group config

@@ -347,6 +347,7 @@ public class ConfigProperty {
         //throw new IllegalArgumentException("This property is not a collection/array/map - "+getType());
 
         // TODO: only specific params shold be cloned...
+        // TODO: to get rid of getReferenceAdapter, we need to create child pseudoProp with reference=true in case of collectionOfReferences
 
         return new ConfigProperty(
                 annotations,

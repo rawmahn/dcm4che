@@ -46,9 +46,9 @@ import org.dcm4che3.conf.core.api.Path;
 import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
 import org.dcm4che3.conf.core.api.internal.ConfigReflection;
+import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.core.context.ContextFactory;
 import org.dcm4che3.conf.core.context.LoadingContext;
-import org.dcm4che3.conf.core.index.ReferablesIndex;
 import org.dcm4che3.conf.core.util.PathPattern;
 
 import java.util.List;
@@ -66,13 +66,14 @@ public class DefaultTypeSafeConfiguration<R> implements TypeSafeConfiguration<R>
     private final Class<R> rootClass;
     private final BeanVitalizer vitalizer;
     private ContextFactory contextFactory;
-
+    private Map<Class, ConfigTypeAdapter> customAdapters;
 
     public DefaultTypeSafeConfiguration(Configuration configurationStorage, Class<R> rootClass, Map<Class, List<Class>> extensionsByClass) {
         this.confStorage = configurationStorage;
         this.rootClass = rootClass;
         contextFactory = new ContextFactory(this);
         this.vitalizer = new DefaultBeanVitalizer(extensionsByClass, contextFactory);
+
     }
 
     @Override
