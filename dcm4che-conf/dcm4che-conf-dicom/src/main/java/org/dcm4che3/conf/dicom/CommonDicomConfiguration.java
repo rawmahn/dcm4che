@@ -56,6 +56,7 @@ import org.dcm4che3.conf.core.api.Configuration;
 import org.dcm4che3.conf.core.api.ConfigurationException;
 import org.dcm4che3.conf.core.api.TypeSafeConfiguration;
 import org.dcm4che3.conf.core.api.internal.BeanVitalizer;
+import org.dcm4che3.conf.core.api.internal.ConfigTypeAdapter;
 import org.dcm4che3.conf.dicom.adapters.*;
 import org.dcm4che3.data.Code;
 import org.dcm4che3.data.Issuer;
@@ -89,6 +90,15 @@ public class CommonDicomConfiguration implements DicomConfigurationManager, Tran
 
     private final Map<Class, List<Class>> extensionsByClass;
     private final TypeSafeConfiguration<DicomConfigurationRoot> config;
+
+    public CommonDicomConfiguration(Configuration configurationStorage, Map<Class, List<Class>> extensionsByClass, Map<Class, ConfigTypeAdapter> customAdapters) {
+        this(configurationStorage, extensionsByClass);
+
+        for (Map.Entry<Class, ConfigTypeAdapter> classListEntry : customAdapters.entrySet()) {
+            vitalizer.registerCustomConfigTypeAdapter(classListEntry.getKey(), classListEntry.getValue());
+        }
+
+    }
 
     /**
      * Returns a list of registered extensions for a specified base extension class
