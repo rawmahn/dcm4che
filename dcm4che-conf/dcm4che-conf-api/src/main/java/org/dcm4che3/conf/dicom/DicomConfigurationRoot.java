@@ -1,5 +1,6 @@
 package org.dcm4che3.conf.dicom;
 
+import org.dcm4che3.conf.api.TCConfiguration;
 import org.dcm4che3.conf.api.upgrade.ConfigurationMetadata;
 import org.dcm4che3.conf.core.api.ConfigurableClass;
 import org.dcm4che3.conf.core.api.ConfigurableProperty;
@@ -29,6 +30,9 @@ public class DicomConfigurationRoot {
         Map<String, Device> dicomDevicesRoot;
 
         @ConfigurableProperty
+        GlobalConfiguration globalConfiguration;
+
+        @ConfigurableProperty
         MetadataRoot metadataRoot;
 
         public MetadataRoot getMetadataRoot() {
@@ -39,15 +43,21 @@ public class DicomConfigurationRoot {
             this.metadataRoot = metadataRoot;
         }
 
-        public Map<String, Device> getDevices() {
+        public Map<String, Device> getDicomDevicesRoot() {
             return dicomDevicesRoot;
         }
 
-        public void setDevices(Map<String, Device> devices) {
-            this.dicomDevicesRoot = devices;
+        public void setDicomDevicesRoot(Map<String, Device> dicomDevicesRoot) {
+            this.dicomDevicesRoot = dicomDevicesRoot;
         }
 
+        public GlobalConfiguration getGlobalConfiguration() {
+            return globalConfiguration;
+        }
 
+        public void setGlobalConfiguration(GlobalConfiguration globalConfiguration) {
+            this.globalConfiguration = globalConfiguration;
+        }
     }
 
 
@@ -63,6 +73,21 @@ public class DicomConfigurationRoot {
 
         public void setVersioning(ConfigurationMetadata versioning) {
             this.versioning = versioning;
+        }
+    }
+
+    @ConfigurableClass
+    public static class GlobalConfiguration {
+
+        @ConfigurableProperty
+        TCConfiguration dcmTransferCapabilities;
+
+        public TCConfiguration getDcmTransferCapabilities() {
+            return dcmTransferCapabilities;
+        }
+
+        public void setDcmTransferCapabilities(TCConfiguration dcmTransferCapabilities) {
+            this.dcmTransferCapabilities = dcmTransferCapabilities;
         }
     }
 }

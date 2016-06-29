@@ -19,7 +19,7 @@ public class TCConfiguration {
 
     /**
      * Persists default group config
-     * Deprecated. Do not us it in upgrade scripts.
+     * Deprecated. Do not use it in upgrade scripts.
      * @param config
      * @throws ConfigurationException
      */
